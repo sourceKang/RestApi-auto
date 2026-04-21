@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from cases import READ_ENDPOINTS
@@ -27,18 +29,22 @@ def test_inventory_read_endpoints_readwrite(api_client, env_config, readwrite_se
     )
     if case.name == "port_list" and response.status_code == 404:
         pytest.skip("/port list endpoint is not supported by this EMS build.")
-    if case.domain == "ont" and response.retstatus == "Fail" and "No data found" in response.retresult:
-        if case.name == "ont_by_sn":
-            _prepare_ont_for_get(api_client, env_config, readwrite_session)
-            response = api_client.request(
-                case.method,
-                case.build_path(env_config),
-                session=readwrite_session,
-                params=case.build_params(env_config, name),
-            )
-        if response.retstatus == "Fail" and "No data found" in response.retresult:
-            pytest.skip(f"{case.name} has no ONT data in this EMS environment after prepare.")
+    if case.domain == "ont" and _is_no_data(response):
+        _prepare_ont_for_get(api_client, env_config, readwrite_session)
+        response = api_client.request(
+            case.method,
+            case.build_path(env_config),
+            session=readwrite_session,
+            params=case.build_params(env_config, name),
+        )
+    if case.domain == "ont" and _is_no_data(response):
+        pytest.fail(
+            f"{case.name} expected an existing ONT from ENV_WEB.JSON, but EMS returned no data. "
+            f"path={case.build_path(env_config)}, response={response.json!r}"
+        )
     assert_api_success(response)
+    if case.domain == "ont":
+        _assert_expected_ont_present(response.json, env_config, case.name)
 
 
 @pytest.mark.inventory
@@ -56,9 +62,14 @@ def test_inventory_read_endpoints_readonly(api_client, env_config, readonly_sess
     )
     if case.name == "port_list" and response.status_code == 404:
         pytest.skip("/port list endpoint is not supported by this EMS build.")
-    if case.domain == "ont" and response.retstatus == "Fail" and "No data found" in response.retresult:
-        pytest.skip(f"{case.name} has no ONT data in this EMS environment.")
+    if case.domain == "ont" and _is_no_data(response):
+        pytest.fail(
+            f"{case.name} expected an existing ONT from ENV_WEB.JSON for readonly GET, "
+            f"but EMS returned no data. path={case.build_path(env_config)}, response={response.json!r}"
+        )
     assert_api_success(response)
+    if case.domain == "ont":
+        _assert_expected_ont_present(response.json, env_config, case.name)
 
 
 @pytest.mark.inventory
@@ -95,4 +106,21 @@ def _prepare_ont_for_get(api_client, env_config, session_id):
         json={"command": commands},
     )
     if response.retstatus != "Success":
-        pytest.skip(f"ONT prepare remote console command failed: {response.json!r}")
+        pytest.fail(f"ONT prepare remote console command failed: {response.json!r}")
+
+
+def _is_no_data(response):
+    return response.retstatus == "Fail" and "No data found" in response.retresult
+
+
+def _assert_expected_ont_present(payload, env_config, case_name):
+    body = json.dumps(payload, ensure_ascii=False)
+    dut = env_config.dut
+    expected_values = [dut.ont_sn]
+    if case_name == "ont_by_description":
+        expected_values.append(dut.ont_description)
+    missing = [value for value in expected_values if value and value not in body]
+    assert not missing, (
+        f"{case_name} returned Success but did not include expected ONT data {missing!r}. "
+        f"Expected SN={dut.ont_sn!r}, description={dut.ont_description!r}, payload={payload!r}"
+    )

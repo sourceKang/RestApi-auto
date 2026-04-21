@@ -1,0 +1,35 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments and local dependency caches
+.venv/
+venv/
+env/
+ENV/
+.pytest_deps/
+
+# Test, coverage, and tooling caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Reports and generated test artifacts
+reports/
+allure-results/
+allure-report/
+
+# Local environment and editor files
+.env
+.env.*
+*.log
+.idea/
+.vscode/
+
+# OS metadata
+Thumbs.db
+Desktop.ini

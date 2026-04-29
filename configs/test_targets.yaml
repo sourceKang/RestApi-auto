@@ -1,0 +1,47 @@
+# Node-specific test targets for the new REST API framework.
+# ENV_WEB.JSON remains read-only; this file narrows what this project reports/tests.
+version: 1
+
+nodes:
+  NODE1:
+    report_cards: ["MSC1240QB", "GLC1440X", "OLC3816"]
+    controller_card: "MSC1240QB"
+    pon_card: "OLC3816"
+    ge_service_card: "GLC1440X"
+    ont:
+      slot_id: "2"
+      port_id: "16"
+      ont_id: "1"
+      sn: "5A5958458CADDDC3"
+      password: "F44D5C39E710"
+      description: "tony_test"
+      template: "#RestApi_provision_temp_SFU"
+    ge_service:
+      slot_id: "1"
+      port_id: "39"
+      template: "#RestApi_getemp_ge1"
+      port_name: "10g_Hsinchu"
+      telephone: "011+886+7+2737"
+
+  NODE3:
+    report_cards: ["NXC400", "NXP316", "NXA340"]
+    controller_card: "NXC400"
+    pon_card: "NXP316"
+    ge_service_card: "NXA340"
+    ont:
+      slot_id: "3"
+      port_id: "16"
+      ont_id: "1"
+      sn: "5A5958458CACE175"
+      password: "D41AD1009ED0"
+      description: "RestApi_test@1234des"
+      template: "#RestApi_provision_temp_SFU"
+    ge_service:
+      slot_id: "1"
+      port_id: "39"
+      template: "#RestApi_getemp_ge1"
+      port_name: "10g_Hsinchu"
+      telephone: "011+886+7+2737"
+
+cross_check:
+  mode: "off"

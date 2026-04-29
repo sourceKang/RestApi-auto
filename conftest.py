@@ -7,10 +7,16 @@ from configs import load_environment
 from models.api import SessionRole
 from utils.assertions import assert_api_success
 from utils.cleanup import CleanupRegistry
-from utils.reporting import ensure_report_dirs, record_result, write_reports
+from utils.reporting import ensure_report_dirs, record_result, register_permission_role, write_reports
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--ems-node",
+        action="store",
+        default=None,
+        help="Select DUT node key from ENV_WEB.JSON, for example NODE1 or NODE3. Overrides EMS_NODE.",
+    )
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
 
@@ -30,6 +36,13 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         for item in items:
             if "alarm_delete" in item.keywords:
                 item.add_marker(skip_alarm_delete)
+    for item in items:
+        role = None
+        if "readonly" in item.keywords:
+            role = "readonly"
+        elif "noaccess" in item.keywords:
+            role = "noaccess"
+        register_permission_role(item.nodeid, role)
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
@@ -44,7 +57,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     try:
-        env_config = load_environment()
+        env_config = load_environment(node=session.config.getoption("--ems-node"))
         txt_path, allure_results, allure_html = write_reports(session.config, env_config)
         terminal = session.config.pluginmanager.get_plugin("terminalreporter")
         if terminal:
@@ -60,9 +73,27 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             terminal.write_line(f"EMS report generation failed: {error}")
 
 
+@pytest.fixture(autouse=True)
+def allure_node_context(env_config):
+    try:
+        import allure
+
+        node = env_config.raw.get("ZYXEL_DUT", {}).get(env_config.dut.node_key, {})
+        chassis = str(node.get("chassis", "unknown"))
+        parent_suite = f"{env_config.dut.node_key} - {env_config.dut.device_name}"
+        allure.dynamic.parent_suite(parent_suite)
+        allure.dynamic.suite(chassis)
+        allure.dynamic.label("ems_node", env_config.dut.node_key)
+        allure.dynamic.label("dut_name", env_config.dut.device_name)
+        allure.dynamic.label("dut_ip", env_config.dut.device_ip)
+        allure.dynamic.label("dut_chassis", chassis)
+    except Exception:
+        pass
+
+
 @pytest.fixture(scope="session")
-def env_config():
-    return load_environment()
+def env_config(request):
+    return load_environment(node=request.config.getoption("--ems-node"))
 
 
 @pytest.fixture(scope="session")

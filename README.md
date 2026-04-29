@@ -24,6 +24,29 @@ $env:EMS_NODE="NODE3"
 pytest
 ```
 
+Or select the DUT node per run:
+
+```powershell
+pytest --ems-node NODE1
+pytest --ems-node NODE3
+```
+
+`--ems-node` overrides `EMS_NODE` for that pytest run.
+
+## Hardware Targets
+
+`ENV_WEB.JSON` is treated as read-only legacy environment data. New framework
+hardware rules and per-node test targets are kept in YAML:
+
+- `configs/hardware_matrix.yaml`: chassis/card capability rules.
+- `configs/test_targets.yaml`: NODE-specific report cards, test cards, ONT target and GE service target.
+
+For a new DUT, add the chassis capability to `hardware_matrix.yaml`, then add a
+node entry to `test_targets.yaml`. If a node is not listed in YAML, the
+framework falls back to the legacy selection logic from `ENV_WEB.JSON`.
+For fields listed in both places, YAML wins and `ENV_WEB.JSON` remains a
+read-only fallback.
+
 ## Roles
 
 - `readwrite`: `EMS.login_username` / `EMS.login_password`

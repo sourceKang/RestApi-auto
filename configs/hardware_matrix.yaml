@@ -1,0 +1,44 @@
+# Hardware rules used by the new REST API test framework.
+# Keep this file focused on platform capabilities, not live lab values.
+version: 1
+
+chassis:
+  IES4204:
+    max_controller_cards: 2
+    max_line_cards: 2
+    report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    controller_cards: ["MSC1240QA", "MSC1240QB"]
+    line_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X"]
+
+  NeoX-03:
+    max_controller_cards: 1
+    max_line_cards: 4
+    report_card_order: ["NXC400", "NXP316", "NXA340", "GLC1440", "GLC1540"]
+    controller_cards: ["NXC400"]
+    line_cards: ["NXP316", "NXA340", "GLC1440", "GLC1540"]
+    ge_service_cards: ["NXA340", "GLC1440", "GLC1540"]
+
+  NeoX-06:
+    max_controller_cards: 1
+    max_line_cards: 8
+    report_card_order: ["NXC400", "NXP316", "NXA340", "GLC1440", "GLC1540"]
+    controller_cards: ["NXC400"]
+    line_cards: ["NXP316", "NXA340", "GLC1440", "GLC1540"]
+    ge_service_cards: ["NXA340", "GLC1440", "GLC1540"]
+
+  OLT1408A-C:
+    max_controller_cards: 1
+    max_line_cards: 0
+    report_card_order: ["OLT140x"]
+    controller_cards: ["OLT140x"]
+    line_cards: []
+    ge_service_cards: []
+
+  OLT1408B-IA:
+    max_controller_cards: 1
+    max_line_cards: 0
+    report_card_order: ["OLT140x"]
+    controller_cards: ["OLT140x"]
+    line_cards: []
+    ge_service_cards: []

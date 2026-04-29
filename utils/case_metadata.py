@@ -17,6 +17,8 @@ def attach_legacy_case(case: dict[str, Any]) -> None:
             allure.dynamic.label("case_id", case_id)
             allure.dynamic.testcase(case_id, case_id)
         allure.dynamic.label("legacy_name", case.get("legacy_name", ""))
+        if case.get("legacy_name"):
+            allure.dynamic.title(case["legacy_name"])
     except Exception:
         pass
 

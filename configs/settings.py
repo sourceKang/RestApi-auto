@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from configs.hardware import HardwareConfig, HardwareConfigError, load_hardware_config
 from models.api import SessionRole
 
 
@@ -48,6 +49,7 @@ class DutSample:
 class EnvironmentConfig:
     source_path: Path
     raw: dict[str, Any]
+    hardware: HardwareConfig
     base_url: str
     verify_tls: bool
     timeout: float
@@ -66,10 +68,14 @@ class EnvironmentConfig:
         raise ConfigError(f"Unsupported session role: {role}")
 
 
-def load_environment(path: str | Path | None = None) -> EnvironmentConfig:
+def load_environment(path: str | Path | None = None, node: str | None = None) -> EnvironmentConfig:
     env_path = Path(path or os.environ.get("EMS_ENV_FILE", DEFAULT_ENV_FILE))
     data = _load_json_with_known_repairs(env_path)
     _validate_minimum_shape(data, env_path)
+    try:
+        hardware = load_hardware_config()
+    except HardwareConfigError as error:
+        raise ConfigError(f"Cannot load hardware YAML configuration: {error}") from error
 
     ems = data["EMS"]
     users = ems["USER"]
@@ -84,16 +90,25 @@ def load_environment(path: str | Path | None = None) -> EnvironmentConfig:
             f"EMS.USER.USER5.name must be {EXPECTED_READONLY_USER!r}, got {user5_name!r}."
         )
 
+    dut = _select_dut_sample(data, node or os.environ.get("EMS_NODE", "NODE3"), hardware)
+    selected_node = data.get("ZYXEL_DUT", {}).get(dut.node_key, {})
+    if isinstance(selected_node, dict):
+        try:
+            hardware.validate_node(dut.node_key, selected_node)
+        except HardwareConfigError as error:
+            raise ConfigError(f"Invalid hardware YAML target for {dut.node_key}: {error}") from error
+
     return EnvironmentConfig(
         source_path=env_path,
         raw=data,
+        hardware=hardware,
         base_url=str(ems["rest_api_url"]).rstrip("/"),
         verify_tls=_env_bool("EMS_VERIFY_TLS", default=False),
         timeout=float(os.environ.get("EMS_API_TIMEOUT", "60")),
         readwrite=Credentials(str(ems["login_username"]), str(ems["login_password"])),
         readonly=Credentials(str(users["USER5"]["name"]), str(users["USER5"]["password"])),
         noaccess=Credentials(str(users["USER4"]["name"]), str(users["USER4"]["password"])),
-        dut=_select_dut_sample(data, os.environ.get("EMS_NODE", "NODE3")),
+        dut=dut,
     )
 
 
@@ -149,7 +164,7 @@ def _validate_minimum_shape(data: dict[str, Any], path: Path) -> None:
         raise ConfigError(f"{path} is missing required keys: {', '.join(missing)}")
 
 
-def _select_dut_sample(data: dict[str, Any], preferred_node: str) -> DutSample:
+def _select_dut_sample(data: dict[str, Any], preferred_node: str, hardware: HardwareConfig | None = None) -> DutSample:
     nodes = data["ZYXEL_DUT"]
     candidates = [preferred_node] + [key for key in nodes if key != preferred_node]
     for node_key in candidates:
@@ -157,37 +172,72 @@ def _select_dut_sample(data: dict[str, Any], preferred_node: str) -> DutSample:
         if not isinstance(node, dict):
             continue
         try:
-            card = _first_pon_card(node)
-            ge_card = _first_ge_service_card(node)
+            card = _target_or_first_pon_card(node_key, node, hardware)
+            ge_card = _target_or_first_ge_service_card(node_key, node, hardware)
             ont = _first_ont(node)
+            target = hardware.node_target(node_key) if hardware is not None else {}
+            ont_target = _target_section(target, "ont")
+            ge_target = _target_section(target, "ge_service")
             return DutSample(
                 node_key=node_key,
                 device_name=str(node["name"]),
                 device_ip=str(node["ip"]),
-                slot_id=str(card["slot_id"]),
-                port_id=str(card["port_id"]),
-                ge_slot_id=str(ge_card["slot_id"]),
-                ge_port_id=str(ge_card["port_id"]),
-                ont_id=str(ont.get("ont_id", "1")),
-                ont_sn=str(ont.get("sn_16") or ont.get("sn_12")).strip(),
-                ont_password=str(ont.get("pw", "DEFAULT")),
-                ont_template=str(ont.get("template_name", "#RestApi_provision_temp_SFU")),
-                ont_description=str(ont.get("description", "AUTO_REST_DESCRIPTION")),
-                ge_template=str(
-                    ge_card.get("PORTINFO", {})
-                    .get("info", {})
-                    .get("ge_template_name", ge_card.get("template_name", "#RestApi_getemp_ge1"))
-                ),
-                ge_port_name=str(
-                    ge_card.get("PORTINFO", {}).get("info", {}).get("port_name", "AUTO_REST_GE")
-                ),
-                ge_telephone=str(
-                    ge_card.get("PORTINFO", {}).get("info", {}).get("telephone", "000")
-                ),
+                slot_id=str(_target_value(ont_target, "slot_id", card["slot_id"])),
+                port_id=str(_target_value(ont_target, "port_id", card["port_id"])),
+                ge_slot_id=str(_target_value(ge_target, "slot_id", ge_card["slot_id"])),
+                ge_port_id=str(_target_value(ge_target, "port_id", ge_card["port_id"])),
+                ont_id=str(_target_value(ont_target, "ont_id", ont.get("ont_id", "1"))),
+                ont_sn=str(_target_value(ont_target, "sn", ont.get("sn_16") or ont.get("sn_12"))).strip(),
+                ont_password=str(_target_value(ont_target, "password", ont.get("pw", "DEFAULT"))),
+                ont_template=str(_target_value(ont_target, "template", ont.get("template_name", "#RestApi_provision_temp_SFU"))),
+                ont_description=str(_target_value(ont_target, "description", ont.get("description", "AUTO_REST_DESCRIPTION"))),
+                ge_template=str(_target_value(ge_target, "template", _ge_card_info_value(ge_card, "ge_template_name", ge_card.get("template_name", "#RestApi_getemp_ge1")))),
+                ge_port_name=str(_target_value(ge_target, "port_name", _ge_card_info_value(ge_card, "port_name", "AUTO_REST_GE"))),
+                ge_telephone=str(_target_value(ge_target, "telephone", _ge_card_info_value(ge_card, "telephone", "000"))),
             )
         except (KeyError, TypeError, ValueError):
             continue
     raise ConfigError("Cannot find a DUT sample with device, port and ONT data.")
+
+
+def _target_section(target: dict[str, Any], name: str) -> dict[str, Any]:
+    section = target.get(name, {})
+    return section if isinstance(section, dict) else {}
+
+
+def _target_value(section: dict[str, Any], field: str, fallback: Any) -> Any:
+    value = section.get(field)
+    return fallback if value in (None, "") else value
+
+
+def _ge_card_info_value(card: dict[str, Any], field: str, fallback: Any) -> Any:
+    return card.get("PORTINFO", {}).get("info", {}).get(field, fallback)
+
+
+def _target_or_first_pon_card(node_key: str, node: dict[str, Any], hardware: HardwareConfig | None) -> dict[str, Any]:
+    card = _target_card(node_key, node, hardware, "pon_card")
+    if card is not None:
+        return card
+    return _first_pon_card(node)
+
+
+def _target_or_first_ge_service_card(node_key: str, node: dict[str, Any], hardware: HardwareConfig | None) -> dict[str, Any]:
+    card = _target_card(node_key, node, hardware, "ge_service_card")
+    if card is not None:
+        return card
+    return _first_ge_service_card(node)
+
+
+def _target_card(node_key: str, node: dict[str, Any], hardware: HardwareConfig | None, field: str) -> dict[str, Any] | None:
+    if hardware is None:
+        return None
+    card_token = hardware.node_target(node_key).get(field)
+    if not isinstance(card_token, str):
+        return None
+    resolved = hardware.resolve_card(node, card_token)
+    if resolved is None:
+        raise ValueError(f"{node_key}.{field} references missing card {card_token!r}")
+    return resolved[2]
 
 
 def _first_pon_card(node: dict[str, Any]) -> dict[str, Any]:

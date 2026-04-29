@@ -10,7 +10,7 @@ import urllib3
 
 from configs.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
-from utils.allure_helpers import attach_json
+from utils.allure_helpers import allure_step, attach_json
 from utils.redaction import redact
 
 
@@ -24,6 +24,19 @@ class EmsApiClient:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        session: str | None = None,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        expected: str | None = None,
+    ) -> ApiResponse:
+        with allure_step(f"{method.upper()} {path}"):
+            return self._send_request(method, path, session=session, params=params, json=json, expected=expected)
+
+    def _send_request(
         self,
         method: str,
         path: str,
@@ -115,4 +128,3 @@ class EmsApiClient:
         if not path.startswith("/"):
             path = f"/{path}"
         return "/".join(quote(segment, safe="") for segment in path.split("/"))
-

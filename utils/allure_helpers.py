@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from typing import Any
 
 from utils.redaction import redact
@@ -18,3 +19,13 @@ def attach_json(name: str, value: Any) -> None:
     except Exception:
         return
 
+
+@contextmanager
+def allure_step(title: str):
+    try:
+        import allure
+    except Exception:
+        yield
+    else:
+        with allure.step(title):
+            yield

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from configs.auth import AuthConfigError, ResolvedAccount, load_auth_config
 from configs.hardware import HardwareConfig, HardwareConfigError, load_hardware_config
 from models.api import SessionRole
 
@@ -31,6 +32,7 @@ class DutSample:
     node_key: str
     device_name: str
     device_ip: str
+    chassis: str
     slot_id: str
     port_id: str
     ge_slot_id: str
@@ -50,12 +52,16 @@ class EnvironmentConfig:
     source_path: Path
     raw: dict[str, Any]
     hardware: HardwareConfig
+    auth_profile: str
     base_url: str
     verify_tls: bool
     timeout: float
     readwrite: Credentials
     readonly: Credentials
     noaccess: Credentials
+    readwrite_account: ResolvedAccount
+    readonly_account: ResolvedAccount
+    noaccess_account: ResolvedAccount
     dut: DutSample
 
     def credentials_for(self, role: SessionRole) -> Credentials:
@@ -68,7 +74,7 @@ class EnvironmentConfig:
         raise ConfigError(f"Unsupported session role: {role}")
 
 
-def load_environment(path: str | Path | None = None, node: str | None = None) -> EnvironmentConfig:
+def load_environment(path: str | Path | None = None, node: str | None = None, auth_profile: str | None = None) -> EnvironmentConfig:
     env_path = Path(path or os.environ.get("EMS_ENV_FILE", DEFAULT_ENV_FILE))
     data = _load_json_with_known_repairs(env_path)
     _validate_minimum_shape(data, env_path)
@@ -76,6 +82,10 @@ def load_environment(path: str | Path | None = None, node: str | None = None) ->
         hardware = load_hardware_config()
     except HardwareConfigError as error:
         raise ConfigError(f"Cannot load hardware YAML configuration: {error}") from error
+    try:
+        auth = load_auth_config()
+    except AuthConfigError as error:
+        raise ConfigError(f"Cannot load auth YAML configuration: {error}") from error
 
     ems = data["EMS"]
     users = ems["USER"]
@@ -90,6 +100,12 @@ def load_environment(path: str | Path | None = None, node: str | None = None) ->
             f"EMS.USER.USER5.name must be {EXPECTED_READONLY_USER!r}, got {user5_name!r}."
         )
 
+    selected_auth_profile = auth_profile or os.environ.get("EMS_AUTH_PROFILE", "default")
+    try:
+        resolved_accounts = auth.resolve_profile(selected_auth_profile, data)
+    except AuthConfigError as error:
+        raise ConfigError(f"Cannot resolve auth profile {selected_auth_profile!r}: {error}") from error
+
     dut = _select_dut_sample(data, node or os.environ.get("EMS_NODE", "NODE3"), hardware)
     selected_node = data.get("ZYXEL_DUT", {}).get(dut.node_key, {})
     if isinstance(selected_node, dict):
@@ -102,12 +118,16 @@ def load_environment(path: str | Path | None = None, node: str | None = None) ->
         source_path=env_path,
         raw=data,
         hardware=hardware,
+        auth_profile=selected_auth_profile,
         base_url=str(ems["rest_api_url"]).rstrip("/"),
         verify_tls=_env_bool("EMS_VERIFY_TLS", default=False),
         timeout=float(os.environ.get("EMS_API_TIMEOUT", "60")),
-        readwrite=Credentials(str(ems["login_username"]), str(ems["login_password"])),
-        readonly=Credentials(str(users["USER5"]["name"]), str(users["USER5"]["password"])),
-        noaccess=Credentials(str(users["USER4"]["name"]), str(users["USER4"]["password"])),
+        readwrite=Credentials(resolved_accounts["readwrite"].username, resolved_accounts["readwrite"].password),
+        readonly=Credentials(resolved_accounts["readonly"].username, resolved_accounts["readonly"].password),
+        noaccess=Credentials(resolved_accounts["noaccess"].username, resolved_accounts["noaccess"].password),
+        readwrite_account=resolved_accounts["readwrite"],
+        readonly_account=resolved_accounts["readonly"],
+        noaccess_account=resolved_accounts["noaccess"],
         dut=dut,
     )
 
@@ -180,8 +200,9 @@ def _select_dut_sample(data: dict[str, Any], preferred_node: str, hardware: Hard
             ge_target = _target_section(target, "ge_service")
             return DutSample(
                 node_key=node_key,
-                device_name=str(node["name"]),
-                device_ip=str(node["ip"]),
+                device_name=str(_target_value(target, "device_name", node["name"])),
+                device_ip=str(_target_value(target, "device_ip", node["ip"])),
+                chassis=str(_target_value(target, "chassis", node["chassis"])),
                 slot_id=str(_target_value(ont_target, "slot_id", card["slot_id"])),
                 port_id=str(_target_value(ont_target, "port_id", card["port_id"])),
                 ge_slot_id=str(_target_value(ge_target, "slot_id", ge_card["slot_id"])),

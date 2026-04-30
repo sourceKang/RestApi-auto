@@ -1,0 +1,46 @@
+version: 1
+
+profiles:
+  default:
+    readwrite_account: "default"
+    readonly_account: "default"
+    noaccess_account: "default"
+
+  rad_external:
+    readwrite_account: "readwrite1"
+    readonly_account: "readonly1"
+    noaccess_account: "noaccess1"
+
+accounts:
+  readwrite:
+    default:
+      source: "ems_local"
+      from_env:
+        username: ["EMS", "login_username"]
+        password: ["EMS", "login_password"]
+    readwrite1:
+      username: "readwrite1"
+      password: "readwrite1PW"
+      source: "rad_external"
+
+  readonly:
+    default:
+      source: "ems_local"
+      from_env:
+        username: ["EMS", "USER", "USER5", "name"]
+        password: ["EMS", "USER", "USER5", "password"]
+    readonly1:
+      username: "readonly1"
+      password: "readonly1PW"
+      source: "rad_external"
+
+  noaccess:
+    default:
+      source: "ems_local"
+      from_env:
+        username: ["EMS", "USER", "USER4", "name"]
+        password: ["EMS", "USER", "USER4", "password"]
+    noaccess1:
+      username: "noaccess1"
+      password: "noaccess1PW"
+      source: "rad_external"

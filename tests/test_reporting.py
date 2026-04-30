@@ -10,6 +10,7 @@ def _fake_env():
         node_key="NODE1",
         device_name="DemoNode",
         device_ip="192.0.2.10",
+        chassis="IES4204",
         slot_id="2",
         port_id="16",
         ont_id="1",
@@ -36,7 +37,19 @@ def _fake_env():
             }
         },
     }
-    return SimpleNamespace(base_url="https://example.invalid", raw=raw, dut=dut, hardware=hardware)
+    readwrite_account = SimpleNamespace(account_name="default", username="admin")
+    readonly_account = SimpleNamespace(account_name="default", username="RestApiRO")
+    noaccess_account = SimpleNamespace(account_name="default", username="RestApiNA")
+    return SimpleNamespace(
+        base_url="https://example.invalid",
+        raw=raw,
+        dut=dut,
+        hardware=hardware,
+        auth_profile="default",
+        readwrite_account=readwrite_account,
+        readonly_account=readonly_account,
+        noaccess_account=noaccess_account,
+    )
 
 
 def test_txt_report_aggregates_permission_cases_and_suppresses_internal_tests(monkeypatch):
@@ -105,3 +118,27 @@ def test_permission_summary_treats_skip_as_non_blocking_when_other_cases_pass(mo
     case_lines = [line for line in rendered.splitlines() if line.startswith("[")]
 
     assert any("[PERM-RO][readonly_permission_summary] Result Pass" in line for line in case_lines)
+
+
+def test_permission_summary_breakdown_lists_failed_members(monkeypatch):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-04-30_12-00-00"))
+
+    reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "readonly")
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="device_list")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "passed", 0.07)
+
+    reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[ont_by_id]", "readonly")
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readonly[ont_by_id]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6678", name="ont_by_id")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[ont_by_id]", "failed", 0.12)
+
+    breakdown = reporting.permission_summary_breakdown("readonly")
+
+    assert breakdown["case_id"] == "PERM-RO"
+    assert breakdown["outcome"] == "failed"
+    assert breakdown["failed"] == 1
+    assert len(breakdown["failed_items"]) == 1
+    assert breakdown["failed_items"][0]["case_ids"] == ["EMS1-6678"]

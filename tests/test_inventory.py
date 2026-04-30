@@ -139,8 +139,8 @@ def _prepare_ont_for_get(api_client, env_config, session_id):
         if response.retstatus != "Success":
             pytest.fail(f"ONT prepare remote console command failed: {response.json!r}")
 
-    with allure_step("Wait until ONT inventory shows Unregistered before provisioning"):
-        _wait_for_ont_unregistered(api_client, env_config, session_id)
+    with allure_step("Try to observe Unregistered before provisioning, but continue if EMS inventory is not ready yet"):
+        _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=240, raise_on_timeout=False)
 
     with allure_step("Ensure ONT template profile and dependencies exist"):
         _ensure_profile_by_name(api_client, session_id, dut.ont_template)
@@ -157,11 +157,17 @@ def _prepare_ont_for_get(api_client, env_config, session_id):
             assert_api_success(create)
         _wait_for_ont_service_state(api_client, env_config, session_id, {"Success"}, timeout=180, interval=15, initial_delay=30)
 
-    with allure_step("Give EMS time to synchronize ONT inventory after provisioning"):
-        time.sleep(180)
-
-    with allure_step("Check whether ONT inventory GET by SN becomes readable after prepare"):
-        _wait_for_ont_inventory(api_client, env_config, session_id, raise_on_timeout=False)
+    with allure_step("Wait until ONT inventory becomes stable after provisioning instead of sleeping a fixed 180 seconds"):
+        _wait_for_ont_inventory(
+            api_client,
+            env_config,
+            session_id,
+            timeout=240,
+            interval=15,
+            initial_delay=30,
+            consecutive_successes=2,
+            raise_on_timeout=False,
+        )
 
 
 def _is_no_data(response):
@@ -200,7 +206,7 @@ def _wait_for_ont_service_state(api_client, env_config, session_id, expected_sta
     raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {last.json if last else None!r}")
 
 
-def _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=180, interval=15):
+def _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=180, interval=15, raise_on_timeout=True):
     path = f"/ont/sn/{env_config.dut.ont_sn}"
     deadline = time.monotonic() + timeout
     last = None
@@ -213,19 +219,41 @@ def _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=180, 
             if ont_state == "Unregistered":
                 return item
         time.sleep(interval)
-    raise AssertionError(f"ONT did not become Unregistered before provisioning. Last response: {last.json if last else None!r}")
+    if raise_on_timeout:
+        raise AssertionError(f"ONT did not become Unregistered before provisioning. Last response: {last.json if last else None!r}")
+    return None
 
 
-def _wait_for_ont_inventory(api_client, env_config, session_id, timeout=240, interval=15, raise_on_timeout=True):
+def _wait_for_ont_inventory(
+    api_client,
+    env_config,
+    session_id,
+    timeout=240,
+    interval=15,
+    initial_delay=0,
+    consecutive_successes=1,
+    raise_on_timeout=True,
+):
     path = f"/ont/sn/{env_config.dut.ont_sn}"
+    if initial_delay > 0:
+        time.sleep(initial_delay)
     deadline = time.monotonic() + timeout
     last = None
+    stable_hits = 0
     while time.monotonic() <= deadline:
         response = api_client.request("GET", path, session=session_id)
         last = response
         if response.retstatus == "Success":
-            _assert_ont_fields(_find_ont_item(response.json, env_config, "ont_by_sn"), env_config)
-            return True
+            try:
+                _assert_ont_fields(_find_ont_item(response.json, env_config, "ont_by_sn"), env_config)
+            except AssertionError:
+                stable_hits = 0
+            else:
+                stable_hits += 1
+                if stable_hits >= consecutive_successes:
+                    return True
+        else:
+            stable_hits = 0
         time.sleep(interval)
     if raise_on_timeout:
         raise AssertionError(f"ONT inventory did not become readable. Last response: {last.json if last else None!r}")

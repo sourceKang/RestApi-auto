@@ -17,6 +17,9 @@ def test_node1_report_cards_are_yaml_targeted():
     env = load_environment(node="NODE1")
     lines = _card_version_lines(env)
     assert [line.split(":", 1)[0] for line in lines] == ["MSC1240QB", "GLC1440X", "OLC3816"]
+    assert env.dut.device_name == "California_IES4204_169.57"
+    assert env.dut.device_ip == "192.168.169.57"
+    assert env.dut.chassis == "IES4204"
     assert env.dut.slot_id == "2"
     assert env.dut.port_id == "16"
     assert env.dut.ge_slot_id == "1"
@@ -31,3 +34,6 @@ def test_node3_report_cards_are_yaml_targeted():
     env = load_environment(node="NODE3")
     lines = _card_version_lines(env)
     assert [line.split(":", 1)[0] for line in lines] == ["NXC400", "NXP316", "NXA340"]
+    assert env.dut.device_name == "北京_NeoX-03_169.58"
+    assert env.dut.device_ip == "192.168.169.58"
+    assert env.dut.chassis == "NeoX-03"

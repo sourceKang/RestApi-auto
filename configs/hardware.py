@@ -147,6 +147,11 @@ class HardwareConfig:
                 )
 
     def _validate_test_target_sections(self, node_key: str, target: dict[str, Any]) -> None:
+        for field in ("device_name", "device_ip", "chassis"):
+            value = target.get(field)
+            if value is not None and not isinstance(value, (str, int)):
+                raise HardwareConfigError(f"{node_key}.{field} must be a string or integer")
+
         ont = target.get("ont", {})
         if ont is not None and not isinstance(ont, dict):
             raise HardwareConfigError(f"{node_key}.ont must be a mapping")

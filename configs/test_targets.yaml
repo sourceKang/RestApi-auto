@@ -4,6 +4,9 @@ version: 1
 
 nodes:
   NODE1:
+    device_name: "California_IES4204_169.57"
+    device_ip: "192.168.169.57"
+    chassis: "IES4204"
     report_cards: ["MSC1240QB", "GLC1440X", "OLC3816"]
     controller_card: "MSC1240QB"
     pon_card: "OLC3816"
@@ -24,6 +27,9 @@ nodes:
       telephone: "011+886+7+2737"
 
   NODE3:
+    device_name: "北京_NeoX-03_169.58"
+    device_ip: "192.168.169.58"
+    chassis: "NeoX-03"
     report_cards: ["NXC400", "NXP316", "NXA340"]
     controller_card: "NXC400"
     pon_card: "NXP316"

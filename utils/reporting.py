@@ -112,9 +112,13 @@ def _render_txt_report(env_config: Any) -> str:
         f"Summary: {passed} Pass / {failed} Fail",
         f"UI URL: {env_config.base_url}",
         f"EMS Version: {env_config.raw.get('EMS', {}).get('version', 'unknown')}",
+        f"Auth Profile: {env_config.auth_profile}",
+        f"RW Account: {env_config.readwrite_account.account_name} ({env_config.readwrite_account.username})",
+        f"RO Account: {env_config.readonly_account.account_name} ({env_config.readonly_account.username})",
+        f"NA Account: {env_config.noaccess_account.account_name} ({env_config.noaccess_account.username})",
         f"Node Name: {env_config.dut.device_name}",
         f"Node IP: {env_config.dut.device_ip}",
-        f"Node Chassis: {_node_data(env_config).get('chassis', 'unknown')}",
+        f"Node Chassis: {env_config.dut.chassis}",
     ]
     lines.extend(_card_version_lines(env_config))
     lines.extend(_target_summary_lines(env_config))
@@ -131,7 +135,7 @@ def _render_txt_report(env_config: Any) -> str:
 def _report_base_name(env_config: Any, timestamp: str) -> str:
     ems_version = env_config.raw.get("EMS", {}).get("version", "unknown")
     node = _node_data(env_config)
-    chassis = node.get("chassis", "unknown")
+    chassis = env_config.dut.chassis
     controller = _controller_card_name(env_config, node)
     return f"Web_Ems_Rest_Api_{ems_version}_{chassis}_{controller}_report_{timestamp}"
 
@@ -257,6 +261,25 @@ class AggregatedReportCase:
     duration: float
 
 
+@dataclass
+class SummaryMember:
+    nodeid: str
+    outcome: str
+    duration: float
+    case_ids: list[str]
+    case_names: list[str]
+
+
+@dataclass
+class PermissionSummaryDetail:
+    case_id: str
+    role: str
+    name: str
+    outcome: str
+    duration: float
+    members: list[SummaryMember]
+
+
 def _aggregate_case_results() -> list[AggregatedReportCase]:
     legacy_names = _legacy_case_name_by_id()
     legacy_order = _legacy_case_order()
@@ -295,22 +318,91 @@ def _aggregate_case_results() -> list[AggregatedReportCase]:
 
 def _aggregate_permission_summaries() -> list[AggregatedReportCase]:
     summaries: list[AggregatedReportCase] = []
-    for case_id, role, name in (
-        ("PERM-RO", "readonly", "readonly_permission_summary"),
-        ("PERM-NA", "noaccess", "noaccess_permission_summary"),
-    ):
-        results = [result for result in REPORT_STATE.results if _permission_role_for(result.nodeid) == role]
-        if not results:
+    for case_id, role, name in _permission_summary_specs():
+        detail = permission_summary_detail(role)
+        if detail is None:
             continue
         summaries.append(
             AggregatedReportCase(
-                case_id=case_id,
-                name=name,
-                outcome=_combine_permission_outcomes(result.outcome for result in results),
-                duration=sum(result.duration for result in results),
+                case_id=detail.case_id,
+                name=detail.name,
+                outcome=detail.outcome,
+                duration=detail.duration,
             )
         )
     return summaries
+
+
+def permission_summary_detail(role: str) -> PermissionSummaryDetail | None:
+    spec = next((item for item in _permission_summary_specs() if item[1] == role), None)
+    if spec is None:
+        return None
+    case_id, _, name = spec
+    results = [result for result in REPORT_STATE.results if _permission_role_for(result.nodeid) == role]
+    if not results:
+        return None
+    members = [
+        SummaryMember(
+            nodeid=result.nodeid,
+            outcome=result.outcome,
+            duration=result.duration,
+            case_ids=[registration.case_id for registration in result.case_ids if registration.case_id],
+            case_names=[registration.name for registration in result.case_ids if registration.name],
+        )
+        for result in results
+    ]
+    return PermissionSummaryDetail(
+        case_id=case_id,
+        role=role,
+        name=name,
+        outcome=_combine_permission_outcomes(result.outcome for result in results),
+        duration=sum(result.duration for result in results),
+        members=members,
+    )
+
+
+def permission_summary_breakdown(role: str) -> dict[str, Any]:
+    detail = permission_summary_detail(role)
+    if detail is None:
+        return {
+            "case_id": None,
+            "role": role,
+            "name": None,
+            "outcome": "skipped",
+            "total": 0,
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "failed_items": [],
+            "members": [],
+        }
+
+    failed_items = []
+    members = []
+    for member in detail.members:
+        item = {
+            "nodeid": member.nodeid,
+            "outcome": member.outcome,
+            "duration": member.duration,
+            "case_ids": member.case_ids,
+            "case_names": member.case_names,
+        }
+        members.append(item)
+        if member.outcome == "failed":
+            failed_items.append(item)
+
+    return {
+        "case_id": detail.case_id,
+        "role": detail.role,
+        "name": detail.name,
+        "outcome": detail.outcome,
+        "total": len(detail.members),
+        "passed": sum(1 for member in detail.members if member.outcome == "passed"),
+        "failed": sum(1 for member in detail.members if member.outcome == "failed"),
+        "skipped": sum(1 for member in detail.members if member.outcome == "skipped"),
+        "failed_items": failed_items,
+        "members": members,
+    }
 
 
 def _permission_role_for(nodeid: str) -> str | None:
@@ -335,6 +427,13 @@ def _combine_permission_outcomes(outcomes: Any) -> str:
     if any(outcome == "passed" for outcome in values):
         return "passed"
     return "skipped"
+
+
+def _permission_summary_specs() -> tuple[tuple[str, str, str], ...]:
+    return (
+        ("PERM-RO", "readonly", "readonly_permission_summary"),
+        ("PERM-NA", "noaccess", "noaccess_permission_summary"),
+    )
 
 
 def _legacy_case_name_by_id() -> dict[str, str]:

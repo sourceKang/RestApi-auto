@@ -35,16 +35,27 @@ def attach_legacy_case(case: dict[str, Any]) -> None:
     )
 
 
-def attach_case_id(case_id: str | None, name: str) -> None:
+def attach_case_id(
+    case_id: str | None,
+    name: str,
+    *,
+    register_txt: bool = True,
+    summary_group: str | None = None,
+) -> None:
     if not case_id:
         return
-    register_case(case_id, name)
+    if register_txt:
+        register_case(case_id, name)
     try:
         import allure
 
         allure.dynamic.label("case_id", case_id)
         allure.dynamic.testcase(case_id, case_id)
         allure.dynamic.label("legacy_name", name)
+        if name:
+            allure.dynamic.title(name)
+        if summary_group:
+            allure.dynamic.label("summary_group", summary_group)
     except Exception:
         pass
     attach_json("legacy case metadata", {"case_ids": [case_id], "legacy_name": name})

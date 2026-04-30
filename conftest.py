@@ -17,6 +17,18 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=None,
         help="Select DUT node key from ENV_WEB.JSON, for example NODE1 or NODE3. Overrides EMS_NODE.",
     )
+    parser.addoption(
+        "--auth-profile",
+        action="store",
+        default=None,
+        help="Select auth profile from configs/auth_accounts.yaml, for example default or rad_external.",
+    )
+    parser.addoption(
+        "--auth-matrix",
+        action="store_true",
+        default=False,
+        help="Also run lightweight RAD external account summary checks in the same pytest session.",
+    )
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
 
@@ -36,6 +48,11 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         for item in items:
             if "alarm_delete" in item.keywords:
                 item.add_marker(skip_alarm_delete)
+    if not config.getoption("--auth-matrix"):
+        skip_auth_matrix = pytest.mark.skip(reason="RAD external summary tests require --auth-matrix")
+        for item in items:
+            if "authmatrix" in item.keywords:
+                item.add_marker(skip_auth_matrix)
     for item in items:
         role = None
         if "readonly" in item.keywords:
@@ -57,7 +74,10 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     try:
-        env_config = load_environment(node=session.config.getoption("--ems-node"))
+        env_config = load_environment(
+            node=session.config.getoption("--ems-node"),
+            auth_profile=session.config.getoption("--auth-profile"),
+        )
         txt_path, allure_results, allure_html = write_reports(session.config, env_config)
         terminal = session.config.pluginmanager.get_plugin("terminalreporter")
         if terminal:
@@ -74,12 +94,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
 
 @pytest.fixture(autouse=True)
-def allure_node_context(env_config):
+def allure_node_context(env_config, request):
     try:
         import allure
 
-        node = env_config.raw.get("ZYXEL_DUT", {}).get(env_config.dut.node_key, {})
-        chassis = str(node.get("chassis", "unknown"))
+        chassis = env_config.dut.chassis
         parent_suite = f"{env_config.dut.node_key} - {env_config.dut.device_name}"
         allure.dynamic.parent_suite(parent_suite)
         allure.dynamic.suite(chassis)
@@ -87,13 +106,32 @@ def allure_node_context(env_config):
         allure.dynamic.label("dut_name", env_config.dut.device_name)
         allure.dynamic.label("dut_ip", env_config.dut.device_ip)
         allure.dynamic.label("dut_chassis", chassis)
+        allure.dynamic.label("auth_profile", env_config.auth_profile)
+        allure.dynamic.label("rw_account", env_config.readwrite_account.account_name)
+        allure.dynamic.label("ro_account", env_config.readonly_account.account_name)
+        allure.dynamic.label("na_account", env_config.noaccess_account.account_name)
+        if "readonly" in request.node.keywords:
+            allure.dynamic.label("summary_group", "PERM-RO")
+        elif "noaccess" in request.node.keywords:
+            allure.dynamic.label("summary_group", "PERM-NA")
     except Exception:
         pass
 
 
 @pytest.fixture(scope="session")
 def env_config(request):
-    return load_environment(node=request.config.getoption("--ems-node"))
+    return load_environment(
+        node=request.config.getoption("--ems-node"),
+        auth_profile=request.config.getoption("--auth-profile"),
+    )
+
+
+@pytest.fixture(scope="session")
+def rad_env_config(request):
+    return load_environment(
+        node=request.config.getoption("--ems-node"),
+        auth_profile="rad_external",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -137,6 +175,42 @@ def readonly_session(api_client, env_config):
 @pytest.fixture
 def noaccess_session(api_client, env_config):
     response = api_client.login(env_config.credentials_for(SessionRole.NOACCESS))
+    assert_api_success(response)
+    session_id = api_client.session_id_from(response)
+    assert session_id, f"Login succeeded but no sessionid was returned: {response.json!r}"
+    try:
+        yield session_id
+    finally:
+        api_client.logout(session_id)
+
+
+@pytest.fixture
+def rad_readwrite_session(api_client, rad_env_config):
+    response = api_client.login(rad_env_config.readwrite)
+    assert_api_success(response)
+    session_id = api_client.session_id_from(response)
+    assert session_id, f"Login succeeded but no sessionid was returned: {response.json!r}"
+    try:
+        yield session_id
+    finally:
+        api_client.logout(session_id)
+
+
+@pytest.fixture
+def rad_readonly_session(api_client, rad_env_config):
+    response = api_client.login(rad_env_config.readonly)
+    assert_api_success(response)
+    session_id = api_client.session_id_from(response)
+    assert session_id, f"Login succeeded but no sessionid was returned: {response.json!r}"
+    try:
+        yield session_id
+    finally:
+        api_client.logout(session_id)
+
+
+@pytest.fixture
+def rad_noaccess_session(api_client, rad_env_config):
+    response = api_client.login(rad_env_config.noaccess)
     assert_api_success(response)
     session_id = api_client.session_id_from(response)
     assert session_id, f"Login succeeded but no sessionid was returned: {response.json!r}"

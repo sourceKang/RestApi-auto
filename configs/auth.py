@@ -29,7 +29,7 @@ class AuthConfig:
     path: Path
     raw: dict[str, Any]
 
-    def resolve_profile(self, profile_name: str, env_data: dict[str, Any]) -> dict[str, ResolvedAccount]:
+    def resolve_profile(self, profile_name: str) -> dict[str, ResolvedAccount]:
         profiles = self.raw.get("profiles", {})
         accounts = self.raw.get("accounts", {})
         profile = profiles.get(profile_name)
@@ -47,7 +47,7 @@ class AuthConfig:
             account = role_accounts.get(account_key)
             if not isinstance(account, dict):
                 raise AuthConfigError(f"Auth account {role}.{account_key} is not defined in {self.path}")
-            resolved[role] = _resolve_account(role, account_key, account, env_data)
+            resolved[role] = _resolve_account(role, account_key, account)
         return resolved
 
 
@@ -68,17 +68,10 @@ def load_auth_config(path: str | Path | None = None) -> AuthConfig:
     return AuthConfig(path=config_path, raw=raw)
 
 
-def _resolve_account(role: str, account_name: str, account: dict[str, Any], env_data: dict[str, Any]) -> ResolvedAccount:
+def _resolve_account(role: str, account_name: str, account: dict[str, Any]) -> ResolvedAccount:
     source = str(account.get("source", "unknown"))
     username = account.get("username")
     password = account.get("password")
-
-    from_env = account.get("from_env")
-    if isinstance(from_env, dict):
-        if username in (None, ""):
-            username = _resolve_env_path(env_data, from_env.get("username"), f"{role}.{account_name}.username")
-        if password in (None, ""):
-            password = _resolve_env_path(env_data, from_env.get("password"), f"{role}.{account_name}.password")
 
     if not isinstance(username, str) or not username:
         raise AuthConfigError(f"Auth account {role}.{account_name} must resolve a non-empty username")
@@ -92,15 +85,3 @@ def _resolve_account(role: str, account_name: str, account: dict[str, Any], env_
         password=password,
         source=source,
     )
-
-
-def _resolve_env_path(env_data: dict[str, Any], path_tokens: Any, label: str) -> str:
-    if not isinstance(path_tokens, list) or not path_tokens or not all(isinstance(token, str) for token in path_tokens):
-        raise AuthConfigError(f"Auth account {label} from_env path must be a non-empty string list")
-    current: Any = env_data
-    for token in path_tokens:
-        if not isinstance(current, dict) or token not in current:
-            dotted = ".".join(path_tokens)
-            raise AuthConfigError(f"Cannot resolve {label} from ENV_WEB.JSON path {dotted}")
-        current = current[token]
-    return str(current)

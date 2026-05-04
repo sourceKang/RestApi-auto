@@ -49,6 +49,14 @@ def register_case(case_id: str | None, name: str) -> None:
         registrations.append(CaseRegistration(case_id=case_id, name=name))
 
 
+def register_node_case(nodeid: str, case_id: str | None, name: str) -> None:
+    if not case_id:
+        return
+    registrations = REPORT_STATE.case_registry.setdefault(nodeid, [])
+    if not any(item.case_id == case_id and item.name == name for item in registrations):
+        registrations.append(CaseRegistration(case_id=case_id, name=name))
+
+
 def register_permission_role(nodeid: str, role: str | None) -> None:
     if role in {"readonly", "noaccess"}:
         REPORT_STATE.permission_roles[nodeid] = role
@@ -78,7 +86,7 @@ def ensure_report_dirs(config: Any) -> None:
 
 def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path | None]:
     root = Path(str(config.rootpath))
-    ems_version = str(env_config.raw.get("EMS", {}).get("version", "unknown_ems_version"))
+    ems_version = str(getattr(env_config, "ems_version", "unknown_ems_version"))
     report_dir = root / "reports" / _safe_path_part(ems_version)
     report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -111,7 +119,7 @@ def _render_txt_report(env_config: Any) -> str:
         f"Total test time: {_format_timedelta(elapsed)} ({elapsed:.2f} seconds)",
         f"Summary: {passed} Pass / {failed} Fail",
         f"UI URL: {env_config.base_url}",
-        f"EMS Version: {env_config.raw.get('EMS', {}).get('version', 'unknown')}",
+        f"EMS Version: {getattr(env_config, 'ems_version', 'unknown')}",
         f"Auth Profile: {env_config.auth_profile}",
         f"RW Account: {env_config.readwrite_account.account_name} ({env_config.readwrite_account.username})",
         f"RO Account: {env_config.readonly_account.account_name} ({env_config.readonly_account.username})",
@@ -133,7 +141,7 @@ def _render_txt_report(env_config: Any) -> str:
 
 
 def _report_base_name(env_config: Any, timestamp: str) -> str:
-    ems_version = env_config.raw.get("EMS", {}).get("version", "unknown")
+    ems_version = getattr(env_config, "ems_version", "unknown")
     node = _node_data(env_config)
     chassis = env_config.dut.chassis
     controller = _controller_card_name(env_config, node)
@@ -141,11 +149,16 @@ def _report_base_name(env_config: Any, timestamp: str) -> str:
 
 
 def _node_data(env_config: Any) -> dict[str, Any]:
-    return env_config.raw.get("ZYXEL_DUT", {}).get(env_config.dut.node_key, {})
+    node = getattr(env_config, "node_target", None)
+    if isinstance(node, dict):
+        return node
+    if hasattr(env_config, "hardware"):
+        return env_config.hardware.node_target(env_config.dut.node_key)
+    return {}
 
 
 def _controller_card_name(env_config: Any, node: dict[str, Any]) -> str:
-    cards = node.get("CARDINFO", {})
+    cards = _node_cards(node)
     if hasattr(env_config, "hardware"):
         configured = env_config.hardware.controller_card_name(env_config.dut.node_key, node)
         if configured:
@@ -159,10 +172,11 @@ def _controller_card_name(env_config: Any, node: dict[str, Any]) -> str:
 
 
 def _card_version_lines(env_config: Any) -> list[str]:
-    cards = _node_data(env_config).get("CARDINFO", {})
+    node = _node_data(env_config)
+    cards = _node_cards(node)
     configured: list[tuple[str, str, dict[str, Any]]] = []
     if hasattr(env_config, "hardware"):
-        configured = env_config.hardware.report_card_entries(env_config.dut.node_key, _node_data(env_config))
+        configured = env_config.hardware.report_card_entries(env_config.dut.node_key, node)
     if configured:
         return _card_lines_for_entries(configured)
 
@@ -188,6 +202,11 @@ def _card_lines_for_entries(entries: list[tuple[str, str, dict[str, Any]]]) -> l
         if isinstance(card, dict) and card.get("fw_version"):
             lines.append(f"{label}:{card['fw_version']}")
     return lines
+
+
+def _node_cards(node: dict[str, Any]) -> dict[str, Any]:
+    cards = node.get("cards", {})
+    return cards if isinstance(cards, dict) else {}
 
 
 def _target_summary_lines(env_config: Any) -> list[str]:

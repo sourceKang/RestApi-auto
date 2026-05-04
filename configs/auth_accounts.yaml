@@ -15,9 +15,8 @@ accounts:
   readwrite:
     default:
       source: "ems_local"
-      from_env:
-        username: ["EMS", "login_username"]
-        password: ["EMS", "login_password"]
+      username: "admin"
+      password: "Pqa1234!!"
     readwrite1:
       username: "readwrite1"
       password: "readwrite1PW"
@@ -26,9 +25,8 @@ accounts:
   readonly:
     default:
       source: "ems_local"
-      from_env:
-        username: ["EMS", "USER", "USER5", "name"]
-        password: ["EMS", "USER", "USER5", "password"]
+      username: "RestApiRO"
+      password: "Pqa1234!!"
     readonly1:
       username: "readonly1"
       password: "readonly1PW"
@@ -37,9 +35,8 @@ accounts:
   noaccess:
     default:
       source: "ems_local"
-      from_env:
-        username: ["EMS", "USER", "USER4", "name"]
-        password: ["EMS", "USER", "USER4", "password"]
+      username: "RestApiNA"
+      password: "Pqa1234!!"
     noaccess1:
       username: "noaccess1"
       password: "noaccess1PW"

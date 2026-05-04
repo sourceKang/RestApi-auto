@@ -10,23 +10,50 @@ from cases.payloads import ont_service_payload
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id
+from utils.diagnostics import format_response_summary, format_value_summary
 from utils.names import unique_name
 
 
 INVENTORY_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "inventory"]
 ONT_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "ont"]
 ONTOLOGY_PATH_CASE_NAMES = {"ont_by_device", "ont_by_slot", "ont_by_port", "ont_by_id"}
+_ONT_READINESS_CACHE: set[tuple[str, str, str, str]] = set()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def ont_inventory_seed_data(api_client, env_config):
+    cache_key = (
+        env_config.dut.node_key,
+        env_config.dut.slot_id,
+        env_config.dut.port_id,
+        env_config.dut.ont_sn,
+    )
+    if cache_key in _ONT_READINESS_CACHE:
+        yield
+        return
+
     login = api_client.login(env_config.readwrite)
     assert_api_success(login)
     session_id = api_client.session_id_from(login)
-    assert session_id, f"Login succeeded but no sessionid was returned: {login.json!r}"
+    assert session_id, f"Login succeeded but no sessionid was returned: {format_response_summary(login)}"
     try:
+        with allure_step("Reuse session-cached ONT inventory readiness when possible"):
+            if _wait_for_ont_inventory(
+                api_client,
+                env_config,
+                session_id,
+                timeout=5,
+                interval=1,
+                consecutive_successes=1,
+                raise_on_timeout=False,
+            ):
+                _ONT_READINESS_CACHE.add(cache_key)
+                yield
+                return
+
         with allure_step("Prepare ONT inventory data like legacy test_prepare_for_get_ont_"):
             _prepare_ont_for_get(api_client, env_config, session_id)
+        _ONT_READINESS_CACHE.add(cache_key)
         yield
     finally:
         api_client.logout(session_id)
@@ -94,14 +121,14 @@ def _run_read_success_case(api_client, env_config, session_id, case, role_name):
                 f"{case.name} hit a known EMS issue: topology-based ONT GET returns "
                 f"'No data found in the database.' when devicename contains non-ASCII characters. "
                 f"device_name={env_config.dut.device_name!r}, path={case.build_path(env_config)}, "
-                f"response={response.json!r}"
+                f"response={format_response_summary(response)}"
             )
         pytest.fail(
-            f"{case.name} expected an existing ONT from ENV_WEB.JSON for {role_name} GET, "
-            f"but EMS returned no data. path={case.build_path(env_config)}, response={response.json!r}"
+            f"{case.name} expected an existing ONT from YAML test target for {role_name} GET, "
+            f"but EMS returned no data. path={case.build_path(env_config)}, response={format_response_summary(response)}"
         )
     assert_api_success(response)
-    with allure_step(f"Verify {case.name} response fields match ENV_WEB.JSON"):
+    with allure_step(f"Verify {case.name} response fields match YAML test target"):
         _assert_inventory_response_matches_env(response.json, env_config, case.name)
 
 
@@ -137,7 +164,7 @@ def _prepare_ont_for_get(api_client, env_config, session_id):
             json={"command": commands},
         )
         if response.retstatus != "Success":
-            pytest.fail(f"ONT prepare remote console command failed: {response.json!r}")
+            pytest.fail(f"ONT prepare remote console command failed: {format_response_summary(response)}")
 
     with allure_step("Try to observe Unregistered before provisioning, but continue if EMS inventory is not ready yet"):
         _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=240, raise_on_timeout=False)
@@ -201,9 +228,9 @@ def _wait_for_ont_service_state(api_client, env_config, session_id, expected_sta
             if service.get("state") in expected_states:
                 return service
             if service.get("state") == "Fail":
-                raise AssertionError(f"ONT service provisioning failed: {response.json!r}")
+                raise AssertionError(f"ONT service provisioning failed: {format_response_summary(response)}")
         time.sleep(interval)
-    raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {last.json if last else None!r}")
+    raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {_response_summary(last)}")
 
 
 def _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=180, interval=15, raise_on_timeout=True):
@@ -220,7 +247,7 @@ def _wait_for_ont_unregistered(api_client, env_config, session_id, timeout=180, 
                 return item
         time.sleep(interval)
     if raise_on_timeout:
-        raise AssertionError(f"ONT did not become Unregistered before provisioning. Last response: {last.json if last else None!r}")
+        raise AssertionError(f"ONT did not become Unregistered before provisioning. Last response: {_response_summary(last)}")
     return None
 
 
@@ -256,7 +283,7 @@ def _wait_for_ont_inventory(
             stable_hits = 0
         time.sleep(interval)
     if raise_on_timeout:
-        raise AssertionError(f"ONT inventory did not become readable. Last response: {last.json if last else None!r}")
+        raise AssertionError(f"ONT inventory did not become readable. Last response: {_response_summary(last)}")
     return False
 
 
@@ -284,7 +311,7 @@ def _ensure_profile_by_name(api_client, session_id, profilename, seen=None):
         json={"Content": definition.get("post_profile_info", {})},
     )
     if created.retstatus != "Success":
-        pytest.skip(f"Cannot create prerequisite profile {profilename}: {created.json!r}")
+        pytest.skip(f"Cannot create prerequisite profile {profilename}: {format_response_summary(created)}")
 
 
 def _profile_refs(value):
@@ -347,30 +374,30 @@ def _assert_inventory_response_matches_env(payload, env_config, case_name):
 def _find_inventory_item(payload, list_key, info_key, matcher, case_name):
     retval = payload.get("retval", {}) if isinstance(payload, dict) else {}
     if not isinstance(retval, dict):
-        raise AssertionError(f"{case_name} response retval is not a dict: {payload!r}")
+        raise AssertionError(f"{case_name} response retval is not a dict: {format_value_summary(payload)}")
     if info_key in retval:
         item = retval[info_key]
-        assert isinstance(item, dict), f"{case_name} {info_key} is not a dict: {payload!r}"
-        assert matcher(item), f"{case_name} {info_key} does not match ENV_WEB.JSON: {item!r}"
+        assert isinstance(item, dict), f"{case_name} {info_key} is not a dict: {format_value_summary(payload)}"
+        assert matcher(item), f"{case_name} {info_key} does not match YAML test target: {item!r}"
         return item
     items = retval.get(list_key)
-    assert isinstance(items, list) and items, f"{case_name} response does not contain {list_key}: {payload!r}"
+    assert isinstance(items, list) and items, f"{case_name} response does not contain {list_key}: {format_value_summary(payload)}"
     for item in items:
         if isinstance(item, dict) and matcher(item):
             return item
-    raise AssertionError(f"{case_name} cannot find expected item in {list_key}: {payload!r}")
+    raise AssertionError(f"{case_name} cannot find expected item in {list_key}: {format_value_summary(payload)}")
 
 
 def _find_ont_item(payload, env_config, case_name):
     retval = payload.get("retval", {}) if isinstance(payload, dict) else {}
     if not isinstance(retval, dict):
-        raise AssertionError(f"{case_name} response retval is not a dict: {payload!r}")
+        raise AssertionError(f"{case_name} response retval is not a dict: {format_value_summary(payload)}")
     for key in ("ontinfo", "ont"):
         item = retval.get(key)
         if isinstance(item, dict):
             return item
     items = retval.get("ontinfolist") or retval.get("ontlist") or []
-    assert isinstance(items, list), f"{case_name} ONT list is not a list: {payload!r}"
+    assert isinstance(items, list), f"{case_name} ONT list is not a list: {format_value_summary(payload)}"
     dut = env_config.dut
     for item in items:
         if not isinstance(item, dict):
@@ -383,7 +410,11 @@ def _find_ont_item(payload, env_config, case_name):
             and str(item.get("ONTID") or item.get("ONT") or "") == dut.ont_id
         ):
             return item
-    raise AssertionError(f"{case_name} cannot find expected ONT SN={dut.ont_sn!r}: {payload!r}")
+    raise AssertionError(f"{case_name} cannot find expected ONT SN={dut.ont_sn!r}: {format_value_summary(payload)}")
+
+
+def _response_summary(response):
+    return format_response_summary(response) if response is not None else "None"
 
 
 def _assert_device_fields(item, env_config):

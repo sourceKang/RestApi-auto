@@ -24,27 +24,22 @@ def _fake_env():
         controller_card_name=lambda node_key, node: "MSC1240QB",
         report_card_entries=lambda node_key, node: [("MSC1240QB", "MSC", {"fw_version": "V2.03"})],
         node_target=lambda node_key: {
+            "chassis": "IES4204",
             "ont": {"slot_id": "2"},
             "ge_service": {"slot_id": "1"},
+            "cards": {"MSC": {"fw_version": "V2.03", "port_type": "network"}},
         },
     )
-    raw = {
-        "EMS": {"version": "demo"},
-        "ZYXEL_DUT": {
-            "NODE1": {
-                "chassis": "IES4204",
-                "CARDINFO": {"MSC": {"fw_version": "V2.03", "port_type": "network"}},
-            }
-        },
-    }
+    node_target = hardware.node_target("NODE1")
     readwrite_account = SimpleNamespace(account_name="default", username="admin")
     readonly_account = SimpleNamespace(account_name="default", username="RestApiRO")
     noaccess_account = SimpleNamespace(account_name="default", username="RestApiNA")
     return SimpleNamespace(
         base_url="https://example.invalid",
-        raw=raw,
+        ems_version="demo",
         dut=dut,
         hardware=hardware,
+        node_target=node_target,
         auth_profile="default",
         readwrite_account=readwrite_account,
         readonly_account=readonly_account,

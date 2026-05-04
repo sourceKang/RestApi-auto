@@ -59,6 +59,8 @@ class HardwareConfig:
         return None
 
     def report_card_entries(self, node_key: str, node_data: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
+        if _node_is_port_only(node_data):
+            return []
         target = self.node_target(node_key)
         configured = target.get("report_cards")
         if isinstance(configured, list) and configured:
@@ -68,7 +70,7 @@ class HardwareConfig:
         return []
 
     def resolve_card(self, node_data: dict[str, Any], token: str) -> tuple[str, str, dict[str, Any]] | None:
-        cards = node_data.get("CARDINFO", {})
+        cards = _node_cards(node_data)
         if not isinstance(cards, dict):
             return None
         if token in cards and isinstance(cards[token], dict):
@@ -93,30 +95,38 @@ class HardwareConfig:
         if not rules:
             raise HardwareConfigError(f"{node_key} uses chassis {chassis!r}, but it is not defined in hardware_matrix.yaml")
 
-        cards = node_data.get("CARDINFO", {})
+        cards = _node_cards(node_data)
+        ports = _node_ports(node_data)
         if not isinstance(cards, dict):
-            raise HardwareConfigError(f"{node_key}.CARDINFO must be a mapping")
+            raise HardwareConfigError(f"{node_key}.cards must be a mapping")
+        if not cards and not ports:
+            raise HardwareConfigError(f"{node_key} must define cards or node-level ports")
 
         for field in ("report_cards",):
             value = target.get(field, [])
             if not isinstance(value, list):
                 raise HardwareConfigError(f"{node_key}.{field} must be a list")
-            missing = [name for name in value if self.resolve_card(node_data, str(name)) is None]
+            missing = [name for name in value if cards and self.resolve_card(node_data, str(name)) is None]
             if missing:
-                raise HardwareConfigError(f"{node_key}.{field} references cards not present in ENV_WEB.JSON: {missing}")
+                raise HardwareConfigError(f"{node_key}.{field} references cards not present in YAML card inventory: {missing}")
 
         for field in ("controller_card", "pon_card", "ge_service_card"):
             value = target.get(field)
-            if value is not None and self.resolve_card(node_data, str(value)) is None:
-                raise HardwareConfigError(f"{node_key}.{field} references card {value!r}, but it is not present in ENV_WEB.JSON")
+            if cards and value is not None and self.resolve_card(node_data, str(value)) is None:
+                raise HardwareConfigError(
+                    f"{node_key}.{field} references card {value!r}, but it is not present in YAML card inventory"
+                )
 
         self._validate_report_card_limits(node_key, chassis, target)
         self._validate_target_capabilities(node_key, chassis, target)
+        self._validate_feature_targets(node_key, target)
         self._validate_test_target_sections(node_key, target)
 
     def _validate_report_card_limits(self, node_key: str, chassis: str, target: dict[str, Any]) -> None:
         rules = self.chassis_rules(chassis)
         report_cards = target.get("report_cards") or []
+        if _node_is_port_only(target):
+            report_cards = []
         controllers = set(_as_string_list(rules.get("controller_cards")))
         line_cards = set(_as_string_list(rules.get("line_cards")))
 
@@ -168,6 +178,33 @@ class HardwareConfig:
                 if value is not None and not isinstance(value, (str, int)):
                     raise HardwareConfigError(f"{node_key}.{section_name}.{field} must be a string or integer")
 
+    def _validate_feature_targets(self, node_key: str, target: dict[str, Any]) -> None:
+        aliases = self.matrix.get("model_aliases", {})
+        features = self.matrix.get("feature_support", {})
+        ont_models = set(_as_string_list(features.get("ont_models")))
+        ge_models = set(_as_string_list(features.get("ge_port_models")))
+
+        ont = target.get("ont")
+        if isinstance(ont, dict):
+            ont_model = self._target_feature_model(target, ont, "pon_card")
+            if _canonical_model(ont_model, aliases) not in ont_models:
+                raise HardwareConfigError(f"{node_key}.ont targets unsupported ONT device {ont_model!r}")
+
+        ge_service = target.get("ge_service")
+        if isinstance(ge_service, dict):
+            ge_model = self._target_feature_model(target, ge_service, "ge_service_card")
+            if _canonical_model(ge_model, aliases) not in ge_models:
+                raise HardwareConfigError(f"{node_key}.ge_service targets unsupported GE Port device {ge_model!r}")
+
+    def _target_feature_model(self, target: dict[str, Any], section: dict[str, Any], fallback_card_field: str) -> str:
+        cards = _node_cards(target)
+        card_token = section.get("card") or target.get(fallback_card_field)
+        if isinstance(cards, dict) and card_token:
+            resolved = self.resolve_card(target, str(card_token))
+            if resolved is not None:
+                return str(resolved[2].get("type", resolved[0]))
+        return str(section.get("type") or target.get("type") or target.get("chassis") or "")
+
 
 def load_hardware_config(
     matrix_path: str | Path | None = None,
@@ -203,3 +240,20 @@ def _as_string_list(value: Any) -> list[str]:
 
 def _normalize_card_token(value: str) -> str:
     return value.strip().upper()
+
+
+def _canonical_model(value: str, aliases: Any) -> str:
+    model = value.strip()
+    return aliases.get(model, model) if isinstance(aliases, dict) else model
+
+
+def _node_cards(node_data: dict[str, Any]) -> Any:
+    return node_data.get("cards", {})
+
+
+def _node_ports(node_data: dict[str, Any]) -> Any:
+    return node_data.get("ports", {})
+
+
+def _node_is_port_only(node_data: dict[str, Any]) -> bool:
+    return not _node_cards(node_data) and bool(_node_ports(node_data))

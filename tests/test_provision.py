@@ -11,6 +11,7 @@ from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id
 from utils.cleanup import CleanupRegistry
+from utils.diagnostics import format_response_summary, format_value_summary
 from utils.names import unique_name
 
 
@@ -24,7 +25,7 @@ def provision_seed_data(api_client, env_config):
     login = api_client.login(env_config.readwrite)
     assert_api_success(login)
     session_id = api_client.session_id_from(login)
-    assert session_id, f"Login succeeded but no sessionid was returned: {login.json!r}"
+    assert session_id, f"Login succeeded but no sessionid was returned: {format_response_summary(login)}"
     try:
         with allure_step("Ensure prerequisite ONT template profile exists"):
             _ensure_profile_by_name(api_client, session_id, registry, env_config.dut.ont_template)
@@ -53,7 +54,7 @@ def test_provision_read_endpoints_readwrite(api_client, env_config, readwrite_se
             params=case.build_params(env_config, name),
         )
     if response.retstatus == "Fail" and "No data found" in response.retresult:
-        pytest.fail(f"{case.name} expected seeded provision data, but EMS returned no data: {response.json!r}")
+        pytest.fail(f"{case.name} expected seeded provision data, but EMS returned no data: {format_response_summary(response)}")
     assert_api_success(response)
     _assert_provision_get_matches_recorded_data(response.json, env_config, case.name)
 
@@ -72,7 +73,10 @@ def test_provision_read_endpoints_readonly(api_client, env_config, readonly_sess
             params=case.build_params(env_config, name),
         )
     if response.retstatus == "Fail" and "No data found" in response.retresult:
-        pytest.fail(f"{case.name} expected seeded provision data for readonly GET, but EMS returned no data: {response.json!r}")
+        pytest.fail(
+            f"{case.name} expected seeded provision data for readonly GET, but EMS returned no data: "
+            f"{format_response_summary(response)}"
+        )
     assert_api_success(response)
     _assert_provision_get_matches_recorded_data(response.json, env_config, case.name)
 
@@ -142,11 +146,7 @@ def test_ont_service_crud_readwrite(api_client, env_config, readwrite_session, c
         _ensure_profile_by_name(api_client, readwrite_session, cleanup_registry, env_config.dut.ont_template)
 
     with allure_step("Clean existing ONT service before create"):
-        existing = api_client.request("GET", path, session=readwrite_session)
-        if existing.retstatus == "Success":
-            delete = api_client.request("DELETE", path, session=readwrite_session)
-            assert_api_success(delete)
-            _wait_for_ont_service_removed(api_client, env_config, readwrite_session)
+        _delete_ont_service_if_exists(api_client, env_config, readwrite_session, timeout=180, interval=15)
 
     cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
 
@@ -186,7 +186,9 @@ def test_ont_service_crud_readwrite(api_client, env_config, readwrite_session, c
         assert_api_success(patched)
         state = _ont_service_info(patched.json).get("state")
         if state is not None:
-            assert state in {"Reprovision", "Success"}, f"Unexpected ONT service state after PATCH: {patched.json!r}"
+            assert state in {"Reprovision", "Success"}, (
+                f"Unexpected ONT service state after PATCH: {format_response_summary(patched)}"
+            )
 
     with allure_step("DELETE ONT service by SN and verify it is removed"):
         delete = api_client.request("DELETE", path, session=readwrite_session)
@@ -226,7 +228,7 @@ def test_ge_service_crud_readwrite(api_client, env_config, readwrite_session, cl
         assert_api_success(get_created)
         _assert_ge_service_fields(_ge_service_info(get_created.json), env_config, create_payload)
         service_id = _ge_service_id(get_created.json)
-        assert service_id, f"GE service was created but no service id was found: {get_created.json!r}"
+        assert service_id, f"GE service was created but no service id was found: {format_response_summary(get_created)}"
 
     cleanup_registry.add(lambda: api_client.request("DELETE", f"/geservice/{service_id}", session=readwrite_session))
 
@@ -297,7 +299,7 @@ def _ensure_recorded_ge_service(api_client, env_config, session_id):
     existing = api_client.request("GET", path, session=session_id)
     if existing.retstatus == "Success":
         service_id = _ge_service_id(existing.json)
-        assert service_id, f"Existing GE service does not expose service id: {existing.json!r}"
+        assert service_id, f"Existing GE service does not expose service id: {format_response_summary(existing)}"
         update = api_client.request("PUT", f"/geservice/{service_id}", session=session_id, json=payload)
         if update.retstatus == "Success":
             _wait_for_ge_service_state(api_client, env_config, session_id, {"Success"})
@@ -359,13 +361,19 @@ def _post_ont_service_with_retry(api_client, env_config, session_id, payload, ti
             return response
         if "already exists" not in response.retresult:
             return response
-        existing = api_client.request("GET", path, session=session_id)
-        if existing.retstatus == "Success":
-            update = api_client.request("PUT", path, session=session_id, json=payload)
-            assert_api_success(update)
-            return update
-        time.sleep(interval)
+        _delete_ont_service_if_exists(api_client, env_config, session_id, timeout=180, interval=15)
+        deadline = time.monotonic() + timeout
     return last
+
+
+def _delete_ont_service_if_exists(api_client, env_config, session_id, timeout=180, interval=15):
+    path = f"/ontservice/{env_config.dut.ont_sn}"
+    existing = api_client.request("GET", path, session=session_id)
+    if existing.retstatus != "Success":
+        return
+    delete = api_client.request("DELETE", path, session=session_id)
+    assert_api_success(delete)
+    _wait_for_ont_service_removed(api_client, env_config, session_id, timeout=timeout, interval=interval)
 
 
 def _post_ge_service_with_retry(api_client, env_config, session_id, payload, timeout=180, interval=5):
@@ -392,7 +400,7 @@ def _delete_ge_service_if_exists(api_client, env_config, session_id, wait_after_
     if existing.retstatus != "Success":
         return
     service_id = _ge_service_id(existing.json)
-    assert service_id, f"Existing GE service does not expose service id: {existing.json!r}"
+    assert service_id, f"Existing GE service does not expose service id: {format_response_summary(existing)}"
     delete = api_client.request("DELETE", f"/geservice/{service_id}", session=session_id)
     if delete.retstatus != "Success" and "does not exist" not in delete.retresult:
         assert_api_success(delete)
@@ -417,7 +425,7 @@ def _assert_provision_get_matches_recorded_data(payload, env_config, case_name):
 def _ont_service_info(payload):
     retval = payload.get("retval", {}) if isinstance(payload, dict) else {}
     service = retval.get("ontserviceinfo", retval) if isinstance(retval, dict) else None
-    assert isinstance(service, dict), f"ONT service response does not contain ontserviceinfo: {payload!r}"
+    assert isinstance(service, dict), f"ONT service response does not contain ontserviceinfo: {format_value_summary(payload)}"
     return service
 
 
@@ -427,7 +435,7 @@ def _find_ont_service(payload, env_config):
     for service in services:
         if isinstance(service, dict) and service.get("sn") == env_config.dut.ont_sn:
             return service
-    raise AssertionError(f"Cannot find ONT service SN={env_config.dut.ont_sn!r}: {payload!r}")
+    raise AssertionError(f"Cannot find ONT service SN={env_config.dut.ont_sn!r}: {format_value_summary(payload)}")
 
 
 def _assert_ont_service_fields(service, env_config, expected_payload):
@@ -465,7 +473,7 @@ def _assert_ont_service_fields(service, env_config, expected_payload):
 def _ge_service_info(payload):
     retval = payload.get("retval", {}) if isinstance(payload, dict) else {}
     service = retval.get("geserviceinfo", retval) if isinstance(retval, dict) else None
-    assert isinstance(service, dict), f"GE service response does not contain geserviceinfo: {payload!r}"
+    assert isinstance(service, dict), f"GE service response does not contain geserviceinfo: {format_value_summary(payload)}"
     return service
 
 
@@ -481,7 +489,9 @@ def _find_ge_service(payload, env_config):
             and str(service.get("PortID")) == dut.ge_port_id
         ):
             return service
-    raise AssertionError(f"Cannot find GE service {dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}: {payload!r}")
+    raise AssertionError(
+        f"Cannot find GE service {dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}: {format_value_summary(payload)}"
+    )
 
 
 def _assert_ge_service_fields(service, env_config, expected_payload):
@@ -529,7 +539,7 @@ def _wait_for_ont_service_state(api_client, env_config, session_id, expected_sta
             if service.get("state") in expected_states:
                 return service
         time.sleep(interval)
-    raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {last.json if last else None!r}")
+    raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {_response_summary(last)}")
 
 
 def _wait_for_ge_service_state(api_client, env_config, session_id, expected_states, timeout=120, interval=5):
@@ -545,7 +555,7 @@ def _wait_for_ge_service_state(api_client, env_config, session_id, expected_stat
             if service.get("state") in expected_states:
                 return service
         time.sleep(interval)
-    raise AssertionError(f"GE service did not reach states {expected_states!r}. Last response: {last.json if last else None!r}")
+    raise AssertionError(f"GE service did not reach states {expected_states!r}. Last response: {_response_summary(last)}")
 
 
 def _wait_for_ont_service_removed(api_client, env_config, session_id, timeout=60, interval=3):
@@ -555,10 +565,12 @@ def _wait_for_ont_service_removed(api_client, env_config, session_id, timeout=60
     while time.monotonic() <= deadline:
         response = api_client.request("GET", path, session=session_id)
         last = response
-        if response.retstatus == "Fail" and "No data found" in response.retresult:
+        if response.retstatus == "Fail" and (
+            "No data found" in response.retresult or "serial number does not exist" in response.retresult
+        ):
             return
         time.sleep(interval)
-    raise AssertionError(f"ONT service was not removed. Last response: {last.json if last else None!r}")
+    raise AssertionError(f"ONT service was not removed. Last response: {_response_summary(last)}")
 
 
 def _wait_for_ge_service_removed(api_client, env_config, session_id, timeout=60, interval=3):
@@ -572,7 +584,7 @@ def _wait_for_ge_service_removed(api_client, env_config, session_id, timeout=60,
         if response.retstatus == "Fail" and "No data found" in response.retresult:
             return
         time.sleep(interval)
-    raise AssertionError(f"GE service was not removed. Last response: {last.json if last else None!r}")
+    raise AssertionError(f"GE service was not removed. Last response: {_response_summary(last)}")
 
 
 def _ensure_profile_by_name(api_client, session_id, cleanup_registry, profilename, seen=None):
@@ -600,8 +612,12 @@ def _ensure_profile_by_name(api_client, session_id, cleanup_registry, profilenam
         json={"Content": definition.get("post_profile_info", {})},
     )
     if created.retstatus != "Success":
-        pytest.skip(f"Cannot create prerequisite profile {profilename}: {created.json!r}")
+        pytest.skip(f"Cannot create prerequisite profile {profilename}: {format_response_summary(created)}")
     cleanup_registry.add(lambda: api_client.request("DELETE", path, session=session_id))
+
+
+def _response_summary(response):
+    return format_response_summary(response) if response is not None else "None"
 
 
 def _profile_refs(value):

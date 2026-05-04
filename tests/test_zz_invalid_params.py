@@ -9,16 +9,17 @@ from cases.neox_legacy import profile_definition_by_name
 from cases.payloads import ge_service_payload, ont_service_payload
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id
+from utils.diagnostics import format_response_summary, format_value_summary
 
 
 def _assert_failure_contains(response, expected_text: str) -> None:
     body = response.json if isinstance(response.json, dict) else {"raw": response.text}
     result = json.dumps(body, ensure_ascii=False, default=str)
     assert response.retstatus == "Fail" or response.status_code >= 400, (
-        f"Expected failure but got success. HTTP={response.status_code}, body={body!r}"
+        f"Expected failure but got success. {format_response_summary(response)}"
     )
     assert expected_text.lower() in result.lower(), (
-        f"Expected error containing {expected_text!r}, got {result!r}"
+        f"Expected error containing {expected_text!r}, got {format_value_summary(body)}"
     )
 
 
@@ -68,7 +69,7 @@ def _ensure_profile_exists(api_client, session_id, profilename, seen=None):
         json={"Content": definition.get("post_profile_info", {})},
     )
     if created.retstatus != "Success":
-        pytest.skip(f"Cannot create prerequisite profile {profilename}: {created.json!r}")
+        pytest.skip(f"Cannot create prerequisite profile {profilename}: {format_response_summary(created)}")
 
 
 def _delete_ont_service_if_exists(api_client, env_config, session_id):

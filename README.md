@@ -10,16 +10,19 @@ python -m pip install -r requirements.txt
 pytest -m smoke
 ```
 
-The framework reads the current EMS environment from:
+The framework reads its primary configuration from YAML:
 
 ```text
-D:\AScript\PyTest\EMS\web_ems\ENV_WEB.JSON
+configs\ems.yaml
+configs\auth_accounts.yaml
+configs\hardware_matrix.yaml
+configs\test_targets.yaml
 ```
 
-Override it when needed:
+Override the EMS YAML file when needed:
 
 ```powershell
-$env:EMS_ENV_FILE="D:\path\to\ENV_WEB.JSON"
+$env:EMS_YAML_FILE="D:\path\to\ems.yaml"
 $env:EMS_NODE="NODE3"
 pytest
 ```
@@ -38,11 +41,11 @@ pytest --ems-node NODE1 --auth-matrix
 
 ## Hardware Targets
 
-`ENV_WEB.JSON` is treated as read-only legacy environment data. New framework
-hardware rules and per-node test targets are kept in YAML:
+New framework hardware rules and per-node test targets are kept in YAML:
 
+- `configs/ems.yaml`: EMS REST URL, version, TLS and timeout defaults.
 - `configs/hardware_matrix.yaml`: chassis/card capability rules.
-- `configs/test_targets.yaml`: NODE-specific report cards, test cards, ONT target and GE service target.
+- `configs/test_targets.yaml`: NODE-specific report cards, card inventory, ONT target and GE service target.
 - `configs/auth_accounts.yaml`: auth profiles and reusable role-based account pools.
 
 By default the suite runs the main/local account set selected by
@@ -51,20 +54,17 @@ same pytest run to include lightweight RAD external account summaries, add
 `--auth-matrix`.
 
 For a new DUT, add the chassis capability to `hardware_matrix.yaml`, then add a
-node entry to `test_targets.yaml`. If a node is not listed in YAML, the
-framework falls back to the legacy selection logic from `ENV_WEB.JSON`.
-For fields listed in both places, YAML wins and `ENV_WEB.JSON` remains a
-read-only fallback.
+node entry to `test_targets.yaml`.
 
-Migration guidance for gradually replacing legacy JSON dependencies lives in:
+YAML configuration guidance lives in:
 
-- `docs/env_web_json_to_yaml_migration.md`
+- `docs/yaml_configuration.md`
 
 ## Roles
 
-- `readwrite`: selected by auth profile, defaulting to `EMS.login_username` / `EMS.login_password`
-- `readonly`: selected by auth profile, defaulting to `EMS.USER.USER5`, expected name `RestApiRO`
-- `noaccess`: selected by auth profile, defaulting to `EMS.USER.USER4`, expected name `RestApiNA`
+- `readwrite`: selected by auth profile, default profile uses `admin`
+- `readonly`: selected by auth profile, default profile uses `RestApiRO`
+- `noaccess`: selected by auth profile, default profile uses `RestApiNA`
 
 When `--auth-matrix` is enabled, the txt report also includes:
 

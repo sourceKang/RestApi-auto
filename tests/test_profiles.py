@@ -16,6 +16,7 @@ from cases.neox_legacy import (
 from models.api import SessionRole
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.case_metadata import attach_legacy_case
+from utils.diagnostics import format_response_summary
 from utils.json_match import content_as_dict
 
 
@@ -134,7 +135,7 @@ def profile_workspace(api_client, env_config):
     response = api_client.login(env_config.credentials_for(SessionRole.READWRITE))
     assert_api_success(response)
     session_id = api_client.session_id_from(response)
-    assert session_id, f"Login succeeded but no sessionid was returned: {response.json!r}"
+    assert session_id, f"Login succeeded but no sessionid was returned: {format_response_summary(response)}"
     workspace = ProfileWorkspace(api_client, session_id)
     try:
         yield workspace
@@ -371,7 +372,7 @@ def _ensure_profile_exists_or_skip(api_client, session_id, profile_workspace, de
     if create.retstatus != "Success":
         pytest.skip(
             f"Cannot create prerequisite profile {definition['_config_ref']} "
-            f"({definition['profiletype']}/{definition['profilename']}): {create.json!r}"
+            f"({definition['profiletype']}/{definition['profilename']}): {format_response_summary(create)}"
         )
     profile_workspace.add(definition)
 
@@ -403,7 +404,7 @@ def _ensure_profile_dependencies(api_client, session_id, profile_workspace, payl
         if created.retstatus != "Success":
             pytest.skip(
                 f"Cannot create dependency profile {dependency['_config_ref']} "
-                f"({dependency['profiletype']}/{dependency['profilename']}): {created.json!r}"
+                f"({dependency['profiletype']}/{dependency['profilename']}): {format_response_summary(created)}"
             )
         profile_workspace.add(dependency)
 
@@ -449,9 +450,9 @@ def _apply_invalid_values(payload, invalid_param):
 
 
 def _assert_invalid_response(response, invalid_param):
-    assert response.retstatus == "Fail", f"Expected invalid parameter failure, got {response.json!r}"
+    assert response.retstatus == "Fail", f"Expected invalid parameter failure, got {format_response_summary(response)}"
     expected_error = invalid_param.get("expected_error")
     if expected_error:
         assert expected_error in response.retresult, (
-            f"Expected error {expected_error!r} in response, got {response.json!r}"
+            f"Expected error {expected_error!r} in response, got {format_response_summary(response)}"
         )

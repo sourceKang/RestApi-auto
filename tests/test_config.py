@@ -7,9 +7,8 @@ from configs import load_environment
 
 @pytest.mark.smoke
 def test_environment_has_expected_rest_api_users(env_config):
-    users = env_config.raw["EMS"]["USER"]
-    assert users["USER4"]["name"] == "RestApiNA"
-    assert users["USER5"]["name"] == "RestApiRO"
+    assert env_config.noaccess.username == "RestApiNA"
+    assert env_config.readonly.username == "RestApiRO"
 
 
 @pytest.mark.smoke
@@ -27,6 +26,7 @@ def test_environment_has_usable_dut_sample(env_config):
 def test_default_auth_profile_loads_expected_accounts():
     env = load_environment(node="NODE1", auth_profile="default")
     assert env.auth_profile == "default"
+    assert env.source_path.name == "ems.yaml"
     assert env.readwrite_account.account_name == "default"
     assert env.readonly_account.account_name == "default"
     assert env.noaccess_account.account_name == "default"

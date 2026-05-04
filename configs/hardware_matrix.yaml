@@ -2,12 +2,92 @@
 # Keep this file focused on platform capabilities, not live lab values.
 version: 1
 
+supported_devices:
+  OLT1404:
+    family: "GPON"
+    version: "V4.02(ABJB.6) C0"
+  OLT1408:
+    family: "GPON"
+    version: "V4.02(ABJC.6) C0"
+  OLT1408A-C:
+    family: "GPON"
+    version: "V4.02(ABJC.6) C0"
+  OLT1408B:
+    family: "GPON"
+    version: "V4.02(ABJB.6) C0"
+    support_status: "lab_only"
+  OLT1408B-IA:
+    family: "GPON"
+    version: "V4.02(ACFQ.6)"
+    support_status: "lab_only"
+  MSC1280XA:
+    family: "MSAN Chassis (IES5206M, IES5212M, IES6217M)"
+    version: "V2.03(AAWD.9)"
+  MSC1280XB:
+    family: "MSAN Chassis (IES5206M, IES5212M, IES6217M)"
+    version: "V2.03(ABXC.9)"
+  MSC1240XA:
+    family: "MSAN Chassis (IES5206M, IES5212M, IES6217M)"
+    version: "V2.03(AAWC.9)"
+  MSC1240QA:
+    family: "MSAN Chassis (IES4204)"
+    version: "V2.03(ABGX.9)"
+  MSC1240QB:
+    family: "MSAN Chassis (IES4204)"
+    version: "V2.03(ACJM.9)"
+  OLC3416-42:
+    family: "MSAN Chassis"
+    version: "V2.03(ABCH.9)"
+  OLC3416-42A:
+    family: "MSAN Chassis"
+    version: "V2.03(ABCH.9)"
+  OLC3708-43A:
+    family: "MSAN Chassis"
+    version: "V2.03(ABPW.9)"
+  OLC3416B-IA:
+    family: "MSAN Chassis"
+    version: "V2.03(ACCH.9)"
+  OLC3816-IA:
+    family: "MSAN Chassis"
+    version: "V2.03(ACHD.9)"
+  GLC1440X-55:
+    family: "MSAN Chassis"
+    version: "V2.03(AAWO.9)"
+  GLC1540X-55A:
+    family: "MSAN Chassis"
+    version: "V2.03(ACFF.9)"
+  NXC400:
+    family: "MSAN Chassis (NeoX06, NeoX03)"
+    version: "V1.02(ACKG.1)"
+  NXP316:
+    family: "MSAN Chassis (NeoX06, NeoX03)"
+    version: "V1.02(ACKI.1)"
+  NXA340:
+    family: "MSAN Chassis (NeoX06, NeoX03)"
+    version: "V1.02(ACQE.1)"
+
+model_aliases:
+  GLC1440X-55A: "GLC1440X-55"
+  OLC3708-43: "OLC3708-43A"
+
+feature_support:
+  ont_models: ["OLT1404", "OLC3416-42", "OLC3416-42A", "OLC3708-43A", "OLC3416B-IA", "OLC3416B", "OLC3816-IA", "NXP316"]
+  ge_port_models: ["GLC1440X-55", "GLC1540X-55A", "NXA340"]
+
 chassis:
   IES4204:
     max_controller_cards: 2
     max_line_cards: 2
     report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
     controller_cards: ["MSC1240QA", "MSC1240QB"]
+    line_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X"]
+
+  IES5206:
+    max_controller_cards: 2
+    max_line_cards: 5
+    report_card_order: ["MSC1280XA", "MSC1280XB", "GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    controller_cards: ["MSC1280XA", "MSC1280XB"]
     line_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
     ge_service_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X"]
 
@@ -28,17 +108,17 @@ chassis:
     ge_service_cards: ["NXA340", "GLC1440", "GLC1540"]
 
   OLT1408A-C:
-    max_controller_cards: 1
+    max_controller_cards: 0
     max_line_cards: 0
-    report_card_order: ["OLT140x"]
-    controller_cards: ["OLT140x"]
+    report_card_order: []
+    controller_cards: []
     line_cards: []
     ge_service_cards: []
 
   OLT1408B-IA:
-    max_controller_cards: 1
+    max_controller_cards: 0
     max_line_cards: 0
-    report_card_order: ["OLT140x"]
-    controller_cards: ["OLT140x"]
+    report_card_order: []
+    controller_cards: []
     line_cards: []
     ge_service_cards: []

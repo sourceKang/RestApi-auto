@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from models.api import ApiResponse
+from utils.diagnostics import format_response_summary
 
 
 AUTHORIZED_FAILURE_MESSAGES = (
@@ -47,5 +48,5 @@ def assert_contains_required_keys(response: ApiResponse, *keys: str) -> None:
 def _format_response(response: ApiResponse) -> str:
     return (
         f"{response.method} {response.url} failed expectation. "
-        f"HTTP={response.status_code}, body={response.json!r}"
+        f"HTTP={response.status_code}, body={format_response_summary(response)}"
     )

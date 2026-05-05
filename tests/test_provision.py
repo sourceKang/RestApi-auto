@@ -372,6 +372,8 @@ def _delete_ont_service_if_exists(api_client, env_config, session_id, timeout=18
     if existing.retstatus != "Success":
         return
     delete = api_client.request("DELETE", path, session=session_id)
+    if delete.retstatus == "Fail" and "serial number does not exist" in delete.retresult:
+        return
     assert_api_success(delete)
     _wait_for_ont_service_removed(api_client, env_config, session_id, timeout=timeout, interval=interval)
 

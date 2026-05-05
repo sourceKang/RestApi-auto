@@ -10,7 +10,7 @@ only from the YAML files in `configs/`.
 | `configs/ems.yaml` | EMS REST URL, EMS version, TLS verify default, API timeout |
 | `configs/auth_accounts.yaml` | default local accounts, RAD external accounts, auth profiles |
 | `configs/hardware_matrix.yaml` | chassis rules, supported controller cards, line cards, GE service cards |
-| `configs/test_targets.yaml` | NODE identity, card inventory, report cards, ONT target, GE service target |
+| `configs/test_targets.yaml` | topology-oriented node, slots, cards, ports, ONTs and service selectors |
 
 ## Normal Run
 
@@ -33,11 +33,38 @@ pytest --ems-node NODE1
 
 1. Add or update chassis capability rules in `configs/hardware_matrix.yaml`.
 2. Add the node under `nodes:` in `configs/test_targets.yaml`.
-3. Include `device_name`, `device_ip`, `chassis`, `report_cards`,
-   `controller_card`, `pon_card`, `ge_service_card`.
-4. Add the node's `cards:` inventory with `fw_version`, `slot_id`, `type`,
-   `port_id`, `port_type`, and `port_speed`.
-5. Add `ont:` and `ge_service:` targets used by the API tests.
+3. Include `device_name`, `device_ip`, `chassis`, and EMS location metadata.
+4. Add the physical `slots:` inventory with card model, firmware, role and ports.
+5. Add ONTs only under GPON/xPON ports, and add GE service data only under the selected GE port.
+6. Add `test_targets:` selectors for report slots, ONT target and GE service target.
+
+## Topology v2
+
+`configs/test_targets.yaml` uses the topology-oriented v2 schema. It models the
+physical layout first:
+
+```text
+node -> slots -> card -> ports -> onts
+```
+
+The test target section then only selects the physical target:
+
+```yaml
+test_targets:
+  report_slots: ["3", "1", "2"]
+  ont:
+    slot: "2"
+    port: "16"
+    ont: "1"
+  ge_service:
+    slot: "1"
+    port: "39"
+```
+
+This removes repeated `card`, `port_id`, and `ont_id` values from the old
+`ont:` and `ge_service:` sections. The loader still accepts v1 files for
+compatibility when a custom target file is passed in tests, but the default
+configuration now uses v2.
 
 ## Account Profiles
 

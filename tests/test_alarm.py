@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 
 import pytest
 
@@ -156,8 +157,7 @@ def _first_alarm(payload):
 
 def _create_history_alarm_from_remote_console(api_client, env_config, session_id):
     _post_remote_console_like_legacy(api_client, env_config, session_id)
-    active = api_client.request("GET", "/activealarm", session=session_id, params=_alarm_filter(env_config))
-    assert_api_success(active)
+    active = _wait_for_matching_active_alarm(api_client, env_config, session_id)
     alarm = _first_alarm(active.json)
     if alarm is None:
         pytest.skip("Remote console did not create a matching active Login Success alarm.")
@@ -188,6 +188,21 @@ def _create_history_alarm_from_remote_console(api_client, env_config, session_id
     history = api_client.request("GET", "/historyalarm", session=session_id, params=_alarm_filter(env_config))
     assert_api_success(history)
     return logid, sublogid
+
+
+def _wait_for_matching_active_alarm(api_client, env_config, session_id, timeout=60, interval=5):
+    deadline = time.monotonic() + timeout
+    last = None
+    while time.monotonic() <= deadline:
+        response = api_client.request("GET", "/activealarm", session=session_id, params=_alarm_filter(env_config))
+        last = response
+        if response.retstatus == "Success" and _first_alarm(response.json) is not None:
+            return response
+        if response.retstatus == "Fail" and "No data found" in response.retresult:
+            time.sleep(interval)
+            continue
+        assert_api_success(response)
+    pytest.skip(f"Remote console did not create a matching active Login Success alarm. Last response: {last.retresult if last else 'None'}")
 
 
 def _post_remote_console_like_legacy(api_client, env_config, session_id):

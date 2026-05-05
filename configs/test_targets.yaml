@@ -1,6 +1,6 @@
-# Node-specific test targets for the REST API framework.
-# Structure follows ENV_WEB.JSON hierarchy: node -> cards -> ports -> service targets.
-version: 1
+# Topology-oriented test targets.
+# Schema v2 models the physical layout as node -> chassis -> slots -> cards -> ports -> ONTs.
+version: 2
 
 nodes:
   NODE1:
@@ -10,122 +10,74 @@ nodes:
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
     geo_position: "California"
-    report_cards: ["MSC1240QB", "GLC1440X", "OLC3816"]
-    controller_card: "MSC1240QB"
-    pon_card: "OLC3816"
-    ge_service_card: "GLC1440X"
-    ont:
-      card: "OLC3816"
-      port_id: "16"
-      ont_id: "1"
-      sn: "5A5958458CADDDC3"
-      password: "F44D5C39E710"
-      description: "tony_test"
-      template: "#RestApi_provision_temp_SFU"
-      model: "PM7300-T0"
-      fw_image: "V542ABYY4Z0"
-      service_mode: "veip"
-    ge_service:
-      card: "GLC1440X"
-      port_id: "39"
-      template: "#RestApi_getemp_ge1"
-      port_name: "10g_Hsinchu"
-      telephone: "011+886+7+2737"
-    cards:
-      MSC:
+    slots:
+      3:
+        card: "MSC1240QB"
         fw_version: "V2.03(ACJM.9)"
-        slot_id: "3"
-        type: "MSC1240QB"
+        role: "controller"
         ports:
-          port_1:
-            port_id: "1"
-            port_type: "Network"
-            port_speed: "1G"
-      GLC1440X:
+          1:
+            type: "Network"
+            speed: "1G"
+      1:
+        card: "GLC1440X"
+        model: "GLC1440X-55A"
         fw_version: "V2.03(AAWO.9)"
-        slot_id: "1"
-        type: "GLC1440X-55A"
+        role: "line"
         ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "1G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      GLC1540X:
-        fw_version: "V2.03(ACFF.9)"
-        slot_id: "1"
-        type: "GLC1540X-55A"
-        ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "10G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      OLC3416-42A:
-        fw_version: "V2.03(ABCH.9)"
-        slot_id: "6"
-        type: "OLC3416-42"
-        ports:
-          port_1:
-            port_id: "1"
-            port_type: "GPON"
-            port_speed: "2.5G"
-      OLC3416B:
-        fw_version: "V2.03(ACCH.9)"
-        slot_id: "1"
-        type: "OLC3416B-IA"
-        ports:
-          port_15:
-            port_id: "15"
-            port_type: "xPON"
-            port_speed: "2.5G"
-      OLC3708:
-        fw_version: "V2.03(ABPW.9)"
-        slot_id: "0"
-        type: "OLC3708-43A"
-        ports:
-          port_7:
-            port_id: "7"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLC3816:
+          39:
+            type: "Ethernet Access"
+            speed: "1G"
+            ge_service:
+              template: "#RestApi_getemp_ge1"
+              port_name: "10g_Hsinchu"
+              telephone: "011+886+7+2737"
+      2:
+        card: "OLC3816"
+        model: "OLC3816-IA"
         fw_version: "V2.03(ACHD.9)"
-        slot_id: "2"
-        type: "OLC3816-IA"
+        role: "line"
         ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLT140x:
-        fw_version: "V4.02(ABJB.6) C0"
-        slot_id: "--"
-        type: "OLT1408B"
-        ports:
-          port_5:
-            port_id: "5"
-            port_type: "Network"
-            port_speed: "Auto"
+          16:
+            type: "xPON"
+            speed: "10G"
+            onts:
+              1:
+                sn: "5A5958458CADDDC3"
+                password: "F44D5C39E710"
+                description: "tony_test"
+                template: "#RestApi_provision_temp_SFU"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY4Z0"
+                service_mode: "veip"
+    test_targets:
+      report_slots: ["3", "1", "2"]
+      ont:
+        slot: "2"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"
 
   NODE2:
     device_name: "OLT1408B-IA_169.85"
     device_ip: "192.168.169.85"
     chassis: "OLT1408B-IA"
-    fw_version: "V4.02(ACFQ.6)"
-    type: "OLT1408B-IA"
     submap_name: "Cecily"
     map_name: "EMS"
     geo_position: "新竹市"
-    ports:
-      port_8:
-        slot_id: "0"
-        port_id: "8"
-        port_type: "Network"
-        port_speed: "Auto"
+    slots:
+      0:
+        card: "OLT1408B-IA"
+        fw_version: "V4.02(ACFQ.6)"
+        role: "integrated"
+        ports:
+          8:
+            type: "Network"
+            speed: "Auto"
+    test_targets:
+      report_slots: []
 
   NODE3:
     device_name: "北京_NeoX-03_169.58"
@@ -134,137 +86,72 @@ nodes:
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
     geo_position: "北京"
-    report_cards: ["NXC400", "NXP316", "NXA340"]
-    controller_card: "NXC400"
-    pon_card: "NXP316"
-    ge_service_card: "NXA340"
-    ont:
-      card: "NXP316"
-      port_id: "16"
-      ont_id: "1"
-      sn: "5A5958458CACE175"
-      password: "D41AD1009ED0"
-      description: "RestApi_test@1234des"
-      template: "#RestApi_provision_temp_SFU"
-      model: "PM7300-T0"
-      fw_image: "V542ABYY22Z0"
-      service_mode: "veip"
-    ge_service:
-      card: "NXA340"
-      port_id: "39"
-      template: "#RestApi_getemp_ge1"
-      port_name: "10g_Hsinchu"
-      telephone: "011+886+7+2737"
-    cards:
-      NXC400:
+    slots:
+      4:
+        card: "NXC400"
         fw_version: "V1.02(ACKG.1)"
-        slot_id: "4"
-        type: "NXC400"
+        role: "controller"
         ports:
-          port_1:
-            port_id: "1"
-            port_type: "Network"
-            port_speed: "1G"
-      NXP316:
+          1:
+            type: "Network"
+            speed: "1G"
+      3:
+        card: "NXP316"
         fw_version: "V1.02(ACKI.1)"
-        slot_id: "3"
-        type: "NXP316"
+        role: "line"
         ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "1G"
-      NXA340:
+          16:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "5A5958458CACE175"
+                password: "D41AD1009ED0"
+                description: "RestApi_test@1234des"
+                template: "#RestApi_provision_temp_SFU"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY22Z0"
+                service_mode: "veip"
+      1:
+        card: "NXA340"
         fw_version: "V1.02(ACQE.1)"
-        slot_id: "1"
-        type: "NXA340"
+        role: "line"
         ports:
-          port_39:
-            port_id: "39"
-            port_type: "xPON"
-            port_speed: "10G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      GLC1440X:
-        fw_version: "V2.03(AAWO.9)"
-        slot_id: "2"
-        type: "GLC1440X-55A"
-        ports:
-          port_7:
-            port_id: "7"
-            port_type: "Ethernet Access"
-            port_speed: "1G"
-      GLC1540X:
-        fw_version: "V2.03(ACFF.9)"
-        slot_id: "1"
-        type: "GLC1540X-55A"
-        ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "10G"
-      OLC3416-42A:
-        fw_version: "V2.03(ABCH.9)"
-        slot_id: "6"
-        type: "OLC3416-42"
-        ports:
-          port_1:
-            port_id: "1"
-            port_type: "GPON"
-            port_speed: "2.5G"
-      OLC3416B:
-        fw_version: "V2.03(ACCH.9)"
-        slot_id: "0"
-        type: "OLC3416B-IA"
-        ports:
-          port_15:
-            port_id: "15"
-            port_type: "xPON"
-            port_speed: "2.5G"
-      OLC3708:
-        fw_version: "V2.03(ABPW.9)"
-        slot_id: "0"
-        type: "OLC3708-43A"
-        ports:
-          port_7:
-            port_id: "7"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLC3816:
-        fw_version: "V2.03(ACHD.9)"
-        slot_id: "2"
-        type: "OLC3816-IA"
-        ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLT140x:
-        fw_version: "V4.02(ABJB.6) C0"
-        slot_id: "--"
-        type: "OLT1408B"
-        ports:
-          port_5:
-            port_id: "5"
-            port_type: "Network"
-            port_speed: "Auto"
+          39:
+            type: "xPON"
+            speed: "10G"
+            ge_service:
+              template: "#RestApi_getemp_ge1"
+              port_name: "10g_Hsinchu"
+              telephone: "011+886+7+2737"
+    test_targets:
+      report_slots: ["4", "3", "1"]
+      ont:
+        slot: "3"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"
 
   NODE4:
     device_name: "OLT1408A-C_168.84"
     device_ip: "192.168.168.84"
     chassis: "OLT1408A-C"
-    fw_version: "V4.02(ABJC.6) C0"
-    type: "OLT1408A-C"
     submap_name: "EMS"
     map_name: "EMS"
     geo_position: "木柵"
-    ports:
-      port_1:
-        slot_id: "0"
-        port_id: "1"
-        port_type: "Network"
-        port_speed: "Auto"
+    slots:
+      0:
+        card: "OLT1408A-C"
+        fw_version: "V4.02(ABJC.6) C0"
+        role: "integrated"
+        ports:
+          1:
+            type: "Network"
+            speed: "Auto"
+    test_targets:
+      report_slots: []
 
   NODE5:
     device_name: "新竹_NeoX-06_168.85"
@@ -273,121 +160,53 @@ nodes:
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
     geo_position: "新竹"
-    report_cards: ["NXC400", "NXP316", "NXA340"]
-    controller_card: "NXC400"
-    pon_card: "NXP316"
-    ge_service_card: "NXA340"
-    ont:
-      card: "NXP316"
-      port_id: "1"
-      ont_id: "1"
-      sn: "5A5958458CACE174"
-      password: "D41AD1009EC8"
-      description: "RestApi_test@1234des"
-      template: "#RestApi_provision_temp_SFU"
-      model: "PM7300-T0"
-      fw_image: "V542ABYY22Z0"
-      service_mode: "veip"
-    ge_service:
-      card: "NXA340"
-      port_id: "16"
-      template: "#RestApi_getemp_ge1"
-      port_name: "10g_Hsinchu"
-      telephone: "011+886+7+2737"
-    cards:
-      NXC400:
+    slots:
+      5:
+        card: "NXC400"
         fw_version: "V1.02(ACKG.1)"
-        slot_id: "5"
-        type: "NXC400"
+        role: "controller"
         ports:
-          port_1:
-            port_id: "1"
-            port_type: "Network"
-            port_speed: "1G"
-      NXP316:
+          1:
+            type: "Network"
+            speed: "1G"
+      8:
+        card: "NXP316"
         fw_version: "V1.02(ACKI.1)"
-        slot_id: "8"
-        type: "NXP316"
+        role: "line"
         ports:
-          port_1:
-            port_id: "1"
-            port_type: "xPON"
-            port_speed: "1G"
-      NXA340:
+          1:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "5A5958458CACE174"
+                password: "D41AD1009EC8"
+                description: "RestApi_test@1234des"
+                template: "#RestApi_provision_temp_SFU"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY22Z0"
+                service_mode: "veip"
+      1:
+        card: "NXA340"
         fw_version: "V1.02(ACQE.1)"
-        slot_id: "1"
-        type: "NXA340"
+        role: "line"
         ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "10G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      GLC1440X:
-        fw_version: "V2.03(AAWO.9)"
-        slot_id: "2"
-        type: "GLC1440X-55A"
-        ports:
-          port_7:
-            port_id: "7"
-            port_type: "Ethernet Access"
-            port_speed: "1G"
-      GLC1540X:
-        fw_version: "V2.03(ACFF.9)"
-        slot_id: "1"
-        type: "GLC1540X-55A"
-        ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "10G"
-      OLC3416-42A:
-        fw_version: "V2.03(ABCH.9)"
-        slot_id: "6"
-        type: "OLC3416-42"
-        ports:
-          port_1:
-            port_id: "1"
-            port_type: "GPON"
-            port_speed: "2.5G"
-      OLC3416B:
-        fw_version: "V2.03(ACCH.9)"
-        slot_id: "0"
-        type: "OLC3416B-IA"
-        ports:
-          port_15:
-            port_id: "15"
-            port_type: "xPON"
-            port_speed: "2.5G"
-      OLC3708:
-        fw_version: "V2.03(ABPW.9)"
-        slot_id: "0"
-        type: "OLC3708-43A"
-        ports:
-          port_7:
-            port_id: "7"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLC3816:
-        fw_version: "V2.03(ACHD.9)"
-        slot_id: "2"
-        type: "OLC3816-IA"
-        ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLT140x:
-        fw_version: "V4.02(ABJB.6) C0"
-        slot_id: "--"
-        type: "OLT1408B"
-        ports:
-          port_5:
-            port_id: "5"
-            port_type: "Network"
-            port_speed: "Auto"
+          16:
+            type: "xPON"
+            speed: "10G"
+            ge_service:
+              template: "#RestApi_getemp_ge1"
+              port_name: "10g_Hsinchu"
+              telephone: "011+886+7+2737"
+    test_targets:
+      report_slots: ["5", "8", "1"]
+      ont:
+        slot: "8"
+        port: "1"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "16"
 
   NODE6:
     device_name: "費城_IES5206_169.54"
@@ -396,97 +215,52 @@ nodes:
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
     geo_position: "費城"
-    report_cards: ["MSC1280XB", "GLC1440X", "OLC3708"]
-    controller_card: "MSC1280XB"
-    pon_card: "OLC3708"
-    ge_service_card: "GLC1440X"
-    ont:
-      card: "OLC3708"
-      port_id: "8"
-      ont_id: "1"
-      sn: "5A595845C601D0A6"
-      password: "DEFAULT"
-      description: "tony_test"
-      template: "#RestApi_provision_temp_SFU"
-      model: "PMG1005-T20C"
-      fw_image: "V542ABYY4Z0"
-      service_mode: "veip"
-    ge_service:
-      card: "GLC1440X"
-      port_id: "39"
-      template: "#RestApi_getemp_ge1"
-      port_name: "10g_Hsinchu"
-      telephone: "011+886+7+2737"
-    cards:
-      MSC:
+    slots:
+      3:
+        card: "MSC1280XB"
         fw_version: "V2.03(ABXC.9)"
-        slot_id: "3"
-        type: "MSC1280XB"
+        role: "controller"
         ports:
-          port_1:
-            port_id: "1"
-            port_type: "Network"
-            port_speed: "1G"
-      GLC1440X:
+          1:
+            type: "Network"
+            speed: "1G"
+      6:
+        card: "GLC1440X"
+        model: "GLC1440X-55A"
         fw_version: "V2.03(AAWO.9)"
-        slot_id: "6"
-        type: "GLC1440X-55A"
+        role: "line"
         ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "1G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      GLC1540X:
-        fw_version: "V2.03(ACFF.9)"
-        slot_id: "2"
-        type: "GLC1540X-55A"
-        ports:
-          port_39:
-            port_id: "39"
-            port_type: "Ethernet Access"
-            port_speed: "10G"
-            port_name: "10g_Hsinchu"
-            telephone: "011+886+7+2737"
-            ge_template: "#RestApi_getemp_ge1"
-      OLC3416-42A:
-        fw_version: "V2.03(ABCH.9)"
-        slot_id: "0"
-        type: "OLC3416-42"
-        ports:
-          port_1:
-            port_id: "1"
-            port_type: "GPON"
-            port_speed: "2.5G"
-      OLC3416B:
-        fw_version: "V2.03(ACCH.9)"
-        slot_id: "2"
-        type: "OLC3416B-IA"
-        ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "2.5G"
-      OLC3708:
+          39:
+            type: "Ethernet Access"
+            speed: "1G"
+            ge_service:
+              template: "#RestApi_getemp_ge1"
+              port_name: "10g_Hsinchu"
+              telephone: "011+886+7+2737"
+      5:
+        card: "OLC3708"
+        model: "OLC3708-43A"
         fw_version: "V2.03(ABPW.9)"
-        slot_id: "5"
-        type: "OLC3708-43A"
+        role: "line"
         ports:
-          port_8:
-            port_id: "8"
-            port_type: "xPON"
-            port_speed: "10G"
-      OLC3816:
-        fw_version: "V2.03(ACHD.9)"
-        slot_id: "2"
-        type: "OLC3816-IA"
-        ports:
-          port_16:
-            port_id: "16"
-            port_type: "xPON"
-            port_speed: "10G"
-
-cross_check:
-  mode: "off"
+          8:
+            type: "xPON"
+            speed: "10G"
+            onts:
+              1:
+                sn: "5A595845C601D0A6"
+                password: "DEFAULT"
+                description: "tony_test"
+                template: "#RestApi_provision_temp_SFU"
+                model: "PMG1005-T20C"
+                fw_image: "V542ABYY4Z0"
+                service_mode: "veip"
+    test_targets:
+      report_slots: ["3", "6", "5"]
+      ont:
+        slot: "5"
+        port: "8"
+        ont: "1"
+      ge_service:
+        slot: "6"
+        port: "39"

@@ -25,6 +25,8 @@ class HardwareConfig:
     def node_target(self, node_key: str) -> dict[str, Any]:
         nodes = self.targets.get("nodes", {})
         target = nodes.get(node_key, {})
+        if self.targets.get("version") == 2:
+            return _normalize_topology_node(target)
         return target if isinstance(target, dict) else {}
 
     def chassis_rules(self, chassis: str) -> dict[str, Any]:
@@ -89,6 +91,7 @@ class HardwareConfig:
         target = self.node_target(node_key)
         if not target:
             return
+        node_data = target
 
         chassis = str(node_data.get("chassis", ""))
         rules = self.chassis_rules(chassis)
@@ -218,16 +221,17 @@ def load_hardware_config(
     except SimpleYamlError as error:
         raise HardwareConfigError(str(error)) from error
 
-    _validate_top_level(matrix_file, matrix, "chassis")
-    _validate_top_level(targets_file, targets, "nodes")
+    _validate_top_level(matrix_file, matrix, "chassis", allowed_versions={1})
+    _validate_top_level(targets_file, targets, "nodes", allowed_versions={1, 2})
     return HardwareConfig(matrix_path=matrix_file, targets_path=targets_file, matrix=matrix, targets=targets)
 
 
-def _validate_top_level(path: Path, data: dict[str, Any], required_key: str) -> None:
+def _validate_top_level(path: Path, data: dict[str, Any], required_key: str, allowed_versions: set[int]) -> None:
     if not isinstance(data, dict):
         raise HardwareConfigError(f"{path} must contain a mapping")
-    if data.get("version") != 1:
-        raise HardwareConfigError(f"{path} must declare version: 1")
+    if data.get("version") not in allowed_versions:
+        allowed = ", ".join(str(version) for version in sorted(allowed_versions))
+        raise HardwareConfigError(f"{path} must declare version: {allowed}")
     if required_key not in data or not isinstance(data[required_key], dict):
         raise HardwareConfigError(f"{path} must contain {required_key}: mapping")
 
@@ -257,3 +261,149 @@ def _node_ports(node_data: dict[str, Any]) -> Any:
 
 def _node_is_port_only(node_data: dict[str, Any]) -> bool:
     return not _node_cards(node_data) and bool(_node_ports(node_data))
+
+
+def _normalize_topology_node(node_data: Any) -> dict[str, Any]:
+    if not isinstance(node_data, dict):
+        return {}
+    slots = node_data.get("slots")
+    if not isinstance(slots, dict):
+        return node_data
+
+    normalized = {
+        key: value
+        for key, value in node_data.items()
+        if key not in {"slots", "test_targets"} and not isinstance(value, dict)
+    }
+    cards: dict[str, Any] = {}
+    slot_to_card_key: dict[str, str] = {}
+
+    for raw_slot_id, raw_slot in slots.items():
+        if not isinstance(raw_slot, dict):
+            continue
+        slot_id = str(raw_slot.get("slot_id", raw_slot_id))
+        label = str(raw_slot.get("card") or raw_slot.get("model") or f"slot_{slot_id}")
+        card_key = _unique_card_key(label, cards, slot_id)
+        slot_to_card_key[slot_id] = card_key
+
+        card = {
+            "fw_version": raw_slot.get("fw_version", ""),
+            "slot_id": slot_id,
+            "type": str(raw_slot.get("model") or raw_slot.get("type") or label),
+            "ports": _normalize_topology_ports(raw_slot.get("ports", {})),
+        }
+        if raw_slot.get("role") is not None:
+            card["role"] = raw_slot["role"]
+        cards[card_key] = card
+
+    normalized["cards"] = cards
+
+    targets = node_data.get("test_targets", {})
+    targets = targets if isinstance(targets, dict) else {}
+    normalized["report_cards"] = _normalize_report_cards(targets, slot_to_card_key)
+
+    controller = _first_slot_by_role(slots, slot_to_card_key, "controller")
+    if controller is not None:
+        normalized["controller_card"] = controller
+
+    ont = _normalize_topology_ont(slots, slot_to_card_key, targets.get("ont"))
+    if ont:
+        normalized["pon_card"] = ont["card"]
+        normalized["ont"] = ont
+
+    ge_service = _normalize_topology_ge_service(slots, slot_to_card_key, targets.get("ge_service"))
+    if ge_service:
+        normalized["ge_service_card"] = ge_service["card"]
+        normalized["ge_service"] = ge_service
+
+    return normalized
+
+
+def _normalize_topology_ports(raw_ports: Any) -> dict[str, Any]:
+    ports: dict[str, Any] = {}
+    if not isinstance(raw_ports, dict):
+        return ports
+    for raw_port_id, raw_port in raw_ports.items():
+        if not isinstance(raw_port, dict):
+            continue
+        port_id = str(raw_port.get("port_id", raw_port_id))
+        port = {
+            "port_id": port_id,
+            "port_type": str(raw_port.get("port_type", raw_port.get("type", ""))),
+            "port_speed": str(raw_port.get("port_speed", raw_port.get("speed", ""))),
+        }
+        ge_service = raw_port.get("ge_service")
+        if isinstance(ge_service, dict):
+            _copy_if_present(port, "ge_template", ge_service, "template")
+            _copy_if_present(port, "port_name", ge_service, "port_name")
+            _copy_if_present(port, "telephone", ge_service, "telephone")
+        ports[f"port_{port_id}"] = port
+    return ports
+
+
+def _normalize_report_cards(targets: dict[str, Any], slot_to_card_key: dict[str, str]) -> list[str]:
+    report_slots = targets.get("report_slots")
+    if isinstance(report_slots, list):
+        return [slot_to_card_key[str(slot)] for slot in report_slots if str(slot) in slot_to_card_key]
+    return list(slot_to_card_key.values())
+
+
+def _normalize_topology_ont(slots: dict[str, Any], slot_to_card_key: dict[str, str], selector: Any) -> dict[str, Any]:
+    if not isinstance(selector, dict):
+        return {}
+    slot_id = str(selector.get("slot", ""))
+    port_id = str(selector.get("port", ""))
+    ont_id = str(selector.get("ont", "1"))
+    raw_port = _topology_port(slots, slot_id, port_id)
+    onts = raw_port.get("onts") if isinstance(raw_port, dict) else None
+    raw_ont = onts.get(ont_id, {}) if isinstance(onts, dict) else {}
+    if not isinstance(raw_ont, dict) or slot_id not in slot_to_card_key or not port_id:
+        return {}
+
+    ont = {"card": slot_to_card_key[slot_id], "port_id": port_id, "ont_id": ont_id}
+    for field in ("sn", "password", "description", "template", "model", "fw_image", "service_mode"):
+        _copy_if_present(ont, field, raw_ont, field)
+    return ont
+
+
+def _normalize_topology_ge_service(slots: dict[str, Any], slot_to_card_key: dict[str, str], selector: Any) -> dict[str, Any]:
+    if not isinstance(selector, dict):
+        return {}
+    slot_id = str(selector.get("slot", ""))
+    port_id = str(selector.get("port", ""))
+    raw_port = _topology_port(slots, slot_id, port_id)
+    raw_ge = raw_port.get("ge_service") if isinstance(raw_port, dict) else None
+    if not isinstance(raw_ge, dict) or slot_id not in slot_to_card_key or not port_id:
+        return {}
+
+    ge_service = {"card": slot_to_card_key[slot_id], "port_id": port_id}
+    _copy_if_present(ge_service, "template", raw_ge, "template")
+    _copy_if_present(ge_service, "port_name", raw_ge, "port_name")
+    _copy_if_present(ge_service, "telephone", raw_ge, "telephone")
+    return ge_service
+
+
+def _topology_port(slots: dict[str, Any], slot_id: str, port_id: str) -> dict[str, Any]:
+    slot = slots.get(slot_id, {})
+    ports = slot.get("ports", {}) if isinstance(slot, dict) else {}
+    port = ports.get(port_id, {}) if isinstance(ports, dict) else {}
+    return port if isinstance(port, dict) else {}
+
+
+def _first_slot_by_role(slots: dict[str, Any], slot_to_card_key: dict[str, str], role: str) -> str | None:
+    for raw_slot_id, raw_slot in slots.items():
+        slot_id = str(raw_slot.get("slot_id", raw_slot_id)) if isinstance(raw_slot, dict) else str(raw_slot_id)
+        if isinstance(raw_slot, dict) and raw_slot.get("role") == role and slot_id in slot_to_card_key:
+            return slot_to_card_key[slot_id]
+    return None
+
+
+def _unique_card_key(label: str, cards: dict[str, Any], slot_id: str) -> str:
+    if label not in cards:
+        return label
+    return f"{label}_slot_{slot_id}"
+
+
+def _copy_if_present(target: dict[str, Any], target_key: str, source: dict[str, Any], source_key: str) -> None:
+    if source.get(source_key) not in (None, ""):
+        target[target_key] = source[source_key]

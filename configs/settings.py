@@ -156,11 +156,11 @@ def _select_dut_sample(hardware: HardwareConfig, preferred_node: str) -> DutSamp
     nodes = hardware.targets["nodes"]
     candidates = [preferred_node] + [key for key in nodes if key != preferred_node]
     for node_key in candidates:
-        node = nodes.get(node_key)
+        node = hardware.node_target(node_key)
         if not isinstance(node, dict):
             continue
         try:
-            target = hardware.node_target(node_key)
+            target = node
             ont_target = _target_section(target, "ont")
             if not ont_target.get("sn"):
                 raise ValueError("No ONT test target")

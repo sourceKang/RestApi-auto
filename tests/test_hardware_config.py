@@ -15,7 +15,8 @@ def test_hardware_yaml_loads_and_validates_known_nodes():
 
 def test_each_yaml_hardware_target_has_port_inventory():
     hardware = load_hardware_config()
-    for node_key, node in hardware.targets["nodes"].items():
+    for node_key in hardware.targets["nodes"]:
+        node = hardware.node_target(node_key)
         cards = node.get("cards", {})
         node_ports = node.get("ports", {})
         assert cards or node_ports, f"{node_key} must define card inventory or node-level ports"
@@ -43,7 +44,8 @@ def test_each_yaml_model_matches_supported_device_matrix():
     hardware = load_hardware_config()
     supported = hardware.matrix["supported_devices"]
     aliases = hardware.matrix.get("model_aliases", {})
-    for node_key, node in hardware.targets["nodes"].items():
+    for node_key in hardware.targets["nodes"]:
+        node = hardware.node_target(node_key)
         if node.get("ports"):
             _assert_supported_model(
                 supported,
@@ -68,7 +70,8 @@ def test_feature_targets_only_use_supported_devices():
     features = hardware.matrix["feature_support"]
     ont_models = set(features["ont_models"])
     ge_models = set(features["ge_port_models"])
-    for node_key, node in hardware.targets["nodes"].items():
+    for node_key in hardware.targets["nodes"]:
+        node = hardware.node_target(node_key)
         if isinstance(node.get("ont"), dict):
             ont_model = _target_model(hardware, node, node["ont"], "pon_card")
             assert _canonical_model(ont_model, aliases) in ont_models, f"{node_key}.ont uses unsupported {ont_model}"

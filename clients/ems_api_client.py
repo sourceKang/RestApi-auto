@@ -8,7 +8,7 @@ from uuid import uuid4
 import requests
 import urllib3
 
-from configs.settings import Credentials, EnvironmentConfig
+from config_loader.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
 from utils.allure_helpers import allure_step, attach_json
 from utils.redaction import redact

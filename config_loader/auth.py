@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from configs.simple_yaml import SimpleYamlError, load_simple_yaml
+from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 
 
-DEFAULT_AUTH_ACCOUNTS_FILE = Path(__file__).with_name("auth_accounts.yaml")
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
+DEFAULT_AUTH_ACCOUNTS_FILE = CONFIG_DIR / "auth_accounts.yaml"
 ROLE_NAMES = ("readwrite", "readonly", "noaccess")
 
 

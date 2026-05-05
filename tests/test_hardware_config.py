@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from configs import load_environment
-from configs.hardware import load_hardware_config
+from config_loader import load_environment
+from config_loader.hardware import load_hardware_config
 from utils.reporting import _card_version_lines, _target_summary_lines
 
 

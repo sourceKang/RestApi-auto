@@ -5,7 +5,7 @@ import os
 import pytest
 
 from clients import EmsApiClient
-from configs import load_environment
+from config_loader import load_environment
 from models.api import SessionRole
 from utils.assertions import assert_api_success
 from utils.cleanup import CleanupRegistry

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from configs import load_environment
+from config_loader import load_environment
 
 
 @pytest.mark.smoke

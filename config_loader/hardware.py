@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from configs.simple_yaml import SimpleYamlError, load_simple_yaml
+from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 
 
-DEFAULT_HARDWARE_MATRIX_FILE = Path(__file__).with_name("hardware_matrix.yaml")
-DEFAULT_TEST_TARGETS_FILE = Path(__file__).with_name("test_targets.yaml")
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
+DEFAULT_HARDWARE_MATRIX_FILE = CONFIG_DIR / "hardware_matrix.yaml"
+DEFAULT_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.yaml"
 
 
 class HardwareConfigError(RuntimeError):
@@ -26,7 +27,7 @@ class HardwareConfig:
         nodes = self.targets.get("nodes", {})
         target = nodes.get(node_key, {})
         if self.targets.get("version") == 2:
-            return _normalize_topology_node(target)
+            return _normalize_topology_node(target, self.targets.get("defaults", {}))
         return target if isinstance(target, dict) else {}
 
     def chassis_rules(self, chassis: str) -> dict[str, Any]:
@@ -263,7 +264,7 @@ def _node_is_port_only(node_data: dict[str, Any]) -> bool:
     return not _node_cards(node_data) and bool(_node_ports(node_data))
 
 
-def _normalize_topology_node(node_data: Any) -> dict[str, Any]:
+def _normalize_topology_node(node_data: Any, defaults: Any = None) -> dict[str, Any]:
     if not isinstance(node_data, dict):
         return {}
     slots = node_data.get("slots")
@@ -306,12 +307,17 @@ def _normalize_topology_node(node_data: Any) -> dict[str, Any]:
     if controller is not None:
         normalized["controller_card"] = controller
 
-    ont = _normalize_topology_ont(slots, slot_to_card_key, targets.get("ont"))
+    ont = _normalize_topology_ont(slots, slot_to_card_key, targets.get("ont"), _section_defaults(defaults, "ont"))
     if ont:
         normalized["pon_card"] = ont["card"]
         normalized["ont"] = ont
 
-    ge_service = _normalize_topology_ge_service(slots, slot_to_card_key, targets.get("ge_service"))
+    ge_service = _normalize_topology_ge_service(
+        slots,
+        slot_to_card_key,
+        targets.get("ge_service"),
+        _section_defaults(defaults, "ge_service"),
+    )
     if ge_service:
         normalized["ge_service_card"] = ge_service["card"]
         normalized["ge_service"] = ge_service
@@ -348,7 +354,12 @@ def _normalize_report_cards(targets: dict[str, Any], slot_to_card_key: dict[str,
     return list(slot_to_card_key.values())
 
 
-def _normalize_topology_ont(slots: dict[str, Any], slot_to_card_key: dict[str, str], selector: Any) -> dict[str, Any]:
+def _normalize_topology_ont(
+    slots: dict[str, Any],
+    slot_to_card_key: dict[str, str],
+    selector: Any,
+    defaults: dict[str, Any],
+) -> dict[str, Any]:
     if not isinstance(selector, dict):
         return {}
     slot_id = str(selector.get("slot", ""))
@@ -362,11 +373,17 @@ def _normalize_topology_ont(slots: dict[str, Any], slot_to_card_key: dict[str, s
 
     ont = {"card": slot_to_card_key[slot_id], "port_id": port_id, "ont_id": ont_id}
     for field in ("sn", "password", "description", "template", "model", "fw_image", "service_mode"):
+        _copy_if_present(ont, field, defaults, field)
         _copy_if_present(ont, field, raw_ont, field)
     return ont
 
 
-def _normalize_topology_ge_service(slots: dict[str, Any], slot_to_card_key: dict[str, str], selector: Any) -> dict[str, Any]:
+def _normalize_topology_ge_service(
+    slots: dict[str, Any],
+    slot_to_card_key: dict[str, str],
+    selector: Any,
+    defaults: dict[str, Any],
+) -> dict[str, Any]:
     if not isinstance(selector, dict):
         return {}
     slot_id = str(selector.get("slot", ""))
@@ -377,10 +394,17 @@ def _normalize_topology_ge_service(slots: dict[str, Any], slot_to_card_key: dict
         return {}
 
     ge_service = {"card": slot_to_card_key[slot_id], "port_id": port_id}
-    _copy_if_present(ge_service, "template", raw_ge, "template")
-    _copy_if_present(ge_service, "port_name", raw_ge, "port_name")
-    _copy_if_present(ge_service, "telephone", raw_ge, "telephone")
+    for field in ("template", "port_name", "telephone"):
+        _copy_if_present(ge_service, field, defaults, field)
+        _copy_if_present(ge_service, field, raw_ge, field)
     return ge_service
+
+
+def _section_defaults(defaults: Any, section: str) -> dict[str, Any]:
+    if not isinstance(defaults, dict):
+        return {}
+    value = defaults.get(section, {})
+    return value if isinstance(value, dict) else {}
 
 
 def _topology_port(slots: dict[str, Any], slot_id: str, port_id: str) -> dict[str, Any]:

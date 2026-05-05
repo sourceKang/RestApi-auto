@@ -5,13 +5,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from configs.auth import AuthConfigError, ResolvedAccount, load_auth_config
-from configs.hardware import HardwareConfig, HardwareConfigError, load_hardware_config
-from configs.simple_yaml import SimpleYamlError, load_simple_yaml
+from config_loader.auth import AuthConfigError, ResolvedAccount, load_auth_config
+from config_loader.hardware import HardwareConfig, HardwareConfigError, load_hardware_config
+from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 from models.api import SessionRole
 
 
-DEFAULT_EMS_FILE = Path(__file__).with_name("ems.yaml")
+CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
+DEFAULT_EMS_FILE = CONFIG_DIR / "ems.yaml"
 EXPECTED_NOACCESS_USER = "RestApiNA"
 EXPECTED_READONLY_USER = "RestApiRO"
 

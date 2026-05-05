@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from configs.hardware import load_hardware_config
+from config_loader.hardware import load_hardware_config
 
 
 def test_default_topology_v2_node1_normalizes_to_runtime_target_shape():

@@ -2,6 +2,15 @@
 # Schema v2 models the physical layout as node -> chassis -> slots -> cards -> ports -> ONTs.
 version: 2
 
+defaults:
+  ont:
+    template: "#RestApi_provision_temp_SFU"
+    service_mode: "veip"
+  ge_service:
+    template: "#RestApi_getemp_ge1"
+    port_name: "10g_Hsinchu"
+    telephone: "011+886+7+2737"
+
 nodes:
   NODE1:
     device_name: "California_IES4204_169.57"
@@ -29,9 +38,6 @@ nodes:
             type: "Ethernet Access"
             speed: "1G"
             ge_service:
-              template: "#RestApi_getemp_ge1"
-              port_name: "10g_Hsinchu"
-              telephone: "011+886+7+2737"
       2:
         card: "OLC3816"
         model: "OLC3816-IA"
@@ -46,10 +52,8 @@ nodes:
                 sn: "5A5958458CADDDC3"
                 password: "F44D5C39E710"
                 description: "tony_test"
-                template: "#RestApi_provision_temp_SFU"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY4Z0"
-                service_mode: "veip"
     test_targets:
       report_slots: ["3", "1", "2"]
       ont:
@@ -108,10 +112,8 @@ nodes:
                 sn: "5A5958458CACE175"
                 password: "D41AD1009ED0"
                 description: "RestApi_test@1234des"
-                template: "#RestApi_provision_temp_SFU"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY22Z0"
-                service_mode: "veip"
       1:
         card: "NXA340"
         fw_version: "V1.02(ACQE.1)"
@@ -121,9 +123,6 @@ nodes:
             type: "xPON"
             speed: "10G"
             ge_service:
-              template: "#RestApi_getemp_ge1"
-              port_name: "10g_Hsinchu"
-              telephone: "011+886+7+2737"
     test_targets:
       report_slots: ["4", "3", "1"]
       ont:
@@ -182,10 +181,8 @@ nodes:
                 sn: "5A5958458CACE174"
                 password: "D41AD1009EC8"
                 description: "RestApi_test@1234des"
-                template: "#RestApi_provision_temp_SFU"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY22Z0"
-                service_mode: "veip"
       1:
         card: "NXA340"
         fw_version: "V1.02(ACQE.1)"
@@ -195,9 +192,6 @@ nodes:
             type: "xPON"
             speed: "10G"
             ge_service:
-              template: "#RestApi_getemp_ge1"
-              port_name: "10g_Hsinchu"
-              telephone: "011+886+7+2737"
     test_targets:
       report_slots: ["5", "8", "1"]
       ont:
@@ -234,9 +228,6 @@ nodes:
             type: "Ethernet Access"
             speed: "1G"
             ge_service:
-              template: "#RestApi_getemp_ge1"
-              port_name: "10g_Hsinchu"
-              telephone: "011+886+7+2737"
       5:
         card: "OLC3708"
         model: "OLC3708-43A"
@@ -251,10 +242,8 @@ nodes:
                 sn: "5A595845C601D0A6"
                 password: "DEFAULT"
                 description: "tony_test"
-                template: "#RestApi_provision_temp_SFU"
                 model: "PMG1005-T20C"
                 fw_image: "V542ABYY4Z0"
-                service_mode: "veip"
     test_targets:
       report_slots: ["3", "6", "5"]
       ont:

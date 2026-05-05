@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from clients import EmsApiClient
@@ -39,6 +41,18 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
+    parser.addoption(
+        "--archive-allure",
+        action="store_true",
+        default=False,
+        help="Archive raw Allure results into reports/<EMS version>/allure-results_<timestamp>.",
+    )
+    parser.addoption(
+        "--generate-allure-html",
+        action="store_true",
+        default=False,
+        help="Generate an Allure HTML report at session finish. Implies --archive-allure.",
+    )
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -100,8 +114,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             terminal.write_line(f"EMS allure results: {allure_results}")
             if allure_html:
                 terminal.write_line(f"EMS allure report: {allure_html}")
+            elif _option_or_env(session.config, "generate_allure_html", "EMS_GENERATE_ALLURE_HTML"):
+                terminal.write_line("EMS allure report: allure CLI not found or generation failed.")
             else:
-                terminal.write_line("EMS allure report: allure CLI not found; raw allure results were archived.")
+                terminal.write_line("EMS allure report: skipped; use --generate-allure-html when needed.")
     except Exception as error:
         terminal = session.config.pluginmanager.get_plugin("terminalreporter")
         if terminal:
@@ -237,3 +253,12 @@ def rad_noaccess_session(api_client, rad_env_config):
         yield session_id
     finally:
         api_client.logout(session_id)
+
+
+def _option_or_env(config: pytest.Config, option_name: str, env_name: str) -> bool:
+    return bool(config.getoption(option_name)) or os.environ.get(env_name, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }

@@ -93,7 +93,24 @@ def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path | None
     txt_path = report_dir / f"{_report_base_name(env_config, REPORT_STATE.timestamp)}.txt"
     txt_path.write_text(_render_txt_report(env_config), encoding="utf-8")
 
-    current_allure_dir = Path(getattr(config.option, "allure_report_dir", "")) if getattr(config.option, "allure_report_dir", None) else root / "reports" / ".allure-results-current"
+    current_allure_dir = _current_allure_dir(config, root)
+    archive_allure = _option_enabled(config, "archive_allure", "EMS_ARCHIVE_ALLURE")
+    generate_allure_html = _option_enabled(config, "generate_allure_html", "EMS_GENERATE_ALLURE_HTML")
+
+    allure_results = current_allure_dir
+    if archive_allure or generate_allure_html:
+        allure_results = _archive_allure_results(current_allure_dir, report_dir)
+
+    html_report = _generate_allure_html(allure_results, report_dir) if generate_allure_html else None
+    return txt_path, allure_results, html_report
+
+
+def _current_allure_dir(config: Any, root: Path) -> Path:
+    configured = getattr(config.option, "allure_report_dir", None)
+    return Path(configured) if configured else root / "reports" / ".allure-results-current"
+
+
+def _archive_allure_results(current_allure_dir: Path, report_dir: Path) -> Path:
     archived_allure_results = report_dir / f"allure-results_{REPORT_STATE.timestamp}"
     if current_allure_dir.exists() and current_allure_dir.resolve() != archived_allure_results.resolve():
         if archived_allure_results.exists():
@@ -101,9 +118,13 @@ def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path | None
         shutil.copytree(current_allure_dir, archived_allure_results)
     else:
         archived_allure_results.mkdir(parents=True, exist_ok=True)
+    return archived_allure_results
 
-    html_report = _generate_allure_html(archived_allure_results, report_dir)
-    return txt_path, archived_allure_results, html_report
+
+def _option_enabled(config: Any, option_name: str, env_name: str) -> bool:
+    if bool(getattr(config.option, option_name, False)):
+        return True
+    return os.environ.get(env_name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _render_txt_report(env_config: Any) -> str:

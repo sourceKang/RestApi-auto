@@ -85,6 +85,8 @@ pytest -m alarm_delete --run-alarm-delete
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.
+Allure JSON attachments are summarized by default to keep reports small. Set
+`EMS_ATTACH_FULL_JSON=1` only when a run needs complete request/response bodies.
 
 ## Reports
 
@@ -97,8 +99,9 @@ reports\<EMS version>\
 Generated artifacts:
 
 - `Web_Ems_Rest_Api_<EMS version>_<chassis>_<controller>_report_<timestamp>.txt`
-- `allure-results_<timestamp>`
-- `allure-report_<timestamp>` when the Allure CLI is available
+- `.allure-results-current`
+- `allure-results_<timestamp>` only when `--archive-allure` or `EMS_ARCHIVE_ALLURE=1` is used
+- `allure-report_<timestamp>` only when `--generate-allure-html` or `EMS_GENERATE_ALLURE_HTML=1` is used
 
 The txt report follows the legacy report format with summary, EMS/DUT metadata,
 card firmware versions and one result line per case ID.

@@ -95,8 +95,8 @@ def test_txt_report_aggregates_permission_cases_and_suppresses_internal_tests(mo
     assert any("[EMS1-6643][test_get_device_all]" in line and "Result Pass" in line for line in case_lines)
     assert any("[EMS1-7029][test_active_alarm_various_invalid_parameters_should_return_error]" in line for line in case_lines)
     assert any("[EMS1-7022][test_post_remote_console_invalid_param_should_return_error]" in line for line in case_lines)
-    assert any("[PERM-RO][readonly_permission_summary] Result Fail" in line for line in case_lines)
-    assert any("[PERM-NA][noaccess_permission_summary] Result Pass" in line for line in case_lines)
+    assert any("[EMS1-7109][readonly_permission_summary] Result Fail" in line for line in case_lines)
+    assert any("[EMS1-7110][noaccess_permission_summary] Result Pass" in line for line in case_lines)
     assert len(case_lines) == 5
 
 
@@ -112,7 +112,7 @@ def test_permission_summary_treats_skip_as_non_blocking_when_other_cases_pass(mo
     rendered = reporting._render_txt_report(_fake_env())
     case_lines = [line for line in rendered.splitlines() if line.startswith("[")]
 
-    assert any("[PERM-RO][readonly_permission_summary] Result Pass" in line for line in case_lines)
+    assert any("[EMS1-7109][readonly_permission_summary] Result Pass" in line for line in case_lines)
 
 
 def test_permission_summary_breakdown_lists_failed_members(monkeypatch):
@@ -132,7 +132,7 @@ def test_permission_summary_breakdown_lists_failed_members(monkeypatch):
 
     breakdown = reporting.permission_summary_breakdown("readonly")
 
-    assert breakdown["case_id"] == "PERM-RO"
+    assert breakdown["case_id"] == "EMS1-7109"
     assert breakdown["outcome"] == "failed"
     assert breakdown["failed"] == 1
     assert len(breakdown["failed_items"]) == 1

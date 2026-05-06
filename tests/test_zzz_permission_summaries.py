@@ -10,7 +10,7 @@ from utils.reporting import permission_summary_breakdown
 @pytest.mark.summary
 def test_readonly_permission_summary_allure():
     attach_case_id(
-        "PERM-RO",
+        "EMS1-7109",
         "readonly_permission_summary",
         register_txt=False,
         summary_group="PERM-RO",
@@ -21,7 +21,7 @@ def test_readonly_permission_summary_allure():
 @pytest.mark.summary
 def test_noaccess_permission_summary_allure():
     attach_case_id(
-        "PERM-NA",
+        "EMS1-7110",
         "noaccess_permission_summary",
         register_txt=False,
         summary_group="PERM-NA",

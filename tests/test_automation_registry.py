@@ -25,7 +25,7 @@ def test_legacy_report_order_and_names_match_converted_legacy_registry():
 
 def test_summary_case_ids_are_registered_as_fixed_contracts():
     assert legacy.permission_summary_specs() == (
-        ("PERM-RO", "readonly", "readonly_permission_summary"),
-        ("PERM-NA", "noaccess", "noaccess_permission_summary"),
+        ("EMS1-7109", "readonly", "readonly_permission_summary"),
+        ("EMS1-7110", "noaccess", "noaccess_permission_summary"),
     )
-    assert {"RAD-RW", "RAD-RO", "RAD-NA"} <= legacy.automated_case_ids()
+    assert {"EMS1-7056", "EMS1-7107", "EMS1-7108"} <= legacy.automated_case_ids()

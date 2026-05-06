@@ -41,6 +41,7 @@ def test_provision_read_endpoints_noaccess(provision_service, noaccess_session, 
 
 @pytest.mark.provision
 @pytest.mark.mutating
+@pytest.mark.readonly
 @pytest.mark.parametrize("case", PROVISION_MUTATING_CASES, ids=lambda case: case.name)
 def test_mutating_endpoints_reject_readonly(provision_service, readonly_session, case):
     provision_service.verify_mutation_rejected(readonly_session, case, "readonly")
@@ -48,6 +49,7 @@ def test_mutating_endpoints_reject_readonly(provision_service, readonly_session,
 
 @pytest.mark.provision
 @pytest.mark.mutating
+@pytest.mark.noaccess
 @pytest.mark.parametrize("case", PROVISION_MUTATING_CASES, ids=lambda case: case.name)
 def test_mutating_endpoints_reject_noaccess(provision_service, noaccess_session, case):
     provision_service.verify_mutation_rejected(noaccess_session, case, "noaccess")

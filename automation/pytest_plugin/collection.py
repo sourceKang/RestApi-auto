@@ -7,9 +7,9 @@ from utils.reporting import register_node_case, register_permission_role
 
 
 RAD_AUTH_MATRIX_CASES = {
-    "test_rad_external_readwrite_summary": ("RAD-RW", "rad_external_readwrite_summary"),
-    "test_rad_external_readonly_summary": ("RAD-RO", "rad_external_readonly_summary"),
-    "test_rad_external_noaccess_summary": ("RAD-NA", "rad_external_noaccess_summary"),
+    "test_rad_external_readwrite_summary": ("EMS1-7056", "rad_external_readwrite_summary"),
+    "test_rad_external_readonly_summary": ("EMS1-7107", "rad_external_readonly_summary"),
+    "test_rad_external_noaccess_summary": ("EMS1-7108", "rad_external_noaccess_summary"),
 }
 
 for case in RAD_SUMMARY_CASES:

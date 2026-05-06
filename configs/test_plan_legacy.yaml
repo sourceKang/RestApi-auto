@@ -34,8 +34,8 @@ fixed_contracts:
     legacy_registry: cases.neox_legacy.legacy_test_cases
     automated_registry: automation.registry.legacy.AUTOMATED_CASES
   summaries:
-    - PERM-RO
-    - PERM-NA
-    - RAD-RW
-    - RAD-RO
-    - RAD-NA
+    - EMS1-7109
+    - EMS1-7110
+    - EMS1-7056
+    - EMS1-7107
+    - EMS1-7108

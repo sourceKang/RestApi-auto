@@ -68,7 +68,9 @@ def _summarize_value(
     max_string_length: int,
 ) -> Any:
     if depth <= 0:
-        return _truncated_marker(value)
+        if isinstance(value, (dict, list)):
+            return _truncated_marker(value)
+        return _summarize_scalar(value, max_string_length=max_string_length)
     if isinstance(value, dict):
         summarized: dict[Any, Any] = {}
         items = list(value.items())
@@ -97,6 +99,10 @@ def _summarize_value(
         if len(value) > max_list_items:
             summarized_list.append({"__truncated_items__": len(value) - max_list_items})
         return summarized_list
+    return _summarize_scalar(value, max_string_length=max_string_length)
+
+
+def _summarize_scalar(value: Any, *, max_string_length: int) -> Any:
     if isinstance(value, str) and len(value) > max_string_length:
         return f"{value[:max_string_length]}...<truncated {len(value) - max_string_length} chars>"
     return value

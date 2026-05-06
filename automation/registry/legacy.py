@@ -58,14 +58,14 @@ DIRECT_CASES: tuple[TestCaseRecord, ...] = (
 )
 
 SUMMARY_CASES: tuple[TestCaseRecord, ...] = (
-    TestCaseRecord("PERM-RO", "readonly_permission_summary", "permission", role="readonly", source="summary", markers=("summary",)),
-    TestCaseRecord("PERM-NA", "noaccess_permission_summary", "permission", role="noaccess", source="summary", markers=("summary",)),
+    TestCaseRecord("EMS1-7109", "readonly_permission_summary", "permission", role="readonly", source="summary", markers=("summary",)),
+    TestCaseRecord("EMS1-7110", "noaccess_permission_summary", "permission", role="noaccess", source="summary", markers=("summary",)),
 )
 
 RAD_SUMMARY_CASES: tuple[TestCaseRecord, ...] = (
-    TestCaseRecord("RAD-RW", "rad_external_readwrite_summary", "authmatrix", role="readwrite", source="summary", markers=("authmatrix",)),
-    TestCaseRecord("RAD-RO", "rad_external_readonly_summary", "authmatrix", role="readonly", source="summary", markers=("authmatrix",)),
-    TestCaseRecord("RAD-NA", "rad_external_noaccess_summary", "authmatrix", role="noaccess", source="summary", markers=("authmatrix",)),
+    TestCaseRecord("EMS1-7056", "rad_external_readwrite_summary", "authmatrix", role="readwrite", source="summary", markers=("authmatrix",)),
+    TestCaseRecord("EMS1-7107", "rad_external_readonly_summary", "authmatrix", role="readonly", source="summary", markers=("authmatrix",)),
+    TestCaseRecord("EMS1-7108", "rad_external_noaccess_summary", "authmatrix", role="noaccess", source="summary", markers=("authmatrix",)),
 )
 
 AUTOMATED_CASES: tuple[TestCaseRecord, ...] = (

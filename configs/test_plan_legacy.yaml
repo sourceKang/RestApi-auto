@@ -1,0 +1,41 @@
+# Baseline execution plan captured before the architecture refactor.
+# This file is intentionally descriptive first; pytest still owns collection.
+# Later phases can turn this into the source of ordering/filtering truth.
+version: 1
+name: legacy-pytest-order
+source: static-baseline
+notes:
+  - txt report format and EMS testcase ids are frozen during the refactor.
+  - Baseline was verified with pytest collect-only on Python 3.13.0 / pytest 8.2.0.
+  - Current collection count is 240 tests.
+  - File order below follows the actual pytest collection order.
+files:
+  - tests/test_alarm.py
+  - tests/test_auth_matrix.py
+  - tests/test_automation_registry.py
+  - tests/test_config.py
+  - tests/test_hardware_config.py
+  - tests/test_inventory.py
+  - tests/test_legacy_registry.py
+  - tests/test_profiles.py
+  - tests/test_provision.py
+  - tests/test_regression_registry.py
+  - tests/test_remote.py
+  - tests/test_reporting.py
+  - tests/test_session.py
+  - tests/test_topology_v2_config.py
+  - tests/test_zz_invalid_params.py
+  - tests/test_zzz_permission_summaries.py
+fixed_contracts:
+  report:
+    format: legacy txt report
+    renderer: utils.reporting._render_txt_report
+  ids:
+    legacy_registry: cases.neox_legacy.legacy_test_cases
+    automated_registry: automation.registry.legacy.AUTOMATED_CASES
+  summaries:
+    - PERM-RO
+    - PERM-NA
+    - RAD-RW
+    - RAD-RO
+    - RAD-NA

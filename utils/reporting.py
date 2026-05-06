@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from cases.neox_legacy import legacy_test_cases
+from automation.registry.legacy import legacy_case_name_by_id, legacy_case_order, permission_summary_specs
 
 
 @dataclass
@@ -470,28 +470,15 @@ def _combine_permission_outcomes(outcomes: Any) -> str:
 
 
 def _permission_summary_specs() -> tuple[tuple[str, str, str], ...]:
-    return (
-        ("PERM-RO", "readonly", "readonly_permission_summary"),
-        ("PERM-NA", "noaccess", "noaccess_permission_summary"),
-    )
+    return permission_summary_specs()
 
 
 def _legacy_case_name_by_id() -> dict[str, str]:
-    mapping: dict[str, str] = {}
-    for case in legacy_test_cases():
-        case_ids = case.get("case_ids") or []
-        if case_ids:
-            mapping[str(case_ids[0])] = str(case.get("legacy_name", case_ids[0]))
-    return mapping
+    return legacy_case_name_by_id()
 
 
 def _legacy_case_order() -> dict[str, int]:
-    order: dict[str, int] = {}
-    for index, case in enumerate(legacy_test_cases()):
-        case_ids = case.get("case_ids") or []
-        if case_ids:
-            order.setdefault(str(case_ids[0]), index)
-    return order
+    return legacy_case_order()
 
 
 def _safe_path_part(value: str) -> str:

@@ -1,0 +1,4 @@
+# Issue-based regression cases live here.
+# Keep EMS testcase ids in legacy registries; link customer/product issues here.
+version: 1
+cases: []

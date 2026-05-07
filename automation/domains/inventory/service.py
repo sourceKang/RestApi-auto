@@ -258,17 +258,16 @@ def assert_inventory_response_matches_env(payload, env_config, case_name: str) -
         )
         return
     if case_name.startswith("slot"):
-        _assert_slot_fields(
-            _find_inventory_item(
-                payload,
-                "slotinfolist",
-                "slotinfo",
-                lambda item: item.get("DevName") == env_config.dut.device_name
-                and str(item.get("SlotID")) == env_config.dut.slot_id,
-                case_name,
-            ),
-            env_config,
+        item = _find_inventory_item(
+            payload,
+            "slotinfolist",
+            "slotinfo",
+            lambda item: item.get("DevName") == env_config.dut.device_name
+            and str(item.get("SlotID")) == env_config.dut.slot_id,
+            case_name,
         )
+        _assert_slot_fields(item, env_config)
+        _assert_report_card_inventory(payload, env_config, case_name)
         return
     if case_name.startswith("port"):
         _assert_port_fields(
@@ -338,6 +337,85 @@ def _assert_device_fields(item, env_config):
 def _assert_slot_fields(item, env_config):
     dut = env_config.dut
     _assert_fields(item, {"DevName": dut.device_name, "IPAddress": dut.device_ip, "SlotID": dut.slot_id}, "Slot")
+
+
+def _assert_report_card_inventory(payload, env_config, case_name: str) -> None:
+    if case_name == "slot_by_id":
+        expected_cards = _expected_cards_by_slot(env_config, only_slot=env_config.dut.slot_id)
+    elif case_name in {"slot_list", "slot_by_device"}:
+        expected_cards = _expected_cards_by_slot(env_config)
+    else:
+        return
+    if not expected_cards:
+        return
+
+    actual_cards = _slot_items_by_slot(payload, env_config, case_name)
+    mismatches = []
+    for slot_id, expected_card in expected_cards.items():
+        actual = actual_cards.get(slot_id)
+        if actual is None:
+            mismatches.append(f"slot {slot_id}: missing expected {expected_card['type']}")
+            continue
+        mismatches.extend(_card_field_mismatches(actual, expected_card, slot_id))
+    assert not mismatches, f"{case_name} card inventory mismatches: {'; '.join(mismatches)}"
+
+
+def _expected_cards_by_slot(env_config, only_slot: str | None = None) -> dict[str, dict]:
+    cards = env_config.node_target.get("cards", {})
+    if not isinstance(cards, dict):
+        return {}
+    expected = {}
+    report_cards = env_config.hardware.report_card_entries(env_config.dut.node_key, env_config.node_target)
+    for label, _key, card in report_cards:
+        slot_id = str(card.get("slot_id", ""))
+        if only_slot is not None and slot_id != str(only_slot):
+            continue
+        expected[slot_id] = {
+            "label": label,
+            "type": label,
+            "fw_version": str(card.get("fw_version", "")),
+        }
+    return expected
+
+
+def _slot_items_by_slot(payload, env_config, case_name: str) -> dict[str, dict]:
+    retval = payload.get("retval", {}) if isinstance(payload, dict) else {}
+    if not isinstance(retval, dict):
+        raise AssertionError(f"{case_name} response retval is not a dict: {format_value_summary(payload)}")
+    items = []
+    if isinstance(retval.get("slotinfo"), dict):
+        items = [retval["slotinfo"]]
+    elif isinstance(retval.get("slotinfolist"), list):
+        items = retval["slotinfolist"]
+    actual = {}
+    for item in items:
+        if not isinstance(item, dict) or item.get("DevName") != env_config.dut.device_name:
+            continue
+        slot_id = str(item.get("SlotID") or item.get("Slot") or "")
+        if slot_id:
+            actual[slot_id] = item
+    return actual
+
+
+def _card_field_mismatches(actual, expected, slot_id: str) -> list[str]:
+    mismatches = []
+    for keys, expected_value, label in (
+        (("RealType", "CardType", "cardType", "type"), expected["type"], "card type"),
+        (("FwVersion", "FW Version", "fwVersion", "fw_version"), expected["fw_version"], "FW version"),
+    ):
+        actual_value = _first_present_value(actual, keys)
+        if actual_value is None:
+            mismatches.append(f"slot {slot_id} {label}: missing one of {keys}")
+        elif str(actual_value) != str(expected_value):
+            mismatches.append(f"slot {slot_id} {label}: expected {expected_value!r}, got {actual_value!r}")
+    return mismatches
+
+
+def _first_present_value(actual, keys):
+    for key in keys:
+        if key in actual:
+            return actual[key]
+    return None
 
 
 def _assert_port_fields(item, env_config):

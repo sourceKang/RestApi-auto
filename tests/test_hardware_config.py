@@ -120,7 +120,9 @@ def test_node1_report_cards_are_yaml_targeted():
     assert env.dut.ont_sn == "5A5958458CADDDC3"
     assert env.dut.ont_template == "#RestApi_provision_temp_SFU"
     assert env.dut.ge_template == "#RestApi_getemp_ge1"
-    assert "Test Target Source: YAML" in _target_summary_lines(env)
+    summary_lines = _target_summary_lines(env)
+    assert "Test Target Source: YAML" in summary_lines
+    assert any("live EMS mismatches are validated by inventory tests" in line for line in summary_lines)
 
 
 def test_node3_report_cards_are_yaml_targeted():

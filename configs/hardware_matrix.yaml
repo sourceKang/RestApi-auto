@@ -58,13 +58,13 @@ supported_devices:
     version: "V2.03(ACFF.9)"
   NXC400:
     family: "MSAN Chassis (NeoX06, NeoX03)"
-    version: "V1.02(ACKG.1)"
+    version: "V1.02(ACKG.1)b17"
   NXP316:
     family: "MSAN Chassis (NeoX06, NeoX03)"
-    version: "V1.02(ACKI.1)"
+    version: "V1.02(ACKI.1)b17"
   NXA340:
     family: "MSAN Chassis (NeoX06, NeoX03)"
-    version: "V1.02(ACQE.1)"
+    version: "V1.02(ACQE.1)b12"
 
 model_aliases:
   GLC1440X-55A: "GLC1440X-55"

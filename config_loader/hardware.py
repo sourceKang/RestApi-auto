@@ -289,6 +289,7 @@ def _normalize_topology_node(node_data: Any, defaults: Any = None) -> dict[str, 
 
         card = {
             "fw_version": raw_slot.get("fw_version", ""),
+            "hw_version": raw_slot.get("hw_version", ""),
             "slot_id": slot_id,
             "type": str(raw_slot.get("model") or raw_slot.get("type") or label),
             "ports": _normalize_topology_ports(raw_slot.get("ports", {})),

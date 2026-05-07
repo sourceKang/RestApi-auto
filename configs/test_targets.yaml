@@ -93,7 +93,8 @@ nodes:
     slots:
       4:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)b17"
+        hw_version: "AAB"
         role: "controller"
         ports:
           1:
@@ -101,7 +102,7 @@ nodes:
             speed: "1G"
       3:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)b17"
         role: "line"
         ports:
           16:
@@ -113,10 +114,11 @@ nodes:
                 password: "D41AD1009ED0"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
-                fw_image: "V542ABYY22Z0"
+                fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)b12"
+        hw_version: "AA"
         role: "line"
         ports:
           39:
@@ -162,7 +164,7 @@ nodes:
     slots:
       5:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)b17"
         role: "controller"
         ports:
           1:
@@ -170,7 +172,7 @@ nodes:
             speed: "1G"
       8:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)b17"
         role: "line"
         ports:
           1:
@@ -182,10 +184,10 @@ nodes:
                 password: "D41AD1009EC8"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
-                fw_image: "V542ABYY22Z0"
+                fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)b12"
         role: "line"
         ports:
           16:

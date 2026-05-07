@@ -239,7 +239,10 @@ def _target_summary_lines(env_config: Any) -> list[str]:
     if not target:
         return []
 
-    lines = ["Test Target Source: YAML"]
+    lines = [
+        "Test Target Source: YAML",
+        "Card/FW Target Note: values above are YAML targets; live EMS mismatches are validated by inventory tests.",
+    ]
     if isinstance(target.get("ont"), dict):
         lines.append(
             "ONT Target: "

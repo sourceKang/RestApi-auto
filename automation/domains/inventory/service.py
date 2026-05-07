@@ -15,6 +15,15 @@ from utils.names import unique_name
 
 
 ONTOLOGY_PATH_CASE_NAMES = {"ont_by_device", "ont_by_slot", "ont_by_port", "ont_by_id"}
+EXPECTED_ENABLED_STATE = "1"
+EXPECTED_UP_OPERATION_STATE = "3"
+EXPECTED_PORT_UP_OPERATION_STATE = "1"
+PORT_TYPE_ALIASES = {
+    "xpon": {"xpon", "gpon", "xgspon", "xgpon", "250"},
+    "gpon": {"xpon", "gpon", "xgspon", "xgpon", "250"},
+    "network": {"network", "ethernet", "ethernet access"},
+    "ethernet access": {"network", "ethernet", "ethernet access"},
+}
 
 
 class InventoryService:
@@ -111,9 +120,8 @@ class InventoryService:
         with allure_step("Wait until ONT inventory becomes stable after provisioning instead of sleeping a fixed 180 seconds"):
             self.wait_for_ont_inventory(
                 session_id=session_id,
-                timeout=240,
+                timeout=300,
                 interval=15,
-                initial_delay=30,
                 consecutive_successes=2,
                 raise_on_timeout=False,
             )
@@ -331,7 +339,22 @@ def find_ont_item(payload, env_config, case_name):
 
 def _assert_device_fields(item, env_config):
     dut = env_config.dut
-    _assert_fields(item, {"DevName": dut.device_name, "IPAddress": dut.device_ip}, "Device")
+    expected = {
+        "DevName": dut.device_name,
+        "IPAddress": dut.device_ip,
+        "DevType": dut.chassis,
+    }
+    controller_fw = _expected_controller_fw_version(env_config)
+    if controller_fw:
+        expected["BootFwVersion"] = controller_fw
+    _assert_fields(item, expected, "Device")
+    if controller_fw:
+        _assert_any_field(
+            item,
+            ("FwVersion2", "FwVersion", "ControllerFwVersion", "controllerFwVersion"),
+            controller_fw,
+            "Device",
+        )
 
 
 def _assert_slot_fields(item, env_config):
@@ -374,6 +397,7 @@ def _expected_cards_by_slot(env_config, only_slot: str | None = None) -> dict[st
             "label": label,
             "type": label,
             "fw_version": str(card.get("fw_version", "")),
+            "hw_version": str(card.get("hw_version", "")),
         }
     return expected
 
@@ -402,12 +426,20 @@ def _card_field_mismatches(actual, expected, slot_id: str) -> list[str]:
     for keys, expected_value, label in (
         (("RealType", "CardType", "cardType", "type"), expected["type"], "card type"),
         (("FwVersion", "FW Version", "fwVersion", "fw_version"), expected["fw_version"], "FW version"),
+        (("AdminState", "adminState"), EXPECTED_ENABLED_STATE, "admin state"),
+        (("OperationStatus", "operationStatus"), EXPECTED_UP_OPERATION_STATE, "operation status"),
     ):
         actual_value = _first_present_value(actual, keys)
         if actual_value is None:
             mismatches.append(f"slot {slot_id} {label}: missing one of {keys}")
         elif str(actual_value) != str(expected_value):
             mismatches.append(f"slot {slot_id} {label}: expected {expected_value!r}, got {actual_value!r}")
+    if expected.get("hw_version"):
+        actual_hw = _first_present_value(actual, ("HwVersion", "HW Version", "hwVersion", "hw_version"))
+        if actual_hw is None:
+            mismatches.append(f"slot {slot_id} HW version: missing one of HwVersion/HW Version/hwVersion/hw_version")
+        elif str(actual_hw) != str(expected["hw_version"]):
+            mismatches.append(f"slot {slot_id} HW version: expected {expected['hw_version']!r}, got {actual_hw!r}")
     return mismatches
 
 
@@ -425,6 +457,24 @@ def _assert_port_fields(item, env_config):
         {"DevName": dut.device_name, "IPAddress": dut.device_ip, "SlotID": dut.slot_id, "PortID": dut.port_id},
         "Port",
     )
+    checks = (
+        lambda: _assert_port_type(item, env_config),
+        lambda: _assert_any_field(item, ("portAdminState", "AdminState", "adminState"), EXPECTED_ENABLED_STATE, "Port"),
+        lambda: _assert_any_field(
+            item,
+            ("portOperationStatus", "OperationStatus", "operationStatus"),
+            EXPECTED_PORT_UP_OPERATION_STATE,
+            "Port",
+        ),
+        lambda: _assert_optional_port_speed(item, env_config),
+    )
+    mismatches = []
+    for check in checks:
+        try:
+            check()
+        except AssertionError as error:
+            mismatches.append(str(error))
+    assert not mismatches, f"Port inventory mismatches: {'; '.join(mismatches)}"
 
 
 def _assert_ont_fields(item, env_config):
@@ -438,6 +488,75 @@ def _assert_ont_fields(item, env_config):
     _assert_any_field(item, ("password",), dut.ont_password, "ONT")
     _assert_any_field(item, ("templateName", "ontTemplate"), dut.ont_template, "ONT")
     _assert_any_field(item, ("description", "Desc"), dut.ont_description, "ONT")
+    _assert_any_field(item, ("model", "ONTModel", "OntModel"), _expected_ont_model(env_config), "ONT")
+    _assert_active_ont_fw_image(item, env_config)
+
+
+def _expected_controller_fw_version(env_config) -> str:
+    controller = env_config.hardware.controller_card_name(env_config.dut.node_key, env_config.node_target)
+    if not controller:
+        return ""
+    resolved = env_config.hardware.resolve_card(env_config.node_target, controller)
+    if resolved is None:
+        return ""
+    return str(resolved[2].get("fw_version", ""))
+
+
+def _expected_ont_model(env_config) -> str:
+    ont = env_config.node_target.get("ont", {})
+    return str(ont.get("model") or "")
+
+
+def _assert_port_type(item, env_config) -> None:
+    expected_type = _expected_port_value(env_config, "port_type")
+    if not expected_type:
+        return
+    actual_value = _first_present_value(item, ("PortType", "portType", "type", "PortTypeName"))
+    assert actual_value is not None, f"Port missing one of PortType/portType/type/PortTypeName: {item!r}"
+    expected_normalized = str(expected_type).strip().lower()
+    actual_normalized = str(actual_value).strip().lower()
+    allowed = PORT_TYPE_ALIASES.get(expected_normalized, {expected_normalized})
+    assert actual_normalized in allowed, (
+        f"Port type mismatch: expected {expected_type!r} ({sorted(allowed)}), got {actual_value!r}. Full data: {item!r}"
+    )
+
+
+def _assert_optional_port_speed(item, env_config) -> None:
+    expected_speed = _expected_port_value(env_config, "port_speed")
+    if not expected_speed:
+        return
+    actual_speed = _first_present_value(item, ("PortSpeed", "portSpeed", "Speed", "speed"))
+    assert actual_speed is not None, f"Port missing one of PortSpeed/portSpeed/Speed/speed: {item!r}"
+    assert str(actual_speed).lower() == str(expected_speed).lower(), (
+        f"Port speed mismatch: expected {expected_speed!r}, got {actual_speed!r}. Full data: {item!r}"
+    )
+
+
+def _expected_port_value(env_config, field: str) -> str:
+    card = env_config.node_target.get("cards", {}).get(env_config.node_target.get("pon_card"), {})
+    ports = card.get("ports", {}) if isinstance(card, dict) else {}
+    for port in ports.values():
+        if isinstance(port, dict) and str(port.get("port_id")) == env_config.dut.port_id:
+            return str(port.get(field, ""))
+    return ""
+
+
+def _assert_active_ont_fw_image(item, env_config) -> None:
+    expected = str(env_config.node_target.get("ont", {}).get("fw_image") or "")
+    if not expected:
+        return
+    actual = _active_ont_fw_image(item)
+    assert actual is not None, f"ONT missing active FW image fields versionA/versionB/activeVersion: {item!r}"
+    assert str(actual) == expected, f"ONT active FW image mismatch: expected {expected!r}, got {actual!r}. Full data: {item!r}"
+
+
+def _active_ont_fw_image(item) -> str | None:
+    active = str(item.get("activeVersion", "")).strip().lower()
+    if active.endswith("1"):
+        return item.get("versionA")
+    if active.endswith("2"):
+        return item.get("versionB")
+    return item.get("activeFwVersion") or item.get("fw_image") or item.get("version")
 
 
 def _assert_fields(actual, expected, label):

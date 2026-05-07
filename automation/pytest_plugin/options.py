@@ -27,6 +27,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
     parser.addoption(
+        "--skip-dut-preflight",
+        action="store_true",
+        default=False,
+        help="Do not pre-check DUT readiness before collecting DUT-dependent API tests.",
+    )
+    parser.addoption(
         "--archive-allure",
         action="store_true",
         default=False,

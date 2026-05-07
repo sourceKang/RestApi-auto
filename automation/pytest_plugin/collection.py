@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from automation.registry.legacy import RAD_SUMMARY_CASES
+from automation.pytest_plugin.preflight import skip_unready_dut_items
 from utils.reporting import register_node_case, register_permission_role
 
 
@@ -18,6 +19,7 @@ for case in RAD_SUMMARY_CASES:
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     run_auth_matrix = config.getoption("--auth-matrix")
+    skip_unready_dut_items(config, items)
     if not config.getoption("--run-remote"):
         skip_remote = pytest.mark.skip(reason="remote console tests require --run-remote")
         for item in items:

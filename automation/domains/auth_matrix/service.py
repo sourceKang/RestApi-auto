@@ -4,7 +4,7 @@ import copy
 import json
 from uuid import uuid4
 
-from cases.neox_legacy import profile_definition_by_name
+from cases.case_catalog import profile_definition_by_name
 from cases.payloads import ge_service_payload, ge_service_modified_payload, ont_service_payload, ont_service_modified_payload
 from utils.allure_helpers import allure_step
 from utils.assertions import assert_api_failure, assert_api_success

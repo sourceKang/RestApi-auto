@@ -27,7 +27,7 @@ def test_attach_case_id_sets_allure_title_like_txt_report(monkeypatch):
     assert titles == ["[EMS1-6643][test_get_device_all]"]
 
 
-def test_attach_legacy_case_sets_multi_id_allure_title(monkeypatch):
+def test_attach_case_metadata_sets_multi_id_allure_title(monkeypatch):
     titles = []
 
     fake_allure = SimpleNamespace(
@@ -39,10 +39,10 @@ def test_attach_legacy_case_sets_multi_id_allure_title(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "allure", fake_allure)
 
-    case_metadata.attach_legacy_case(
+    case_metadata.attach_case_metadata(
         {
             "case_ids": ["EMS1-6666", "EMS1-6647"],
-            "legacy_name": "test_ont_service_workflow",
+            "name": "test_ont_service_workflow",
         }
     )
 

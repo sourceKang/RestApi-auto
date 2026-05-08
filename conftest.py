@@ -22,6 +22,7 @@ from automation.pytest_plugin.fixtures import (
     readonly_session,
     readwrite_session,
     run_context,
+    services,
     session_manager,
     user_session_service,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "readonly_session",
     "readwrite_session",
     "run_context",
+    "services",
     "session_manager",
     "user_session_service",
 ]

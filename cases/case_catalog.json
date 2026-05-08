@@ -1,4 +1,4 @@
-{
+﻿{
   "source_file": "D:\\AScript\\PyTest\\EMS\\web_ems\\test_rest_api_neox.py",
   "generated_from": "test_rest_api_neox.py text extraction; old file is not imported",
   "test_case_count": 169,
@@ -3146,7 +3146,7 @@
   },
   "test_cases": [
     {
-      "legacy_name": "test_get_sessionid",
+      "name": "test_get_sessionid",
       "source_line": 3415,
       "case_ids": [
         "EMS1-6640"
@@ -3162,7 +3162,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_delete_sessionid",
+      "name": "test_delete_sessionid",
       "source_line": 3428,
       "case_ids": [
         "EMS1-6651"
@@ -3179,7 +3179,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_remote_console",
+      "name": "test_post_remote_console",
       "source_line": 3441,
       "case_ids": [
         "EMS1-6652"
@@ -3201,7 +3201,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_active_alarm",
+      "name": "test_get_active_alarm",
       "source_line": 3475,
       "case_ids": [
         "EMS1-6641"
@@ -3226,7 +3226,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_active_alarm_by_id",
+      "name": "test_get_active_alarm_by_id",
       "source_line": 3510,
       "case_ids": [
         "EMS1-6654"
@@ -3249,7 +3249,7 @@
       ]
     },
     {
-      "legacy_name": "test_patch_active_alarm_by_id",
+      "name": "test_patch_active_alarm_by_id",
       "source_line": 3541,
       "case_ids": [
         "EMS1-6658"
@@ -3270,7 +3270,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_active_alarm_by_id",
+      "name": "test_delete_active_alarm_by_id",
       "source_line": 3572,
       "case_ids": [
         "EMS1-6659"
@@ -3295,7 +3295,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_history_alarm",
+      "name": "test_get_history_alarm",
       "source_line": 3617,
       "case_ids": [
         "EMS1-6642"
@@ -3321,7 +3321,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_history_alarm_by_id",
+      "name": "test_get_history_alarm_by_id",
       "source_line": 3658,
       "case_ids": [
         "EMS1-6670"
@@ -3345,7 +3345,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_history_alarm_by_id",
+      "name": "test_delete_history_alarm_by_id",
       "source_line": 3692,
       "case_ids": [
         "EMS1-6674"
@@ -3370,7 +3370,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_device_all",
+      "name": "test_get_device_all",
       "source_line": 3736,
       "case_ids": [
         "EMS1-6643"
@@ -3395,7 +3395,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_device_name",
+      "name": "test_get_device_name",
       "source_line": 3767,
       "case_ids": [
         "EMS1-6679"
@@ -3421,7 +3421,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_slot_all",
+      "name": "test_get_slot_all",
       "source_line": 3802,
       "case_ids": [
         "EMS1-6644"
@@ -3446,7 +3446,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_slot_by_devicename",
+      "name": "test_get_slot_by_devicename",
       "source_line": 3834,
       "case_ids": [
         "EMS1-6680"
@@ -3466,7 +3466,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_slot_by_id",
+      "name": "test_get_slot_by_id",
       "source_line": 3862,
       "case_ids": [
         "EMS1-6681"
@@ -3493,7 +3493,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_port_by_devicename",
+      "name": "test_get_port_by_devicename",
       "source_line": 3894,
       "case_ids": [
         "EMS1-6682"
@@ -3514,7 +3514,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_port_by_slot_id",
+      "name": "test_get_port_by_slot_id",
       "source_line": 3921,
       "case_ids": [
         "EMS1-6683"
@@ -3540,7 +3540,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_port_by_port_id",
+      "name": "test_get_port_by_port_id",
       "source_line": 3951,
       "case_ids": [
         "EMS1-6684"
@@ -3566,7 +3566,7 @@
       ]
     },
     {
-      "legacy_name": "test_prepare_for_get_ont_",
+      "name": "test_prepare_for_get_ont_",
       "source_line": 3980,
       "case_ids": [],
       "markers": [],
@@ -3604,7 +3604,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_sn",
+      "name": "test_get_ont_by_sn",
       "source_line": 4078,
       "case_ids": [
         "EMS1-6671"
@@ -3635,7 +3635,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_description",
+      "name": "test_get_ont_by_description",
       "source_line": 4111,
       "case_ids": [
         "EMS1-6673"
@@ -3666,7 +3666,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_devicename",
+      "name": "test_get_ont_by_devicename",
       "source_line": 4155,
       "case_ids": [
         "EMS1-6675"
@@ -3698,7 +3698,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_slot_id",
+      "name": "test_get_ont_by_slot_id",
       "source_line": 4203,
       "case_ids": [
         "EMS1-6676"
@@ -3730,7 +3730,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_port_id",
+      "name": "test_get_ont_by_port_id",
       "source_line": 4251,
       "case_ids": [
         "EMS1-6677"
@@ -3762,7 +3762,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_by_sn_id",
+      "name": "test_get_ont_by_sn_id",
       "source_line": 4302,
       "case_ids": [
         "EMS1-6678"
@@ -3794,7 +3794,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_ont_service_by_sn",
+      "name": "test_post_ont_service_by_sn",
       "source_line": 4342,
       "case_ids": [
         "EMS1-6666"
@@ -3828,7 +3828,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_service",
+      "name": "test_get_ont_service",
       "source_line": 4424,
       "case_ids": [
         "EMS1-6647"
@@ -3862,7 +3862,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ont_service_by_sn",
+      "name": "test_get_ont_service_by_sn",
       "source_line": 4616,
       "case_ids": [
         "EMS1-6665"
@@ -3890,7 +3890,7 @@
       ]
     },
     {
-      "legacy_name": "test_put_ont_service_by_sn",
+      "name": "test_put_ont_service_by_sn",
       "source_line": 4647,
       "case_ids": [
         "EMS1-6667"
@@ -3918,7 +3918,7 @@
       ]
     },
     {
-      "legacy_name": "test_patch_ont_service_by_sn",
+      "name": "test_patch_ont_service_by_sn",
       "source_line": 4688,
       "case_ids": [
         "EMS1-6668"
@@ -3941,7 +3941,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_ont_service_by_sn",
+      "name": "test_delete_ont_service_by_sn",
       "source_line": 4709,
       "case_ids": [
         "EMS1-6669"
@@ -3972,7 +3972,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_ont_service_profiles",
+      "name": "test_delete_ont_service_profiles",
       "source_line": 4751,
       "case_ids": [],
       "markers": [
@@ -3996,7 +3996,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_ge_service_by_port",
+      "name": "test_post_ge_service_by_port",
       "source_line": 4771,
       "case_ids": [
         "EMS1-6661"
@@ -4026,7 +4026,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ge_service",
+      "name": "test_get_ge_service",
       "source_line": 4823,
       "case_ids": [
         "EMS1-6648"
@@ -4057,7 +4057,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_ge_service_by_port",
+      "name": "test_get_ge_service_by_port",
       "source_line": 4874,
       "case_ids": [
         "EMS1-6660"
@@ -4086,7 +4086,7 @@
       ]
     },
     {
-      "legacy_name": "test_put_ge_service_by_serviceid",
+      "name": "test_put_ge_service_by_serviceid",
       "source_line": 4914,
       "case_ids": [
         "EMS1-6662"
@@ -4119,7 +4119,7 @@
       ]
     },
     {
-      "legacy_name": "test_patch_ge_service_by_serviceid",
+      "name": "test_patch_ge_service_by_serviceid",
       "source_line": 4968,
       "case_ids": [
         "EMS1-6663"
@@ -4150,7 +4150,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_ge_service_by_serviceid",
+      "name": "test_delete_ge_service_by_serviceid",
       "source_line": 5029,
       "case_ids": [
         "EMS1-6664"
@@ -4186,7 +4186,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_igmpgroupprivilegeprofile",
+      "name": "test_post_profile_by_igmpgroupprivilegeprofile",
       "source_line": 5120,
       "case_ids": [
         "EMS1-6848"
@@ -4210,7 +4210,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_igmpgroupprivilegeprofile",
+      "name": "test_get_profile_by_igmpgroupprivilegeprofile",
       "source_line": 5145,
       "case_ids": [
         "EMS1-6847"
@@ -4230,7 +4230,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_igmpgroupprivilegeprofile",
+      "name": "test_patch_profile_by_igmpgroupprivilegeprofile",
       "source_line": 5162,
       "case_ids": [
         "EMS1-6849"
@@ -4256,7 +4256,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_igmpgroupprivilegeprofile",
+      "name": "test_get_profiles_by_igmpgroupprivilegeprofile",
       "source_line": 5201,
       "case_ids": [
         "EMS1-6846"
@@ -4279,7 +4279,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_igmpgroupprivilegeprofile",
+      "name": "test_delete_profile_by_igmpgroupprivilegeprofile",
       "source_line": 5228,
       "case_ids": [
         "EMS1-6850"
@@ -4306,7 +4306,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_igmpgroupprivilegeprofile_invalid_params",
+      "name": "test_post_profile_by_igmpgroupprivilegeprofile_invalid_params",
       "source_line": 5267,
       "case_ids": [
         "EMS1-6921"
@@ -4325,7 +4325,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_igmpgroupprivilegeprofile_invalid_params",
+      "name": "test_patch_profile_by_igmpgroupprivilegeprofile_invalid_params",
       "source_line": 5279,
       "case_ids": [
         "EMS1-6922"
@@ -4344,7 +4344,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ratelimitprofile",
+      "name": "test_post_profile_by_ratelimitprofile",
       "source_line": 5295,
       "case_ids": [
         "EMS1-6853"
@@ -4369,7 +4369,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ratelimitprofile",
+      "name": "test_get_profile_by_ratelimitprofile",
       "source_line": 5324,
       "case_ids": [
         "EMS1-6852"
@@ -4389,7 +4389,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ratelimitprofile",
+      "name": "test_patch_profile_by_ratelimitprofile",
       "source_line": 5342,
       "case_ids": [
         "EMS1-6854"
@@ -4415,7 +4415,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ratelimitprofile",
+      "name": "test_get_profiles_by_ratelimitprofile",
       "source_line": 5381,
       "case_ids": [
         "EMS1-6851"
@@ -4438,7 +4438,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ratelimitprofile",
+      "name": "test_delete_profile_by_ratelimitprofile",
       "source_line": 5409,
       "case_ids": [
         "EMS1-6855"
@@ -4465,7 +4465,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ratelimitprofile_invalid_params",
+      "name": "test_post_profile_by_ratelimitprofile_invalid_params",
       "source_line": 5449,
       "case_ids": [
         "EMS1-6923"
@@ -4484,7 +4484,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ratelimitprofile_invalid_params",
+      "name": "test_patch_profile_by_ratelimitprofile_invalid_params",
       "source_line": 5461,
       "case_ids": [
         "EMS1-6924"
@@ -4503,7 +4503,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_shapingprofile",
+      "name": "test_post_profile_by_shapingprofile",
       "source_line": 5476,
       "case_ids": [
         "EMS1-6858"
@@ -4528,7 +4528,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_shapingprofile",
+      "name": "test_get_profile_by_shapingprofile",
       "source_line": 5506,
       "case_ids": [
         "EMS1-6857"
@@ -4548,7 +4548,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_shapingprofile",
+      "name": "test_patch_profile_by_shapingprofile",
       "source_line": 5524,
       "case_ids": [
         "EMS1-6859"
@@ -4574,7 +4574,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_shapingprofile",
+      "name": "test_get_profiles_by_shapingprofile",
       "source_line": 5564,
       "case_ids": [
         "EMS1-6856"
@@ -4597,7 +4597,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_shapingprofile",
+      "name": "test_delete_profile_by_shapingprofile",
       "source_line": 5594,
       "case_ids": [
         "EMS1-6860"
@@ -4624,7 +4624,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_shapingprofile_invalid_params",
+      "name": "test_post_profile_by_shapingprofile_invalid_params",
       "source_line": 5632,
       "case_ids": [
         "EMS1-6925"
@@ -4643,7 +4643,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_shapingprofile_invalid_params",
+      "name": "test_patch_profile_by_shapingprofile_invalid_params",
       "source_line": 5644,
       "case_ids": [
         "EMS1-6926"
@@ -4662,7 +4662,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_weightprofile",
+      "name": "test_post_profile_by_weightprofile",
       "source_line": 5660,
       "case_ids": [
         "EMS1-6863"
@@ -4687,7 +4687,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_weightprofile",
+      "name": "test_get_profile_by_weightprofile",
       "source_line": 5690,
       "case_ids": [
         "EMS1-6862"
@@ -4707,7 +4707,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_weightprofile",
+      "name": "test_patch_profile_by_weightprofile",
       "source_line": 5709,
       "case_ids": [
         "EMS1-6864"
@@ -4733,7 +4733,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_weightprofile",
+      "name": "test_get_profiles_by_weightprofile",
       "source_line": 5748,
       "case_ids": [
         "EMS1-6861"
@@ -4756,7 +4756,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_weightprofile",
+      "name": "test_delete_profile_by_weightprofile",
       "source_line": 5776,
       "case_ids": [
         "EMS1-6865"
@@ -4783,7 +4783,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_weightprofile_invalid_params",
+      "name": "test_post_profile_by_weightprofile_invalid_params",
       "source_line": 5813,
       "case_ids": [
         "EMS1-6927"
@@ -4802,7 +4802,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_weightprofile_invalid_params",
+      "name": "test_patch_profile_by_weightprofile_invalid_params",
       "source_line": 5825,
       "case_ids": [
         "EMS1-6928"
@@ -4821,7 +4821,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_getemplateprofile",
+      "name": "test_post_profile_by_getemplateprofile",
       "source_line": 5839,
       "case_ids": [
         "EMS1-6888"
@@ -4850,7 +4850,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_getemplateprofile",
+      "name": "test_get_profile_by_getemplateprofile",
       "source_line": 5875,
       "case_ids": [
         "EMS1-6887"
@@ -4870,7 +4870,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_getemplateprofile",
+      "name": "test_patch_profile_by_getemplateprofile",
       "source_line": 5894,
       "case_ids": [
         "EMS1-6889"
@@ -4896,7 +4896,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_getemplateprofile",
+      "name": "test_get_profiles_by_getemplateprofile",
       "source_line": 5935,
       "case_ids": [
         "EMS1-6886"
@@ -4919,7 +4919,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profiles_by_getemplateprofile",
+      "name": "test_delete_profiles_by_getemplateprofile",
       "source_line": 5964,
       "case_ids": [
         "EMS1-6890"
@@ -4953,7 +4953,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_getemplateprofile_invalid_params",
+      "name": "test_post_profile_by_getemplateprofile_invalid_params",
       "source_line": 6014,
       "case_ids": [
         "EMS1-6929"
@@ -4972,7 +4972,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_getemplateprofile_invalid_params",
+      "name": "test_patch_profile_by_getemplateprofile_invalid_params",
       "source_line": 6026,
       "case_ids": [
         "EMS1-6930"
@@ -4991,7 +4991,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontalarmprofile",
+      "name": "test_post_profile_by_ontalarmprofile",
       "source_line": 6041,
       "case_ids": [
         "EMS1-6788"
@@ -5015,7 +5015,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontalarmprofile",
+      "name": "test_get_profile_by_ontalarmprofile",
       "source_line": 6073,
       "case_ids": [
         "EMS1-6787"
@@ -5035,7 +5035,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontalarmprofile",
+      "name": "test_patch_profile_by_ontalarmprofile",
       "source_line": 6092,
       "case_ids": [
         "EMS1-6789"
@@ -5061,7 +5061,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontalarmprofile",
+      "name": "test_get_profiles_by_ontalarmprofile",
       "source_line": 6129,
       "case_ids": [
         "EMS1-6786"
@@ -5084,7 +5084,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontalarmprofile",
+      "name": "test_delete_profile_by_ontalarmprofile",
       "source_line": 6162,
       "case_ids": [
         "EMS1-6790"
@@ -5111,7 +5111,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontalarmprofile_invalid_params",
+      "name": "test_post_profile_by_ontalarmprofile_invalid_params",
       "source_line": 6204,
       "case_ids": [
         "EMS1-6897"
@@ -5130,7 +5130,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontalarmprofile_invalid_params",
+      "name": "test_patch_profile_by_ontalarmprofile_invalid_params",
       "source_line": 6216,
       "case_ids": [
         "EMS1-6898"
@@ -5149,7 +5149,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profiles_by_ontaclprofile",
+      "name": "test_post_profiles_by_ontaclprofile",
       "source_line": 6229,
       "case_ids": [],
       "markers": [
@@ -5167,7 +5167,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontaclprofile",
+      "name": "test_post_profile_by_ontaclprofile",
       "source_line": 6255,
       "case_ids": [
         "EMS1-6793"
@@ -5191,7 +5191,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontaclprofile",
+      "name": "test_get_profile_by_ontaclprofile",
       "source_line": 6286,
       "case_ids": [
         "EMS1-6792"
@@ -5211,7 +5211,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontaclprofile",
+      "name": "test_patch_profile_by_ontaclprofile",
       "source_line": 6305,
       "case_ids": [
         "EMS1-6794"
@@ -5237,7 +5237,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontaclprofile",
+      "name": "test_get_profiles_by_ontaclprofile",
       "source_line": 6343,
       "case_ids": [
         "EMS1-6791"
@@ -5260,7 +5260,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontaclprofile",
+      "name": "test_delete_profile_by_ontaclprofile",
       "source_line": 6375,
       "case_ids": [
         "EMS1-6795"
@@ -5287,7 +5287,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontaclprofile_invalid_params",
+      "name": "test_post_profile_by_ontaclprofile_invalid_params",
       "source_line": 6411,
       "case_ids": [
         "EMS1-6899"
@@ -5306,7 +5306,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontaclprofile_invalid_params",
+      "name": "test_patch_profile_by_ontaclprofile_invalid_params",
       "source_line": 6423,
       "case_ids": [
         "EMS1-6900"
@@ -5325,7 +5325,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipdialplanprofile",
+      "name": "test_post_profile_by_ontvoipdialplanprofile",
       "source_line": 6437,
       "case_ids": [
         "EMS1-6798"
@@ -5349,7 +5349,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontvoipdialplanprofile",
+      "name": "test_get_profile_by_ontvoipdialplanprofile",
       "source_line": 6468,
       "case_ids": [
         "EMS1-6797"
@@ -5369,7 +5369,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipdialplanprofile",
+      "name": "test_patch_profile_by_ontvoipdialplanprofile",
       "source_line": 6486,
       "case_ids": [
         "EMS1-6799"
@@ -5395,7 +5395,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontvoipdialplanprofile",
+      "name": "test_get_profiles_by_ontvoipdialplanprofile",
       "source_line": 6524,
       "case_ids": [
         "EMS1-6796"
@@ -5418,7 +5418,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontvoipdialplanprofile",
+      "name": "test_delete_profile_by_ontvoipdialplanprofile",
       "source_line": 6550,
       "case_ids": [
         "EMS1-6800"
@@ -5445,7 +5445,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipdialplanprofile_invalid_params",
+      "name": "test_post_profile_by_ontvoipdialplanprofile_invalid_params",
       "source_line": 6587,
       "case_ids": [
         "EMS1-6901"
@@ -5464,7 +5464,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipdialplanprofile_invalid_params",
+      "name": "test_patch_profile_by_ontvoipdialplanprofile_invalid_params",
       "source_line": 6599,
       "case_ids": [
         "EMS1-6902"
@@ -5483,7 +5483,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipcommonprofile",
+      "name": "test_post_profile_by_ontvoipcommonprofile",
       "source_line": 6614,
       "case_ids": [
         "EMS1-6801"
@@ -5507,7 +5507,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontvoipcommonprofile",
+      "name": "test_get_profile_by_ontvoipcommonprofile",
       "source_line": 6645,
       "case_ids": [
         "EMS1-6802"
@@ -5527,7 +5527,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipcommonprofile",
+      "name": "test_patch_profile_by_ontvoipcommonprofile",
       "source_line": 6663,
       "case_ids": [
         "EMS1-6803"
@@ -5553,7 +5553,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontvoipcommonprofile",
+      "name": "test_get_profiles_by_ontvoipcommonprofile",
       "source_line": 6701,
       "case_ids": [
         "EMS1-6804"
@@ -5576,7 +5576,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontvoipcommonprofile",
+      "name": "test_delete_profile_by_ontvoipcommonprofile",
       "source_line": 6728,
       "case_ids": [
         "EMS1-6805"
@@ -5603,7 +5603,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipcommonprofile_invalid_params",
+      "name": "test_post_profile_by_ontvoipcommonprofile_invalid_params",
       "source_line": 6764,
       "case_ids": [
         "EMS1-6903"
@@ -5622,7 +5622,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipcommonprofile_invalid_params",
+      "name": "test_patch_profile_by_ontvoipcommonprofile_invalid_params",
       "source_line": 6776,
       "case_ids": [
         "EMS1-6904"
@@ -5641,7 +5641,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipsipprofile",
+      "name": "test_post_profile_by_ontvoipsipprofile",
       "source_line": 6791,
       "case_ids": [
         "EMS1-6806"
@@ -5665,7 +5665,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontvoipsipprofile",
+      "name": "test_get_profile_by_ontvoipsipprofile",
       "source_line": 6814,
       "case_ids": [
         "EMS1-6807"
@@ -5685,7 +5685,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipsipprofile",
+      "name": "test_patch_profile_by_ontvoipsipprofile",
       "source_line": 6832,
       "case_ids": [
         "EMS1-6808"
@@ -5711,7 +5711,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontvoipsipprofile",
+      "name": "test_get_profiles_by_ontvoipsipprofile",
       "source_line": 6870,
       "case_ids": [
         "EMS1-6809"
@@ -5734,7 +5734,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontvoipsipprofile",
+      "name": "test_delete_profile_by_ontvoipsipprofile",
       "source_line": 6896,
       "case_ids": [
         "EMS1-6810"
@@ -5761,7 +5761,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontvoipsipprofile_invalid_params",
+      "name": "test_post_profile_by_ontvoipsipprofile_invalid_params",
       "source_line": 6933,
       "case_ids": [
         "EMS1-6905"
@@ -5780,7 +5780,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontvoipsipprofile_invalid_params",
+      "name": "test_patch_profile_by_ontvoipsipprofile_invalid_params",
       "source_line": 6943,
       "case_ids": [
         "EMS1-6906"
@@ -5799,7 +5799,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontsecurityprofile",
+      "name": "test_post_profile_by_ontsecurityprofile",
       "source_line": 6955,
       "case_ids": [
         "EMS1-6818"
@@ -5823,7 +5823,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontsecurityprofile",
+      "name": "test_get_profile_by_ontsecurityprofile",
       "source_line": 6988,
       "case_ids": [
         "EMS1-6817"
@@ -5843,7 +5843,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontsecurityprofile",
+      "name": "test_patch_profile_by_ontsecurityprofile",
       "source_line": 7006,
       "case_ids": [
         "EMS1-6819"
@@ -5869,7 +5869,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontsecurityprofile",
+      "name": "test_get_profiles_by_ontsecurityprofile",
       "source_line": 7045,
       "case_ids": [
         "EMS1-6816"
@@ -5892,7 +5892,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontsecurityprofile",
+      "name": "test_delete_profile_by_ontsecurityprofile",
       "source_line": 7071,
       "case_ids": [
         "EMS1-6820"
@@ -5919,7 +5919,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontsecurityprofile_invalid_params",
+      "name": "test_post_profile_by_ontsecurityprofile_invalid_params",
       "source_line": 7107,
       "case_ids": [
         "EMS1-6909"
@@ -5938,7 +5938,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontsecurityprofile_invalid_params",
+      "name": "test_patch_profile_by_ontsecurityprofile_invalid_params",
       "source_line": 7119,
       "case_ids": [
         "EMS1-6910"
@@ -5957,7 +5957,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontuniprofile",
+      "name": "test_post_profile_by_ontuniprofile",
       "source_line": 7133,
       "case_ids": [
         "EMS1-6823"
@@ -5981,7 +5981,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontuniprofile",
+      "name": "test_get_profile_by_ontuniprofile",
       "source_line": 7164,
       "case_ids": [
         "EMS1-6822"
@@ -6001,7 +6001,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontuniprofile",
+      "name": "test_patch_profile_by_ontuniprofile",
       "source_line": 7181,
       "case_ids": [
         "EMS1-6824"
@@ -6027,7 +6027,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontuniprofile",
+      "name": "test_get_profiles_by_ontuniprofile",
       "source_line": 7219,
       "case_ids": [
         "EMS1-6821"
@@ -6050,7 +6050,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontuniprofile",
+      "name": "test_delete_profile_by_ontuniprofile",
       "source_line": 7247,
       "case_ids": [
         "EMS1-6825"
@@ -6077,7 +6077,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontunitprofile_invalid_params",
+      "name": "test_post_profile_by_ontunitprofile_invalid_params",
       "source_line": 7287,
       "case_ids": [
         "EMS1-6911"
@@ -6096,7 +6096,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontunitprofile_invalid_params",
+      "name": "test_patch_profile_by_ontunitprofile_invalid_params",
       "source_line": 7299,
       "case_ids": [
         "EMS1-6912"
@@ -6115,7 +6115,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontmulticastprofile",
+      "name": "test_post_profile_by_ontmulticastprofile",
       "source_line": 7314,
       "case_ids": [
         "EMS1-6828"
@@ -6140,7 +6140,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_ontmulticastprofile",
+      "name": "test_get_profile_by_ontmulticastprofile",
       "source_line": 7347,
       "case_ids": [
         "EMS1-6827"
@@ -6160,7 +6160,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontmulticastprofile",
+      "name": "test_patch_profile_by_ontmulticastprofile",
       "source_line": 7365,
       "case_ids": [
         "EMS1-6829"
@@ -6186,7 +6186,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontmulticastprofile",
+      "name": "test_get_profiles_by_ontmulticastprofile",
       "source_line": 7405,
       "case_ids": [
         "EMS1-6826"
@@ -6209,7 +6209,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontmulticastprofile",
+      "name": "test_delete_profile_by_ontmulticastprofile",
       "source_line": 7432,
       "case_ids": [
         "EMS1-6830"
@@ -6236,7 +6236,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontmulticastprofile_invalid_params",
+      "name": "test_post_profile_by_ontmulticastprofile_invalid_params",
       "source_line": 7471,
       "case_ids": [
         "EMS1-6913"
@@ -6255,7 +6255,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontmulticastprofile_invalid_params",
+      "name": "test_patch_profile_by_ontmulticastprofile_invalid_params",
       "source_line": 7483,
       "case_ids": [
         "EMS1-6914"
@@ -6274,7 +6274,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontbandwidthprofile",
+      "name": "test_post_profile_by_ontbandwidthprofile",
       "source_line": 7499,
       "case_ids": [
         "EMS1-6833"
@@ -6294,7 +6294,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_profile_by_ontbandwidthprofile",
+      "name": "test_get_profile_by_ontbandwidthprofile",
       "source_line": 7529,
       "case_ids": [
         "EMS1-6832"
@@ -6314,7 +6314,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontbandwidthprofile",
+      "name": "test_patch_profile_by_ontbandwidthprofile",
       "source_line": 7549,
       "case_ids": [
         "EMS1-6834"
@@ -6340,7 +6340,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontbandwidthprofile",
+      "name": "test_get_profiles_by_ontbandwidthprofile",
       "source_line": 7586,
       "case_ids": [
         "EMS1-6831"
@@ -6363,7 +6363,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontbandwidthprofile",
+      "name": "test_delete_profile_by_ontbandwidthprofile",
       "source_line": 7615,
       "case_ids": [
         "EMS1-6835"
@@ -6390,7 +6390,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontbandwidthprofile_invalid_params",
+      "name": "test_post_profile_by_ontbandwidthprofile_invalid_params",
       "source_line": 7655,
       "case_ids": [
         "EMS1-6915"
@@ -6409,7 +6409,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontbandwidthprofile_invalid_params",
+      "name": "test_patch_profile_by_ontbandwidthprofile_invalid_params",
       "source_line": 7665,
       "case_ids": [
         "EMS1-6916"
@@ -6428,7 +6428,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontserviceprofile",
+      "name": "test_post_profile_by_ontserviceprofile",
       "source_line": 7679,
       "case_ids": [
         "EMS1-6838"
@@ -6448,7 +6448,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_profile_by_ontserviceprofile",
+      "name": "test_get_profile_by_ontserviceprofile",
       "source_line": 7704,
       "case_ids": [
         "EMS1-6837"
@@ -6468,7 +6468,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontserviceprofile",
+      "name": "test_patch_profile_by_ontserviceprofile",
       "source_line": 7722,
       "case_ids": [
         "EMS1-6839"
@@ -6494,7 +6494,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontserviceprofile",
+      "name": "test_get_profiles_by_ontserviceprofile",
       "source_line": 7763,
       "case_ids": [
         "EMS1-6836"
@@ -6517,7 +6517,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontserviceprofile",
+      "name": "test_delete_profile_by_ontserviceprofile",
       "source_line": 7788,
       "case_ids": [
         "EMS1-6840"
@@ -6544,7 +6544,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontserviceprofile_invalid_params",
+      "name": "test_post_profile_by_ontserviceprofile_invalid_params",
       "source_line": 7871,
       "case_ids": [
         "EMS1-6917"
@@ -6563,7 +6563,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontserviceprofile_invalid_params",
+      "name": "test_patch_profile_by_ontserviceprofile_invalid_params",
       "source_line": 7883,
       "case_ids": [
         "EMS1-6918"
@@ -6582,7 +6582,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_ontontprofile",
+      "name": "test_post_profile_by_ontontprofile",
       "source_line": 7899,
       "case_ids": [
         "EMS1-6813"
@@ -6603,7 +6603,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_profile_by_ontontprofile",
+      "name": "test_get_profile_by_ontontprofile",
       "source_line": 7934,
       "case_ids": [
         "EMS1-6812"
@@ -6623,7 +6623,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontontprofile",
+      "name": "test_patch_profile_by_ontontprofile",
       "source_line": 7955,
       "case_ids": [
         "EMS1-6814"
@@ -6649,7 +6649,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_ontontprofile",
+      "name": "test_get_profiles_by_ontontprofile",
       "source_line": 7998,
       "case_ids": [
         "EMS1-6811"
@@ -6672,7 +6672,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_ontontprofile",
+      "name": "test_delete_profile_by_ontontprofile",
       "source_line": 8024,
       "case_ids": [
         "EMS1-6815"
@@ -6699,7 +6699,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_ontontprofile_invalid_params",
+      "name": "test_post_profile_by_ontontprofile_invalid_params",
       "source_line": 8064,
       "case_ids": [
         "EMS1-6907"
@@ -6718,7 +6718,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_ontontprofile_invalid_params",
+      "name": "test_patch_profile_by_ontontprofile_invalid_params",
       "source_line": 8076,
       "case_ids": [
         "EMS1-6908"
@@ -6737,7 +6737,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_post_profile_by_onttemplateprofile",
+      "name": "test_post_profile_by_onttemplateprofile",
       "source_line": 8092,
       "case_ids": [
         "EMS1-6843"
@@ -6762,7 +6762,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profile_by_onttemplateprofile",
+      "name": "test_get_profile_by_onttemplateprofile",
       "source_line": 8129,
       "case_ids": [
         "EMS1-6842"
@@ -6782,7 +6782,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_onttemplateprofile",
+      "name": "test_patch_profile_by_onttemplateprofile",
       "source_line": 8149,
       "case_ids": [
         "EMS1-6844"
@@ -6808,7 +6808,7 @@
       ]
     },
     {
-      "legacy_name": "test_get_profiles_by_onttemplateprofile",
+      "name": "test_get_profiles_by_onttemplateprofile",
       "source_line": 8187,
       "case_ids": [
         "EMS1-6841"
@@ -6831,7 +6831,7 @@
       ]
     },
     {
-      "legacy_name": "test_delete_profile_by_onttemplateprofile",
+      "name": "test_delete_profile_by_onttemplateprofile",
       "source_line": 8215,
       "case_ids": [
         "EMS1-6845"
@@ -6858,7 +6858,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_profile_by_onttemplateprofile_invalid_params",
+      "name": "test_post_profile_by_onttemplateprofile_invalid_params",
       "source_line": 8253,
       "case_ids": [
         "EMS1-6919"
@@ -6877,7 +6877,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_patch_profile_by_onttemplateprofile_invalid_params",
+      "name": "test_patch_profile_by_onttemplateprofile_invalid_params",
       "source_line": 8266,
       "case_ids": [
         "EMS1-6920"
@@ -6896,7 +6896,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_usersession_post_invalid_param_should_return_error",
+      "name": "test_usersession_post_invalid_param_should_return_error",
       "source_line": 8277,
       "case_ids": [
         "EMS1-7020"
@@ -6920,7 +6920,7 @@
       ]
     },
     {
-      "legacy_name": "test_usersession_delete_invalid_param_should_return_error",
+      "name": "test_usersession_delete_invalid_param_should_return_error",
       "source_line": 8308,
       "case_ids": [
         "EMS1-7021"
@@ -6941,7 +6941,7 @@
       ]
     },
     {
-      "legacy_name": "test_post_remote_console_invalid_param_should_return_error",
+      "name": "test_post_remote_console_invalid_param_should_return_error",
       "source_line": 8336,
       "case_ids": [
         "EMS1-7022"
@@ -6966,7 +6966,7 @@
       ]
     },
     {
-      "legacy_name": "test_ont_service_post_various_invalid_parameters_should_return_error",
+      "name": "test_ont_service_post_various_invalid_parameters_should_return_error",
       "source_line": 8428,
       "case_ids": [
         "EMS1-7023"
@@ -6996,7 +6996,7 @@
       ]
     },
     {
-      "legacy_name": "test_ge_service_post_various_invalid_parameters_should_return_error",
+      "name": "test_ge_service_post_various_invalid_parameters_should_return_error",
       "source_line": 8675,
       "case_ids": [
         "EMS1-7024"
@@ -7029,7 +7029,7 @@
       ]
     },
     {
-      "legacy_name": "test_active_alarm_various_invalid_parameters_should_return_error",
+      "name": "test_active_alarm_various_invalid_parameters_should_return_error",
       "source_line": 8888,
       "case_ids": [
         "EMS1-7029"
@@ -7049,7 +7049,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_history_alarm_various_invalid_parameters_should_return_error",
+      "name": "test_history_alarm_various_invalid_parameters_should_return_error",
       "source_line": 8934,
       "case_ids": [
         "EMS1-7030"
@@ -7069,7 +7069,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_get_device_name_with_invalid_parameters_should_return_error",
+      "name": "test_get_device_name_with_invalid_parameters_should_return_error",
       "source_line": 8986,
       "case_ids": [
         "EMS1-7031"
@@ -7088,7 +7088,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_slot_api_with_invalid_parameters_should_return_error",
+      "name": "test_slot_api_with_invalid_parameters_should_return_error",
       "source_line": 9033,
       "case_ids": [
         "EMS1-7032"
@@ -7107,7 +7107,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_port_api_with_invalid_parameters_should_return_error",
+      "name": "test_port_api_with_invalid_parameters_should_return_error",
       "source_line": 9102,
       "case_ids": [
         "EMS1-7033"
@@ -7126,7 +7126,7 @@
       "data_and_validation_snippets": []
     },
     {
-      "legacy_name": "test_ont_api_with_invalid_parameters_should_return_error",
+      "name": "test_ont_api_with_invalid_parameters_should_return_error",
       "source_line": 9189,
       "case_ids": [
         "EMS1-7034"

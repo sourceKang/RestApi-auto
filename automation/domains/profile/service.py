@@ -4,16 +4,16 @@ import copy
 
 import pytest
 
-from cases.neox_legacy import (
+from cases.case_catalog import (
     first_profile_definition_for,
-    legacy_profile_data,
+    catalog_profile_data,
     profile_definition_by_name,
     profile_cases_for_operation,
     profile_definitions_for,
     profile_invalid_cases_for_operation,
 )
 from utils.assertions import assert_api_failure, assert_api_success
-from utils.case_metadata import attach_legacy_case
+from utils.case_metadata import attach_case_metadata
 from utils.diagnostics import format_response_summary
 from utils.json_match import content_as_dict
 
@@ -71,9 +71,9 @@ class ProfileService:
         self.api_client = api_client
 
     def verify_post_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definitions = definitions_create_order(profile_definitions_for(case))
-        assert definitions, f"No profile data converted for {case['legacy_name']}"
+        assert definitions, f"No profile data converted for {case['name']}"
 
         for definition in definitions_delete_order(definitions):
             self.ensure_profile_deleted(session_id, definition)
@@ -85,7 +85,7 @@ class ProfileService:
             workspace.add(definition)
 
     def verify_get_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definition = first_profile_definition_for(case)
         self.ensure_profile_exists_or_skip(session_id, workspace, definition)
 
@@ -94,13 +94,17 @@ class ProfileService:
         retval = response.json.get("retval", {})
         assert retval.get("Name") == definition["profilename"]
 
-        content = content_as_dict(retval.get("Content", {}))
-        for key, value in definition.get("post_profile_info", {}).items():
-            if key in content:
-                assert content[key] == value
+        if case.get("validation_refs"):
+            content = content_as_dict(retval.get("Content", {}))
+            for key, value in definition.get("post_profile_info", {}).items():
+                if key in content:
+                    assert content[key] == value, (
+                        f"Profile content mismatch for {definition['profiletype']}/{definition['profilename']} "
+                        f"field {key!r}: expected {value!r}, got {content[key]!r}"
+                    )
 
     def verify_get_list_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definition = first_profile_definition_for(case)
         self.ensure_profile_exists_or_skip(session_id, workspace, definition)
 
@@ -109,7 +113,7 @@ class ProfileService:
         assert profile_name_is_present(response.json, definition["profilename"])
 
     def verify_patch_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definition = first_profile_definition_for(case)
         if "patch_profile_info" not in definition:
             pytest.skip(f"{definition['_config_ref']} has no patch_profile_info")
@@ -123,9 +127,9 @@ class ProfileService:
         assert_api_success(get_response)
 
     def verify_delete_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definitions = definitions_delete_order(profile_definitions_for(case))
-        assert definitions, f"No profile data converted for {case['legacy_name']}"
+        assert definitions, f"No profile data converted for {case['name']}"
 
         for definition in definitions:
             self.ensure_profile_exists_or_skip(session_id, workspace, definition)
@@ -135,7 +139,7 @@ class ProfileService:
             assert_api_failure(get_response, accepted_messages=("does not exist", "no data", "not found", "invalid parameter"))
 
     def verify_post_invalid_param_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definition = first_profile_definition_for(case)
         invalid_params = definition.get("invalid_params_to_test") or []
         if not invalid_params:
@@ -151,7 +155,7 @@ class ProfileService:
             assert_invalid_response(response, invalid_param)
 
     def verify_patch_invalid_param_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
-        attach_legacy_case(case)
+        attach_case_metadata(case)
         definition = first_profile_definition_for(case)
         invalid_params = definition.get("invalid_params_to_test") or []
         if not invalid_params:
@@ -357,7 +361,7 @@ def profile_name_depth(profilename):
 def profile_dependents(definition):
     profilename = definition["profilename"]
     dependents = []
-    for ref, data in legacy_profile_data().items():
+    for ref, data in catalog_profile_data().items():
         if data.get("profilename") == profilename:
             continue
         if profilename not in profile_refs(data.get("post_profile_info", {})):

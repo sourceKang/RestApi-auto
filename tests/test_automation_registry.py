@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from automation.registry import legacy
+from automation.registry import cases
 from cases.endpoint_cases import MUTATING_ENDPOINTS, READ_ENDPOINTS
 
 
@@ -11,12 +11,12 @@ def test_automated_registry_contains_all_endpoint_case_ids():
         if case.case_id
     }
 
-    assert endpoint_ids <= legacy.automated_case_ids()
+    assert endpoint_ids <= cases.automated_case_ids()
 
 
-def test_legacy_report_order_and_names_match_converted_legacy_registry():
-    names = legacy.legacy_case_name_by_id()
-    order = legacy.legacy_case_order()
+def test_report_order_and_names_match_case_catalog():
+    names = cases.case_name_by_id()
+    order = cases.case_order()
 
     assert names["EMS1-6640"] == "test_get_sessionid"
     assert names["EMS1-6643"] == "test_get_device_all"
@@ -24,8 +24,8 @@ def test_legacy_report_order_and_names_match_converted_legacy_registry():
 
 
 def test_summary_case_ids_are_registered_as_fixed_contracts():
-    assert legacy.permission_summary_specs() == (
+    assert cases.permission_summary_specs() == (
         ("EMS1-7109", "readonly", "readonly_permission_summary"),
         ("EMS1-7110", "noaccess", "noaccess_permission_summary"),
     )
-    assert {"EMS1-7056", "EMS1-7107", "EMS1-7108"} <= legacy.automated_case_ids()
+    assert {"EMS1-7056", "EMS1-7107", "EMS1-7108"} <= cases.automated_case_ids()

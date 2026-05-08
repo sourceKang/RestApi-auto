@@ -6,9 +6,9 @@ from utils.allure_helpers import attach_json
 from utils.reporting import register_case
 
 
-def attach_legacy_case(case: dict[str, Any]) -> None:
+def attach_case_metadata(case: dict[str, Any]) -> None:
     case_ids = case.get("case_ids") or []
-    name = case.get("legacy_name", "")
+    name = case.get("name", "")
     for case_id in case_ids:
         register_case(case_id, name)
     try:
@@ -17,17 +17,17 @@ def attach_legacy_case(case: dict[str, Any]) -> None:
         for case_id in case_ids:
             allure.dynamic.label("case_id", case_id)
             allure.dynamic.testcase(case_id, case_id)
-        allure.dynamic.label("legacy_name", name)
+        allure.dynamic.label("case_name", name)
         if name:
             allure.dynamic.title(format_case_title(case_ids, name))
     except Exception:
         pass
 
     attach_json(
-        "legacy case metadata",
+        "case metadata",
         {
             "case_ids": case_ids,
-            "legacy_name": name,
+            "name": name,
             "markers": case.get("markers"),
             "config_data_refs": case.get("config_data_refs"),
             "validation_refs": case.get("validation_refs"),
@@ -52,14 +52,14 @@ def attach_case_id(
 
         allure.dynamic.label("case_id", case_id)
         allure.dynamic.testcase(case_id, case_id)
-        allure.dynamic.label("legacy_name", name)
+        allure.dynamic.label("case_name", name)
         if name:
             allure.dynamic.title(format_case_title([case_id], name))
         if summary_group:
             allure.dynamic.label("summary_group", summary_group)
     except Exception:
         pass
-    attach_json("legacy case metadata", {"case_ids": [case_id], "legacy_name": name})
+    attach_json("case metadata", {"case_ids": [case_id], "name": name})
 
 
 def format_case_title(case_ids: list[str] | tuple[str, ...], name: str) -> str:

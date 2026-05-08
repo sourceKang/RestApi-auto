@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from automation.registry.legacy import RAD_SUMMARY_CASES
+from automation.registry.cases import RAD_SUMMARY_CASES
 from automation.pytest_plugin.preflight import skip_unready_dut_items
 from utils.reporting import register_node_case, register_permission_role
 

@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from automation.registry.legacy import legacy_case_name_by_id, legacy_case_order, permission_summary_specs
+from automation.registry.cases import case_name_by_id, case_order, permission_summary_specs
 
 
 @dataclass
@@ -326,8 +326,8 @@ class PermissionSummaryDetail:
 
 
 def _aggregate_case_results() -> list[AggregatedReportCase]:
-    legacy_names = _legacy_case_name_by_id()
-    legacy_order = _legacy_case_order()
+    case_names = _case_name_by_id()
+    report_order = _case_order()
     non_permission_case_ids = {
         registration.case_id
         for result in REPORT_STATE.results
@@ -352,12 +352,12 @@ def _aggregate_case_results() -> list[AggregatedReportCase]:
         aggregates.append(
             AggregatedReportCase(
                 case_id=case_id,
-                name=legacy_names.get(case_id, fallback_names.get(case_id, case_id)),
+                name=case_names.get(case_id, fallback_names.get(case_id, case_id)),
                 outcome=_combine_outcomes(result.outcome for result in results),
                 duration=max((result.duration for result in results), default=0.0),
             )
         )
-    aggregates.sort(key=lambda item: (legacy_order.get(item.case_id, 10**9), item.case_id, item.name))
+    aggregates.sort(key=lambda item: (report_order.get(item.case_id, 10**9), item.case_id, item.name))
     return aggregates
 
 
@@ -478,12 +478,12 @@ def _permission_summary_specs() -> tuple[tuple[str, str, str], ...]:
     return permission_summary_specs()
 
 
-def _legacy_case_name_by_id() -> dict[str, str]:
-    return legacy_case_name_by_id()
+def _case_name_by_id() -> dict[str, str]:
+    return case_name_by_id()
 
 
-def _legacy_case_order() -> dict[str, int]:
-    return legacy_case_order()
+def _case_order() -> dict[str, int]:
+    return case_order()
 
 
 def _safe_path_part(value: str) -> str:

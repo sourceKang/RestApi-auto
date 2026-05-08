@@ -5,14 +5,14 @@ import time
 
 import pytest
 
-from cases.neox_legacy import profile_definition_by_name
+from automation.domains.endpoint_case import assert_permission_rejected, request_endpoint_case
+from cases.case_catalog import profile_definition_by_name
 from cases.payloads import ge_service_payload, ont_service_payload
 from models.api import EndpointCase
 from utils.allure_helpers import allure_step
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.case_metadata import attach_case_id
 from utils.diagnostics import format_response_summary, format_value_summary
-from utils.names import unique_name
 
 
 class ProvisionService:
@@ -31,15 +31,13 @@ class ProvisionService:
             self.ensure_recorded_ge_service(session_id)
 
     def verify_read_success(self, session_id: str, case: EndpointCase, role_name: str) -> None:
-        attach_case_id(case.case_id, case.name)
-        name = unique_name(case.name)
-        with allure_step(f"GET {case.name} as {role_name}"):
-            response = self.api_client.request(
-                case.method,
-                case.build_path(self.env_config),
-                session=session_id,
-                params=case.build_params(self.env_config, name),
-            )
+        response = request_endpoint_case(
+            self.api_client,
+            self.env_config,
+            session_id,
+            case,
+            step=f"GET {case.name} as {role_name}",
+        )
         if response.retstatus == "Fail" and "No data found" in response.retresult:
             pytest.fail(
                 f"{case.name} expected seeded provision data for {role_name} GET, but EMS returned no data: "
@@ -49,28 +47,25 @@ class ProvisionService:
         assert_provision_get_matches_recorded_data(response.json, self.env_config, case.name)
 
     def verify_read_rejected(self, session_id: str, case: EndpointCase) -> None:
-        attach_case_id(case.case_id, case.name)
-        name = unique_name(case.name)
-        with allure_step(f"Verify noaccess cannot GET {case.name}"):
-            response = self.api_client.request(
-                case.method,
-                case.build_path(self.env_config),
-                session=session_id,
-                params=case.build_params(self.env_config, name),
-            )
-        assert_api_failure(response, accepted_messages=("not authorized", "no access", "permission", "privilege"))
+        response = request_endpoint_case(
+            self.api_client,
+            self.env_config,
+            session_id,
+            case,
+            step=f"Verify noaccess cannot GET {case.name}",
+        )
+        assert_permission_rejected(response)
 
     def verify_mutation_rejected(self, session_id: str, case: EndpointCase, role_name: str) -> None:
-        attach_case_id(case.case_id, case.name)
-        name = unique_name(case.name)
-        with allure_step(f"Verify {role_name} cannot mutate {case.name}"):
-            response = self.api_client.request(
-                case.method,
-                case.build_path(self.env_config),
-                session=session_id,
-                json=case.build_payload(self.env_config, name),
-            )
-        assert_api_failure(response, accepted_messages=("not authorized", "no access", "permission", "privilege"))
+        response = request_endpoint_case(
+            self.api_client,
+            self.env_config,
+            session_id,
+            case,
+            step=f"Verify {role_name} cannot mutate {case.name}",
+            payload=True,
+        )
+        assert_permission_rejected(response)
 
     def verify_ont_service_crud(self, session_id: str, cleanup_registry) -> None:
         attach_case_id("EMS1-6666", "test_post_ont_service_by_sn")

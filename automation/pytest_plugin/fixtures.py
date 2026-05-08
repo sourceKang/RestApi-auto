@@ -4,14 +4,7 @@ import pytest
 
 from automation.pytest_plugin.collection import RAD_AUTH_MATRIX_CASES
 from automation.core import SessionManager, build_run_context
-from automation.domains.alarm import AlarmService
-from automation.domains.auth_matrix import AuthMatrixService
-from automation.domains.inventory import InventoryService
-from automation.domains.invalid_params import InvalidParamsService
-from automation.domains.profile import ProfileService
-from automation.domains.provision import ProvisionService
-from automation.domains.remote import RemoteService
-from automation.domains.session import UserSessionService
+from automation.pytest_plugin.service_bundle import ServiceBundle, build_service_bundle
 from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
@@ -76,43 +69,48 @@ def session_manager(api_client, env_config):
 
 
 @pytest.fixture(scope="session")
-def inventory_service(api_client, env_config):
-    return InventoryService(api_client, env_config)
+def services(api_client, env_config) -> ServiceBundle:
+    return build_service_bundle(api_client, env_config)
 
 
 @pytest.fixture(scope="session")
-def invalid_params_service(api_client, env_config):
-    return InvalidParamsService(api_client, env_config)
+def inventory_service(services):
+    return services.inventory
 
 
 @pytest.fixture(scope="session")
-def alarm_service(api_client, env_config):
-    return AlarmService(api_client, env_config)
+def invalid_params_service(services):
+    return services.invalid_params
 
 
 @pytest.fixture(scope="session")
-def auth_matrix_service(api_client):
-    return AuthMatrixService(api_client)
+def alarm_service(services):
+    return services.alarm
 
 
 @pytest.fixture(scope="session")
-def provision_service(api_client, env_config):
-    return ProvisionService(api_client, env_config)
+def auth_matrix_service(services):
+    return services.auth_matrix
 
 
 @pytest.fixture(scope="session")
-def profile_service(api_client):
-    return ProfileService(api_client)
+def provision_service(services):
+    return services.provision
 
 
 @pytest.fixture(scope="session")
-def remote_service(api_client, env_config):
-    return RemoteService(api_client, env_config)
+def profile_service(services):
+    return services.profile
 
 
 @pytest.fixture(scope="session")
-def user_session_service(api_client, env_config):
-    return UserSessionService(api_client, env_config)
+def remote_service(services):
+    return services.remote
+
+
+@pytest.fixture(scope="session")
+def user_session_service(services):
+    return services.user_session
 
 
 @pytest.fixture

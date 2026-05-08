@@ -122,7 +122,7 @@ nodes:
         role: "line"
         ports:
           39:
-            type: "xPON"
+            type: "GE"
             speed: "10G"
             ge_service:
     test_targets:

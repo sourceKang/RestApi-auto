@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from cases.case_catalog import catalog_test_cases
 from cases.endpoint_cases import MUTATING_ENDPOINTS, READ_ENDPOINTS
-from cases.neox_legacy import legacy_test_cases
 
 
 @dataclass(frozen=True)
@@ -12,7 +12,7 @@ class TestCaseRecord:
     name: str
     domain: str
     role: str | None = None
-    source: str = "legacy"
+    source: str = "case_catalog"
     markers: tuple[str, ...] = ()
 
 
@@ -33,9 +33,6 @@ def _endpoint_records() -> tuple[TestCaseRecord, ...]:
     return tuple(records)
 
 
-# Direct registrations that are currently attached inside test bodies instead
-# of EndpointCase metadata.  Keeping them here makes the report/test id contract
-# explicit before the test files are reorganized into domain services.
 DIRECT_CASES: tuple[TestCaseRecord, ...] = (
     TestCaseRecord("EMS1-6640", "test_get_sessionid", "session", markers=("session", "smoke")),
     TestCaseRecord("EMS1-6651", "test_delete_sessionid", "session", markers=("session",)),
@@ -80,18 +77,18 @@ def automated_case_ids() -> set[str]:
     return {case.case_id for case in AUTOMATED_CASES}
 
 
-def legacy_case_name_by_id() -> dict[str, str]:
+def case_name_by_id() -> dict[str, str]:
     mapping: dict[str, str] = {}
-    for case in legacy_test_cases():
+    for case in catalog_test_cases():
         case_ids = case.get("case_ids") or []
         if case_ids:
-            mapping[str(case_ids[0])] = str(case.get("legacy_name", case_ids[0]))
+            mapping[str(case_ids[0])] = str(case.get("name", case_ids[0]))
     return mapping
 
 
-def legacy_case_order() -> dict[str, int]:
+def case_order() -> dict[str, int]:
     order: dict[str, int] = {}
-    for index, case in enumerate(legacy_test_cases()):
+    for index, case in enumerate(catalog_test_cases()):
         case_ids = case.get("case_ids") or []
         if case_ids:
             order.setdefault(str(case_ids[0]), index)

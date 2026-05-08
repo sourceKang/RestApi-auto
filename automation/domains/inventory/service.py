@@ -4,14 +4,13 @@ import time
 
 import pytest
 
-from cases.neox_legacy import profile_definition_by_name
+from automation.domains.endpoint_case import assert_permission_rejected, request_endpoint_case
+from cases.case_catalog import profile_definition_by_name
 from cases.payloads import ont_service_payload
 from models.api import EndpointCase
 from utils.allure_helpers import allure_step
-from utils.assertions import assert_api_failure, assert_api_success
-from utils.case_metadata import attach_case_id
+from utils.assertions import assert_api_success
 from utils.diagnostics import format_response_summary, format_value_summary
-from utils.names import unique_name
 
 
 ONTOLOGY_PATH_CASE_NAMES = {"ont_by_device", "ont_by_slot", "ont_by_port", "ont_by_id"}
@@ -23,6 +22,7 @@ PORT_TYPE_ALIASES = {
     "gpon": {"xpon", "gpon", "xgspon", "xgpon", "250"},
     "network": {"network", "ethernet", "ethernet access"},
     "ethernet access": {"network", "ethernet", "ethernet access"},
+    "ge": {"ge", "6"},
 }
 
 
@@ -32,15 +32,13 @@ class InventoryService:
         self.env_config = env_config
 
     def verify_read_success(self, session_id: str, case: EndpointCase, role_name: str) -> None:
-        attach_case_id(case.case_id, case.name)
-        name = unique_name(case.name)
-        with allure_step(f"GET {case.name} as {role_name}"):
-            response = self.api_client.request(
-                case.method,
-                case.build_path(self.env_config),
-                session=session_id,
-                params=case.build_params(self.env_config, name),
-            )
+        response = request_endpoint_case(
+            self.api_client,
+            self.env_config,
+            session_id,
+            case,
+            step=f"GET {case.name} as {role_name}",
+        )
         if case.name == "port_list" and response.status_code == 404:
             pytest.skip("/port list endpoint is not supported by this EMS build.")
         if case.domain == "ont" and _is_no_data(response):
@@ -60,16 +58,14 @@ class InventoryService:
             assert_inventory_response_matches_env(response.json, self.env_config, case.name)
 
     def verify_noaccess_rejected(self, session_id: str, case: EndpointCase) -> None:
-        attach_case_id(case.case_id, case.name)
-        name = unique_name(case.name)
-        with allure_step(f"Verify noaccess cannot GET {case.name}"):
-            response = self.api_client.request(
-                case.method,
-                case.build_path(self.env_config),
-                session=session_id,
-                params=case.build_params(self.env_config, name),
-            )
-        assert_api_failure(response, accepted_messages=("not authorized", "no access", "permission", "privilege"))
+        response = request_endpoint_case(
+            self.api_client,
+            self.env_config,
+            session_id,
+            case,
+            step=f"Verify noaccess cannot GET {case.name}",
+        )
+        assert_permission_rejected(response)
 
     def ensure_ont_inventory_ready(self, session_id: str) -> None:
         with allure_step("Reuse session-cached ONT inventory readiness when possible"):
@@ -278,14 +274,15 @@ def assert_inventory_response_matches_env(payload, env_config, case_name: str) -
         _assert_report_card_inventory(payload, env_config, case_name)
         return
     if case_name.startswith("port"):
+        target = _expected_port_target(env_config)
         _assert_port_fields(
             _find_inventory_item(
                 payload,
                 "portinfolist",
                 "portinfo",
                 lambda item: item.get("DevName") == env_config.dut.device_name
-                and str(item.get("SlotID")) == env_config.dut.slot_id
-                and str(item.get("PortID")) == env_config.dut.port_id,
+                and str(item.get("SlotID")) == target["slot_id"]
+                and str(item.get("PortID")) == target["port_id"],
                 case_name,
             ),
             env_config,
@@ -452,12 +449,20 @@ def _first_present_value(actual, keys):
 
 def _assert_port_fields(item, env_config):
     dut = env_config.dut
+    target = _expected_port_target(env_config)
     _assert_fields(
         item,
-        {"DevName": dut.device_name, "IPAddress": dut.device_ip, "SlotID": dut.slot_id, "PortID": dut.port_id},
+        {
+            "DevName": dut.device_name,
+            "IPAddress": dut.device_ip,
+            "SlotID": target["slot_id"],
+            "PortID": target["port_id"],
+        },
         "Port",
     )
     checks = (
+        lambda: _assert_any_field(item, ("SubmapName", "Submap Name", "submapName"), env_config.node_target.get("submap_name", ""), "Port"),
+        lambda: _assert_any_field(item, ("PortName", "Port Name", "portName"), dut.ge_port_name, "Port"),
         lambda: _assert_port_type(item, env_config),
         lambda: _assert_any_field(item, ("portAdminState", "AdminState", "adminState"), EXPECTED_ENABLED_STATE, "Port"),
         lambda: _assert_any_field(
@@ -467,6 +472,14 @@ def _assert_port_fields(item, env_config):
             "Port",
         ),
         lambda: _assert_optional_port_speed(item, env_config),
+        lambda: _assert_any_field_present(item, ("Telephone", "telephone"), "Port"),
+        lambda: _assert_any_field_present(
+            item,
+            ("ProvisioningStatus", "Provisioning Status", "provisioningStatus", "ProvisioningState", "provisioningState"),
+            "Port",
+        ),
+        lambda: _assert_any_field_present(item, ("txPower", "TxPower", "Tx Power"), "Port"),
+        lambda: _assert_any_field_present(item, ("rxPower", "RxPower", "Rx Power"), "Port"),
     )
     mismatches = []
     for check in checks:
@@ -533,12 +546,25 @@ def _assert_optional_port_speed(item, env_config) -> None:
 
 
 def _expected_port_value(env_config, field: str) -> str:
-    card = env_config.node_target.get("cards", {}).get(env_config.node_target.get("pon_card"), {})
+    card = env_config.node_target.get("cards", {}).get(env_config.node_target.get("ge_service_card"), {})
     ports = card.get("ports", {}) if isinstance(card, dict) else {}
     for port in ports.values():
-        if isinstance(port, dict) and str(port.get("port_id")) == env_config.dut.port_id:
+        if isinstance(port, dict) and str(port.get("port_id")) == env_config.dut.ge_port_id:
             return str(port.get(field, ""))
     return ""
+
+
+def _expected_port_target(env_config) -> dict[str, str]:
+    dut = env_config.dut
+    return {
+        "slot_id": dut.ge_slot_id or dut.slot_id,
+        "port_id": dut.ge_port_id or dut.port_id,
+    }
+
+
+def _assert_any_field_present(item, keys, label: str) -> None:
+    actual_value = _first_present_value(item, keys)
+    assert actual_value not in (None, ""), f"{label} missing one of {'/'.join(keys)}: {item!r}"
 
 
 def _assert_active_ont_fw_image(item, env_config) -> None:

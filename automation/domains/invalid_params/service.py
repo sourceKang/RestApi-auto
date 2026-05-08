@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from cases.neox_legacy import profile_definition_by_name
+from cases.case_catalog import profile_definition_by_name
 from cases.payloads import ge_service_payload, ont_service_payload
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id

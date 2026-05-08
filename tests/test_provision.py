@@ -11,59 +11,59 @@ PROVISION_MUTATING_CASES = [case for case in MUTATING_ENDPOINTS if case.domain =
 
 
 @pytest.fixture(scope="module")
-def provision_seed_data(provision_service, session_manager):
+def provision_seed_data(services, session_manager):
     registry = CleanupRegistry()
-    with session_manager.credentials_session(provision_service.env_config.readwrite) as session_id:
-        provision_service.ensure_seed_data(session_id, registry)
+    with session_manager.credentials_session(services.provision.env_config.readwrite) as session_id:
+        services.provision.ensure_seed_data(session_id, registry)
         yield
 
 
 @pytest.mark.provision
 @pytest.mark.readwrite
 @pytest.mark.parametrize("case", PROVISION_READ_CASES, ids=lambda case: case.name)
-def test_provision_read_endpoints_readwrite(provision_service, readwrite_session, provision_seed_data, case):
-    provision_service.verify_read_success(readwrite_session, case, "readwrite")
+def test_provision_read_endpoints_readwrite(services, readwrite_session, provision_seed_data, case):
+    services.provision.verify_read_success(readwrite_session, case, "readwrite")
 
 
 @pytest.mark.provision
 @pytest.mark.readonly
 @pytest.mark.parametrize("case", PROVISION_READ_CASES, ids=lambda case: case.name)
-def test_provision_read_endpoints_readonly(provision_service, readonly_session, provision_seed_data, case):
-    provision_service.verify_read_success(readonly_session, case, "readonly")
+def test_provision_read_endpoints_readonly(services, readonly_session, provision_seed_data, case):
+    services.provision.verify_read_success(readonly_session, case, "readonly")
 
 
 @pytest.mark.provision
 @pytest.mark.noaccess
 @pytest.mark.parametrize("case", PROVISION_READ_CASES, ids=lambda case: case.name)
-def test_provision_read_endpoints_noaccess(provision_service, noaccess_session, case):
-    provision_service.verify_read_rejected(noaccess_session, case)
+def test_provision_read_endpoints_noaccess(services, noaccess_session, case):
+    services.provision.verify_read_rejected(noaccess_session, case)
 
 
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readonly
 @pytest.mark.parametrize("case", PROVISION_MUTATING_CASES, ids=lambda case: case.name)
-def test_mutating_endpoints_reject_readonly(provision_service, readonly_session, case):
-    provision_service.verify_mutation_rejected(readonly_session, case, "readonly")
+def test_mutating_endpoints_reject_readonly(services, readonly_session, case):
+    services.provision.verify_mutation_rejected(readonly_session, case, "readonly")
 
 
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.noaccess
 @pytest.mark.parametrize("case", PROVISION_MUTATING_CASES, ids=lambda case: case.name)
-def test_mutating_endpoints_reject_noaccess(provision_service, noaccess_session, case):
-    provision_service.verify_mutation_rejected(noaccess_session, case, "noaccess")
+def test_mutating_endpoints_reject_noaccess(services, noaccess_session, case):
+    services.provision.verify_mutation_rejected(noaccess_session, case, "noaccess")
 
 
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
-def test_ont_service_crud_readwrite(provision_service, readwrite_session, cleanup_registry):
-    provision_service.verify_ont_service_crud(readwrite_session, cleanup_registry)
+def test_ont_service_crud_readwrite(services, readwrite_session, cleanup_registry):
+    services.provision.verify_ont_service_crud(readwrite_session, cleanup_registry)
 
 
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
-def test_ge_service_crud_readwrite(provision_service, readwrite_session, cleanup_registry):
-    provision_service.verify_ge_service_crud(readwrite_session, cleanup_registry)
+def test_ge_service_crud_readwrite(services, readwrite_session, cleanup_registry):
+    services.provision.verify_ge_service_crud(readwrite_session, cleanup_registry)

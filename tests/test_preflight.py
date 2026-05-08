@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from automation.pytest_plugin import preflight
+from tests.support import preflight
 
 
 def test_find_down_reason_detects_device_down_message():

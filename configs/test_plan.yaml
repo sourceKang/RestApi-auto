@@ -1,4 +1,4 @@
-# Baseline execution plan for the current pytest automation architecture.
+﻿# Baseline execution plan for the current pytest REST API test framework.
 # This file is descriptive first; pytest still owns collection.
 version: 2
 name: pytest-case-catalog-order
@@ -11,7 +11,7 @@ notes:
 files:
   - tests/test_alarm.py
   - tests/test_auth_matrix.py
-  - tests/test_automation_registry.py
+  - tests/test_case_registry.py
   - tests/test_case_catalog.py
   - tests/test_case_metadata.py
   - tests/test_config.py
@@ -36,7 +36,7 @@ fixed_contracts:
     renderer: utils.reporting._render_txt_report
   ids:
     case_catalog: cases.case_catalog.catalog_test_cases
-    automated_registry: automation.registry.cases.AUTOMATED_CASES
+    automated_registry: cases.registry.AUTOMATED_CASES
   summaries:
     - EMS1-7109
     - EMS1-7110

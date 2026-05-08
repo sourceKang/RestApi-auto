@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from automation.pytest_plugin.collection import RAD_AUTH_MATRIX_CASES, pytest_collection_modifyitems
-from automation.pytest_plugin.fixtures import (
+from tests.support.collection import RAD_AUTH_MATRIX_CASES, pytest_collection_modifyitems
+from tests.support.fixtures import (
     allure_node_context,
     alarm_service,
     api_client,
@@ -26,8 +26,8 @@ from automation.pytest_plugin.fixtures import (
     session_manager,
     user_session_service,
 )
-from automation.pytest_plugin.options import pytest_addoption
-from automation.pytest_plugin.reporting_hooks import pytest_configure, pytest_runtest_logreport, pytest_sessionfinish
+from tests.support.options import pytest_addoption
+from tests.support.reporting_hooks import pytest_configure, pytest_runtest_logreport, pytest_sessionfinish
 
 
 __all__ = [

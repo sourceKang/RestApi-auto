@@ -1,7 +1,7 @@
-# Current Test Order
+﻿# Current Test Order
 
 This document describes the current pytest collection order, testcase id
-registration, and txt report output contracts for the automation architecture.
+registration, and txt report output contracts for the REST API test framework.
 
 The current collection was verified with `pytest --collect-only --skip-dut-preflight -q`.
 Current collection count: 251 tests.
@@ -10,7 +10,7 @@ Current collection count: 251 tests.
 
 1. `tests/test_alarm.py`
 2. `tests/test_auth_matrix.py`
-3. `tests/test_automation_registry.py`
+3. `tests/test_case_registry.py`
 4. `tests/test_case_catalog.py`
 5. `tests/test_case_metadata.py`
 6. `tests/test_config.py`

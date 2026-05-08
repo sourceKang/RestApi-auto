@@ -19,6 +19,18 @@ configs\hardware_matrix.yaml
 configs\test_targets.yaml
 ```
 
+## Project Layout
+
+- `clients/`: EMS REST API client.
+- `services/`: domain services and endpoint case helpers used by tests.
+- `config_loader/`: YAML loading and runtime environment resolution.
+- `cases/`: endpoint definitions, payload factories, converted case catalog and case registry.
+- `configs/`: EMS, auth, hardware and DUT target YAML files.
+- `models/`: shared typed data models.
+- `tests/`: pytest test cases that call domain services through the `services` fixture.
+- `tests/support/`: pytest fixtures, options, collection hooks, preflight checks and reporting hooks.
+- `utils/`: shared assertions, reporting, diagnostics and redaction helpers.
+
 Override the EMS YAML file when needed:
 
 ```powershell

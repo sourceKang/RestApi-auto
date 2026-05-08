@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 import shutil
@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from automation.registry.cases import case_name_by_id, case_order, permission_summary_specs
+from cases.registry import case_name_by_id, case_order, permission_summary_specs
 
 
 @dataclass

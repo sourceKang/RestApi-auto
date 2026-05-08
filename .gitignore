@@ -9,6 +9,7 @@ venv/
 env/
 ENV/
 .pytest_deps/
+.codex-tools/
 
 # Test, coverage, and tooling caches
 .pytest_cache/

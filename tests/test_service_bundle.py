@@ -1,14 +1,14 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from automation.domains.alarm import AlarmService
-from automation.domains.auth_matrix import AuthMatrixService
-from automation.domains.invalid_params import InvalidParamsService
-from automation.domains.inventory import InventoryService
-from automation.domains.profile import ProfileService
-from automation.domains.provision import ProvisionService
-from automation.domains.remote import RemoteService
-from automation.domains.session import UserSessionService
-from automation.pytest_plugin.service_bundle import build_service_bundle
+from services.alarm import AlarmService
+from services.auth_matrix import AuthMatrixService
+from services.invalid_params import InvalidParamsService
+from services.inventory import InventoryService
+from services.profile import ProfileService
+from services.provision import ProvisionService
+from services.remote import RemoteService
+from services.session import UserSessionService
+from tests.support.service_bundle import build_service_bundle
 
 
 def test_build_service_bundle_groups_domain_services():

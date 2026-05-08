@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pytest
 
-from automation.domains.profile import (
+from services.profile import (
     DELETE_PROFILE_CASES,
     GET_PROFILE_CASES,
     GET_PROFILE_LIST_CASES,

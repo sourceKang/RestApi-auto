@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from models.api import EndpointCase
-from automation.domains.endpoint_case import request_endpoint_case
+from services.endpoint_case import request_endpoint_case
 
 
 class RecordingClient:

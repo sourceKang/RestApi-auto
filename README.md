@@ -17,6 +17,7 @@ configs\ems.yaml
 configs\auth_accounts.yaml
 configs\hardware_matrix.yaml
 configs\test_targets.yaml
+configs\profiles.yaml
 ```
 
 ## Project Layout
@@ -59,6 +60,7 @@ New framework hardware rules and per-node test targets are kept in YAML:
 - `configs/hardware_matrix.yaml`: chassis/card capability rules.
 - `configs/test_targets.yaml`: NODE-specific report cards, card inventory, ONT target and GE service target.
 - `configs/auth_accounts.yaml`: auth profiles and reusable role-based account pools.
+- `configs/profiles.yaml`: profile API test definitions referenced by case catalog metadata.
 
 By default the suite runs the main/local account set selected by
 `--auth-profile` (or the default profile when omitted). If you also want the

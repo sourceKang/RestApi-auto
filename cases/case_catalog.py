@@ -6,6 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from config_loader.profile import load_profile_definitions
+
 
 CASE_CATALOG_FILE = Path(__file__).with_name("case_catalog.json")
 
@@ -20,7 +22,7 @@ def catalog_test_cases() -> list[dict[str, Any]]:
 
 
 def catalog_profile_data() -> dict[str, dict[str, Any]]:
-    return case_catalog_payload()["profile_data"]
+    return load_profile_definitions()
 
 
 def catalog_case_by_name(name: str) -> dict[str, Any]:

@@ -11,6 +11,7 @@ only from the YAML files in `configs/`.
 | `configs/auth_accounts.yaml` | default local accounts, RAD external accounts, auth profiles |
 | `configs/hardware_matrix.yaml` | chassis rules, supported controller cards, line cards, GE service cards |
 | `configs/test_targets.yaml` | topology-oriented node, slots, cards, ports, ONTs and service selectors |
+| `configs/profiles.yaml` | profile API test definitions referenced by case catalog metadata |
 
 ## Normal Run
 

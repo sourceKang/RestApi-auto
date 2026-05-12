@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from cases.case_catalog import case_catalog_payload, catalog_profile_data, catalog_test_cases
+from config_loader.profile import load_profile_definitions
 
 
 @pytest.mark.smoke
@@ -22,3 +23,15 @@ def test_case_catalog_profile_data_contains_test_and_validation_data():
         assert profile["profiletype"], name
         assert profile["profilename"], name
         assert "post_profile_info" in profile, name
+
+
+@pytest.mark.smoke
+def test_profiles_yaml_contains_all_catalog_profile_refs():
+    profiles = load_profile_definitions()
+    refs = {
+        ref
+        for case in catalog_test_cases()
+        for ref in case.get("config_data_refs", [])
+        if ref.endswith("_profile_data") or "_profile_data_" in ref
+    }
+    assert refs <= set(profiles)

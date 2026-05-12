@@ -1,7 +1,7 @@
 version: 1
 
 ems:
-  rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
-  version: "03.00.10 (AAVV.221) C0"
+  rest_api_url: "https://192.168.128.35:9116/netatlasemsapi"
+  version: "03.00.11 (AAVV.221) b1"
   verify_tls: false
   timeout: 60

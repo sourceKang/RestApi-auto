@@ -1,0 +1,247 @@
+{
+  "source": {
+    "swagger_example": "configs/neox_ge_swagger_payload.json",
+    "strategy": "Start with a known passing base payload, then add one GE field at a time. Keep successful fields in the next request and record failed fields for future negative tests.",
+    "target_scope": "NODE3 GE safe port"
+  },
+  "base_content": {
+    "anti_spoofing": "enable",
+    "arpinspection": "enable",
+    "auto_nego": "enable"
+  },
+  "candidates": [
+    {
+      "field": "portenable",
+      "value": "enable"
+    },
+    {
+      "field": "flow",
+      "value": "disable"
+    },
+    {
+      "field": "portspeed",
+      "value": "auto"
+    },
+    {
+      "field": "frametype",
+      "value": "all"
+    },
+    {
+      "field": "portname",
+      "value": "REST_GE_39"
+    },
+    {
+      "field": "algorithm",
+      "value": "sp"
+    },
+    {
+      "field": "bpdu",
+      "value": "peer"
+    },
+    {
+      "field": "copycpbit",
+      "value": "disable"
+    },
+    {
+      "field": "dot1xcontrol",
+      "value": "auto"
+    },
+    {
+      "field": "dotlxactive",
+      "value": "disable"
+    },
+    {
+      "field": "dotlxauthone",
+      "value": "disable"
+    },
+    {
+      "field": "dscp",
+      "value": "disable"
+    },
+    {
+      "field": "groupprivilege",
+      "value": "disable"
+    },
+    {
+      "field": "ldrapolicy",
+      "value": "drop"
+    },
+    {
+      "field": "lldp_admin",
+      "value": "disabled"
+    },
+    {
+      "field": "lldp_management",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_notification",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_org_dot1",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_org_dot3_link",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_org_dot3_macphy",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_org_dot3_maxframe",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_portdesc",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_systemcap",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_systemdsc",
+      "value": "disable"
+    },
+    {
+      "field": "lldp_systemname",
+      "value": "disable"
+    },
+    {
+      "field": "lldralinklocal",
+      "value": "chk-all"
+    },
+    {
+      "field": "loopguard",
+      "value": "disable"
+    },
+    {
+      "field": "loopguard_policy",
+      "value": "fix"
+    },
+    {
+      "field": "macfilter",
+      "value": "disable"
+    },
+    {
+      "field": "macfiltermode",
+      "value": "accept"
+    },
+    {
+      "field": "opt82policy",
+      "value": "drop"
+    },
+    {
+      "field": "ouifilter",
+      "value": "disable"
+    },
+    {
+      "field": "ouifiltermode",
+      "value": "accept"
+    },
+    {
+      "field": "outertpid",
+      "value": "disable"
+    },
+    {
+      "field": "packfiltertype",
+      "value": "accept-all"
+    },
+    {
+      "field": "pppoepolicy",
+      "value": "drop"
+    },
+    {
+      "field": "pwsaving",
+      "value": "disable"
+    },
+    {
+      "field": "snooping_dhcp",
+      "value": "trust"
+    },
+    {
+      "field": "snooping_dhcpv6",
+      "value": "trust"
+    },
+    {
+      "field": "snooping_ipmacbinding",
+      "value": "disable"
+    },
+    {
+      "field": "spoofing_action",
+      "value": "disable"
+    },
+    {
+      "field": "staticipfilter_ipmacbinding",
+      "value": "disable"
+    }
+  ],
+  "deferred_fields": [
+    "acl_maclist",
+    "acl_ouilist",
+    "bias_alarm_high",
+    "bias_alarm_low",
+    "bias_warn_high",
+    "bias_warn_low",
+    "broadcast_rate",
+    "customtype",
+    "dlf_rate",
+    "dot1xreauthpeiod",
+    "dotlxcircuitinfo",
+    "dotlxserverindex",
+    "egress_profile_list",
+    "fdb_list",
+    "igmp_bandwidth",
+    "igmp_grouppriprofile_list",
+    "igmp_mvid_list",
+    "loopguard_recovertime",
+    "maxcount",
+    "maxgroup",
+    "maxmsg",
+    "mtu",
+    "multicast_rate",
+    "nnimaxcount",
+    "nnivlan",
+    "pbit",
+    "port_aclprofile_list",
+    "profile_aclprofilename",
+    "pvid",
+    "pwsaving_awake",
+    "pwsaving_sleep",
+    "ratelimitname",
+    "rxpower_alarm_high",
+    "rxpower_alarm_low",
+    "rxpower_warn_high",
+    "rxpower_warn_low",
+    "shapingname",
+    "smcastip_list",
+    "smcastmac_list",
+    "snooping_maxlease",
+    "snooping_vlanlist",
+    "staticipfilter_list",
+    "tel",
+    "temperature_alarm_high",
+    "temperature_alarm_low",
+    "temperature_warn_high",
+    "temperature_warn_low",
+    "txpower_alarm_high",
+    "txpower_alarm_low",
+    "txpower_warn_high",
+    "txpower_warn_low",
+    "vlan_list",
+    "vlantls_list",
+    "vlantrans_list",
+    "vlantrunk_ether_list",
+    "vlantrunk_subnet_list",
+    "vlantrunk_untag_list",
+    "vlantrunk_vlan_list",
+    "voltage_alarm_high",
+    "voltage_alarm_low",
+    "voltage_warn_high",
+    "voltage_warn_low",
+    "weightname"
+  ]
+}

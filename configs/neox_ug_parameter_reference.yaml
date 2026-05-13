@@ -1,0 +1,293 @@
+# Read-only parameter reference extracted from the NeoX Series User's Guide.
+# Source PDF: D:\Download\NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf
+# Extracted text: reports/neox_ug_text.txt
+# Captured: 2026-05-13
+#
+# This file records documented fields and value ranges. It is not a live device
+# snapshot. API field names come from Swagger where possible; meanings and value
+# ranges come from the user guide.
+
+source:
+  pdf: "D:\\Download\\NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf"
+  extracted_text: "reports/neox_ug_text.txt"
+  swagger_reference: "configs/neox_swagger_data.yaml"
+
+ge_port:
+  source_lines: "11086-11143"
+  api_schema: "GePortInfo.Content"
+  fields:
+    portenable:
+      manual_name: "Active"
+      allowed: ["enable", "disable"]
+    portname:
+      manual_name: "Name"
+      max_length: 31
+    auto_nego:
+      manual_name: "Auto-Nego"
+      allowed: ["enable", "disable"]
+    flow:
+      manual_name: "Flow-Ctrl"
+      allowed: ["enable", "disable"]
+    portspeed:
+      manual_name: "Speed"
+      allowed: ["auto", "10g-full", "2.5g-full", "1g-full", "100-full", "100-half"]
+    frametype:
+      manual_name: "Frame-Type"
+      allowed: ["all", "tag"]
+    mtu:
+      manual_name: "MTU"
+      type: "integer"
+  test_field_groups:
+    smoke_safe:
+      fields: ["portenable", "portname", "auto_nego", "flow", "portspeed", "frametype"]
+      note: "Documented in UG and present in Swagger. Prefer conservative values that keep the port enabled and auto speed negotiation stable."
+    needs_environment_data:
+      fields: ["pvid", "vlan_list", "ratelimitname", "shapingname", "weightname", "profile_aclprofilename", "port_aclprofile_list", "egress_profile_list", "igmp_grouppriprofile_list", "acl_maclist", "acl_ouilist", "fdb_list"]
+      note: "Requires existing VLAN/profile/MAC/IP data or a setup/cleanup flow before readwrite testing."
+    schema_or_negative_only:
+      fields: ["bias_alarm_high", "bias_alarm_low", "bias_warn_high", "bias_warn_low", "rxpower_alarm_high", "rxpower_alarm_low", "rxpower_warn_high", "rxpower_warn_low", "temperature_alarm_high", "temperature_alarm_low", "temperature_warn_high", "temperature_warn_low", "txpower_alarm_high", "txpower_alarm_low", "txpower_warn_high", "txpower_warn_low", "voltage_alarm_high", "voltage_alarm_low", "voltage_warn_high", "voltage_warn_low", "customtype", "tel"]
+      note: "Swagger exposes placeholder strings; UG Port > GE does not provide enough confirmed API-safe values for smoke tests."
+    advanced_risk:
+      fields: ["dot1xcontrol", "dot1xreauthpeiod", "dotlxactive", "dotlxauthone", "dotlxcircuitinfo", "dotlxserverindex", "dscp", "lldp_admin", "lldp_management", "lldp_notification", "lldp_org_dot1", "lldp_org_dot3_link", "lldp_org_dot3_macphy", "lldp_org_dot3_maxframe", "lldp_portdesc", "lldp_systemcap", "lldp_systemdsc", "lldp_systemname", "loopguard", "loopguard_policy", "loopguard_recovertime", "macfilter", "macfiltermode", "ouifilter", "ouifiltermode", "outertpid", "packfiltertype", "pwsaving", "pwsaving_awake", "pwsaving_sleep", "snooping_dhcp", "snooping_dhcpv6", "snooping_ipmacbinding", "snooping_maxlease", "snooping_vlanlist", "spoofing_action", "staticipfilter_ipmacbinding", "staticipfilter_list", "vlantrans_list", "vlantls_list", "vlantrunk_ether_list", "vlantrunk_subnet_list", "vlantrunk_untag_list", "vlantrunk_vlan_list"]
+      note: "Can affect authentication, VLAN behavior, DHCP, loop protection, power saving, filtering, or subscriber traffic. Keep behind explicit opt-in tests."
+
+nni_port:
+  source_lines: "10916-11027"
+  api_schema: "NniPortInfo.Content"
+  fields:
+    portenable:
+      manual_name: "Active"
+      allowed: ["enable", "disable"]
+    portname:
+      manual_name: "Name"
+      max_length: 31
+    auto_nego:
+      manual_name: "Auto-Nego"
+      allowed: ["enable", "disable"]
+    flow:
+      manual_name: "Flow-Ctrl"
+      allowed: ["enable", "disable"]
+    vlan_trunk:
+      manual_name: "VLAN-Trunk"
+      allowed: ["enable", "disable"]
+    portspeed:
+      manual_name: "Speed"
+      allowed: ["auto", "1g-full", "10g-full", "25g-fiber-full", "25g-copper-full", "50g-2x-fiber-full", "50g-2x-copper-full", "100g-fiber-full", "100g-copper-full"]
+    mode:
+      manual_name: "Mode"
+      allowed: ["uplink", "subtend", "auto"]
+    fec:
+      manual_name: "FEC"
+      allowed: ["CL74", "CL91", "CL108", "disable"]
+    vlan_qinq_tpid:
+      manual_name: "QinQ-TPID"
+      allowed: ["enable", "disable"]
+    vlan_default_tpid:
+      manual_name: "Default-TPID"
+      allowed: ["enable", "disable"]
+    mtu:
+      manual_name: "MTU"
+      type: "integer"
+
+profiles:
+  ONTBandwidthProfile:
+    source_lines: "7131-7160"
+    fields:
+      sir:
+        range: ["0", "8509952"]
+        multiple_of: 128
+      air:
+        range: ["0", "8509952"]
+        multiple_of: 128
+      pir:
+        range: ["256", "10000000"]
+        multiple_of: 128
+      rule: "pir >= sir + air; sir + air <= 8509952"
+  ONTAlarmProfile:
+    source_lines: "9524-9561"
+    fields:
+      lowcurr:
+        range: ["0", "79"]
+      upcurr:
+        range: ["0", "79"]
+      lowrxpower:
+        range: ["-127.0", "0"]
+      uprxpower:
+        range: ["-127.0", "0"]
+      lowtemp:
+        range: ["-40", "100"]
+      uptemp:
+        range: ["-40", "100"]
+      lowtxpower:
+        range: ["-15.3", "6.5"]
+      uptxpower:
+        range: ["-15.3", "6.5"]
+      lowvolt:
+        range: ["2.80", "3.59"]
+      upvol:
+        manual_name: "Up-volt-thresh"
+        range: ["2.80", "3.59"]
+  ONTSecurityProfile:
+    source_lines: "7883-7897"
+    fields:
+      spoofingdisable:
+        manual_name: "Anti Mac Spoofing"
+        allowed: ["enable", "disable"]
+      fdb:
+        manual_name: "Max FDB Count"
+        range: ["0", "1023"]
+  ONTServiceProfile:
+    source_lines: "7062-7077"
+    fields:
+      vlan:
+        range: ["1", "4094"]
+      pbit:
+        range: ["0", "7"]
+      mode:
+        allowed: ["veip", "bridge"]
+      uniport:
+        manual_name: "UNI Port"
+      lan:
+        manual_name: "LAN Port"
+      xlan:
+        manual_name: "10G LAN Port"
+  ONTMulticastProfile:
+    source_lines: "7221-7263"
+    fields:
+      univid:
+        manual_name: "UNI VID"
+        range: ["1", "4094"]
+      igmp:
+        manual_name: "IGMP Version"
+        allowed: ["IGMPv2", "IGMPv3"]
+      mode:
+        manual_name: "TX Tag Mode"
+        allowed: ["transparent", "untag", "replace"]
+      txtagvid:
+        manual_name: "TX Tag VID"
+        range: ["1", "4094"]
+      txtagpbit:
+        manual_name: "TX Tag Pbit"
+        range: ["0", "7"]
+      maxgroup:
+        range: ["1", "512"]
+      maxmsg:
+        range: ["1", "64"]
+  ONTUNIProfile:
+    source_lines: "7363-7771"
+    fields:
+      vlan:
+        range: ["1", "4094"]
+      pbit:
+        range: ["0", "7"]
+      fdb:
+        range: ["1", "255"]
+      ds_ratelimit:
+        range: ["128", "1000000"]
+      storm_control:
+        range: ["32", "1000000"]
+  ONTTemplateProfile:
+    source_lines: "6854-7006"
+    fields:
+      dspir:
+        range: ["0", "2400000"]
+        note: "0 disables the downstream PIR limit; otherwise use 128-2400000."
+      dsop:
+        manual_name: "QoS Downstream Option"
+        allowed: ["ont", "olt", "both"]
+      enc_algorithm:
+        allowed: ["none", "aes128"]
+      encscope_service:
+        allowed: ["enable", "disable"]
+      encscope_omci:
+        allowed: ["enable", "disable"]
+      encscope_iphost:
+        allowed: ["enable", "disable"]
+  ONTVoipCommonProfile:
+    source_lines: "9065-9177"
+    fields:
+      1codec:
+        manual_name: "1st codec"
+        allowed: ["PCMU", "GSM", "G723", "DVI4-8000", "DVI4-16000", "LPC", "PCMA", "G722", "L16-2", "L16-1", "QCELP", "CN", "MPA", "G728", "DVI4-11025", "DVI4-22050", "G729"]
+      1packet:
+        manual_name: "1st packet period"
+        range: ["10", "30"]
+      1silence:
+        manual_name: "1st silence"
+        allowed: ["0", "1", "enable", "disable"]
+      minport:
+        manual_name: "min local port"
+      maxport:
+        manual_name: "max local port"
+      dscp:
+        range: ["0", "63"]
+      dtmf:
+        manual_name: "dtmf"
+        allowed: ["0", "1", "enable", "disable"]
+      echo:
+        manual_name: "echo cancel"
+        allowed: ["0", "1", "enable", "disable"]
+      target:
+        manual_name: "jitter target"
+        range: ["0", "5000"]
+      buf:
+        manual_name: "max jitter buffer"
+        range: ["0", "500"]
+      pstn:
+        range: ["0", "999"]
+      packet_period:
+        range: ["10", "30"]
+  ONTVoipDialPlanProfile:
+    source_lines: "9240-9316"
+    fields:
+      max:
+        range: ["1", "256"]
+      critical:
+        range: ["0", "8000"]
+      partial:
+        range: ["0", "32000"]
+      format:
+        allowed: ["not-def", "h248", "NSC", "ven-spe"]
+      identifier:
+        manual_name: "content-table token"
+        max_length: 28
+  ONTVoipSipProfile:
+    source_lines: "8812-8902"
+    fields:
+      proxyaddr:
+        max_length: 63
+      outaddr:
+        max_length: 63
+      pridns:
+        manual_name: "primary dns"
+      secdns:
+        manual_name: "secondary dns"
+      hosturi:
+        max_length: 63
+      registrar:
+        max_length: 63
+      regexptime:
+        range: ["0", "25200"]
+      rereg:
+        range: ["0", "720"]
+      softswitch:
+        max_length: 4
+  ONTAclProfile:
+    source_lines: "9395-9440"
+    fields:
+      enable:
+        allowed: ["enable", "disable"]
+      policy:
+        allowed: ["drop", "trust"]
+      interface:
+        allowed: ["lan", "wan", "both"]
+      protocol:
+        range: ["0", "255"]
+      srcport:
+        range: ["1", "65535"]
+      destport:
+        range: ["1", "65535"]
+      srcmask:
+        range: ["1", "32"]
+      destmask:
+        range: ["1", "32"]

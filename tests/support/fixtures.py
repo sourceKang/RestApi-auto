@@ -80,6 +80,11 @@ def inventory_service(services):
 
 
 @pytest.fixture(scope="session")
+def neox_config_service(services):
+    return services.neox_config
+
+
+@pytest.fixture(scope="session")
 def invalid_params_service(services):
     return services.invalid_params
 

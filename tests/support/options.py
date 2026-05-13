@@ -27,6 +27,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
     parser.addoption(
+        "--run-neox-config",
+        action="store_true",
+        default=False,
+        help="Run NeoX configuration tests that may mutate NODE3 device state.",
+    )
+    parser.addoption(
         "--skip-dut-preflight",
         action="store_true",
         default=False,

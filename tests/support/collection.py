@@ -30,6 +30,11 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         for item in items:
             if "alarm_delete" in item.keywords:
                 item.add_marker(skip_alarm_delete)
+    if not config.getoption("--run-neox-config"):
+        skip_neox_config = pytest.mark.skip(reason="NeoX configuration tests require --run-neox-config")
+        for item in items:
+            if "neox_config" in item.keywords:
+                item.add_marker(skip_neox_config)
     if not run_auth_matrix:
         skip_auth_matrix = pytest.mark.skip(reason="RAD external summary tests require --auth-matrix")
         for item in items:

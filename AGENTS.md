@@ -1,37 +1,9 @@
-﻿# 全域 Codex 指引
-
-## 基本偏好
-
-- 預設使用繁體中文回覆。
-- 若使用者要求先說明計畫，執行前要先提出計畫並等待確認。
-- 回覆保持清楚、精簡、可執行。
-
-## 工作原則
-
-- 修改前先理解目前專案結構與既有規則。
-- 優先遵循目前 repository 的既有 patterns、tools 與測試方式。
-- 不要主動新增 dependencies，除非使用者同意或專案已經使用。
-- 不要 revert 或覆蓋使用者既有修改，除非使用者明確要求。
-
-## 安全原則
-
-- 不要把 API keys、tokens、passwords、session IDs 或私人 credentials 寫入檔案。
-- 可能影響外部系統、硬體、正式環境或 destructive flows 的操作，執行前要先詢問。
-
-## 驗證
-
-- 修改後要說明改了什麼，以及已執行或建議執行的驗證方式。
-
---- project-doc ---
-
-# RestApi Auto 專案指引
+﻿# RestApi Auto 專案指引
 
 ## 語言與協作
 
-- 預設使用繁體中文回覆。
-- 若使用者要求先說明計畫，執行前要先提出計畫並等待確認。
-- 回覆保持清楚、精簡、可執行。
 - 修改前先理解目前專案結構、既有測試方式與設定來源。
+- 通用協作、安全與回報規則以 `D:\CodeX\AGENTS.md` 為準；本檔只補充 RestApi Auto 專案細節。
 
 ## 專案目標
 
@@ -65,15 +37,14 @@
 - 不要把 API keys、tokens、passwords、session IDs 或私人 credentials 寫入檔案。
 - 需要輸出 request/response/report 時，必須使用 redaction helper 或既有遮罩規則。
 - 環境差異應透過 config/profile/pytest option 處理，不要在測試中寫死正式或特定設備資訊。
+- `reports/` 視為 generated output；除非使用者明確要求，不要把 Allure 產物或 HTML/txt 報表當作原始碼修改重點或提交內容。
+- 只有需要完整 request/response 附件調查時才提高附件詳細度（例如使用 `EMS_ATTACH_FULL_JSON=1`），避免讓 Allure 報告暴增或擴散敏感內容。
 
 ## 安全原則
 
 - 可能影響外部 EMS、硬體、正式環境或 destructive flows 的操作，執行前要先詢問。
 - 會刪除 alarm、改動設備狀態、開 remote console、provision、cleanup 的測試，不得預設執行。
-- 高風險測試需使用明確 pytest option 或 marker，例如：
-  - `--run-alarm-delete`
-  - `--run-remote`
-- 不要 revert 或覆蓋使用者既有修改，除非使用者明確要求。
+- 高風險測試需使用明確 pytest option 或 marker，例如 `--run-alarm-delete`、`--run-remote`。
 
 ## 驗證
 

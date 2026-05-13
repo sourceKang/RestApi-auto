@@ -323,6 +323,11 @@ def _normalize_topology_node(node_data: Any, defaults: Any = None) -> dict[str, 
         normalized["ge_service_card"] = ge_service["card"]
         normalized["ge_service"] = ge_service
 
+    nni = _normalize_topology_nni(slots, slot_to_card_key, targets.get("nni"))
+    if nni:
+        normalized["nni_card"] = nni["card"]
+        normalized["nni"] = nni
+
     return normalized
 
 
@@ -399,6 +404,27 @@ def _normalize_topology_ge_service(
         _copy_if_present(ge_service, field, defaults, field)
         _copy_if_present(ge_service, field, raw_ge, field)
     return ge_service
+
+
+def _normalize_topology_nni(
+    slots: dict[str, Any],
+    slot_to_card_key: dict[str, str],
+    selector: Any,
+) -> dict[str, Any]:
+    if not isinstance(selector, dict):
+        return {}
+    slot_id = str(selector.get("slot", ""))
+    port_id = str(selector.get("port", ""))
+    raw_port = _topology_port(slots, slot_id, port_id)
+    if not isinstance(raw_port, dict) or slot_id not in slot_to_card_key or not port_id:
+        return {}
+    return {
+        "card": slot_to_card_key[slot_id],
+        "slot_id": slot_id,
+        "port_id": port_id,
+        "port_type": str(raw_port.get("port_type", raw_port.get("type", ""))),
+        "port_speed": str(raw_port.get("port_speed", raw_port.get("speed", ""))),
+    }
 
 
 def _section_defaults(defaults: Any, section: str) -> dict[str, Any]:

@@ -1,0 +1,161 @@
+{
+  "source": {
+    "generated_from": "tests/test_neox_ge_incremental_probe.py",
+    "observed": "2026-05-13",
+    "report": "reports/incremental-probes/neox_ge_incremental_probe_20260513_110913.json",
+    "target_scope": "NODE3 GE safe port",
+    "note": "Fields were added one at a time. Each field here was retained because the accumulated payload still returned Success."
+  },
+  "payload": {
+    "Content": {
+      "anti_spoofing": "enable",
+      "arpinspection": "enable",
+      "auto_nego": "enable",
+      "portenable": "enable",
+      "flow": "disable",
+      "portspeed": "auto",
+      "frametype": "all",
+      "portname": "REST_GE_39",
+      "algorithm": "sp",
+      "bpdu": "peer",
+      "copycpbit": "disable",
+      "dot1xcontrol": "auto",
+      "dotlxactive": "disable",
+      "dotlxauthone": "disable",
+      "dscp": "disable",
+      "groupprivilege": "disable",
+      "ldrapolicy": "drop",
+      "lldp_admin": "disabled",
+      "lldp_management": "disable",
+      "lldp_notification": "disable",
+      "lldp_org_dot1": "disable",
+      "lldp_org_dot3_link": "disable",
+      "lldp_org_dot3_macphy": "disable",
+      "lldp_org_dot3_maxframe": "disable",
+      "lldp_portdesc": "disable"
+    }
+  },
+  "failed_when_added_to_accumulated_payload": [
+    {
+      "field": "lldp_systemcap",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail",
+      "message": "Not authorized."
+    },
+    {
+      "field": "lldp_systemdsc",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "lldp_systemname",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "lldralinklocal",
+      "value": "chk-all",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "loopguard",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "loopguard_policy",
+      "value": "fix",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "macfilter",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "macfiltermode",
+      "value": "accept",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "opt82policy",
+      "value": "drop",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "ouifilter",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "ouifiltermode",
+      "value": "accept",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "outertpid",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "packfiltertype",
+      "value": "accept-all",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "pppoepolicy",
+      "value": "drop",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "pwsaving",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "snooping_dhcp",
+      "value": "trust",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "snooping_dhcpv6",
+      "value": "trust",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "snooping_ipmacbinding",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "spoofing_action",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    },
+    {
+      "field": "staticipfilter_ipmacbinding",
+      "value": "disable",
+      "status_code": 200,
+      "retstatus": "Fail"
+    }
+  ]
+}

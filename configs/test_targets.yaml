@@ -100,6 +100,9 @@ nodes:
           1:
             type: "Network"
             speed: "1G"
+          12:
+            type: "Network"
+            speed: "10G"
       3:
         card: "NXP316"
         fw_version: "V1.02(ACKI.1)b17"
@@ -134,6 +137,9 @@ nodes:
       ge_service:
         slot: "1"
         port: "39"
+      nni:
+        slot: "4"
+        port: "12"
 
   NODE4:
     device_name: "OLT1408A-C_168.84"

@@ -1,0 +1,175 @@
+{
+  "source": {
+    "derived_from": [
+      "NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf",
+      "configs/neox_ge_full_accepted_payload.json",
+      "configs/neox_ge_enable_accepted_payload.json"
+    ],
+    "purpose": "Retry GE fields that failed in the full probe with values and preconditions inferred from the NeoX user guide.",
+    "notes": [
+      "Cases may include multiple fields when the user guide indicates a feature needs an enable flag plus mode/value fields.",
+      "Some VLAN TLS/trunk/translation features are documented as unsupported on NXC/NXP; expected failures are still recorded for negative-case evidence.",
+      "QoS profile-name cases require profiles to exist before assigning them to the GE port."
+    ]
+  },
+  "preconditions": {
+    "create_vlan": true,
+    "create_qos_profiles": true
+  },
+  "candidates": [
+    {
+      "name": "oui_filter_colon_format",
+      "fields": {
+        "ouifilter": "enable",
+        "ouifiltermode": "accept",
+        "acl_ouilist": [
+          {
+            "acloui": "00:11:22"
+          }
+        ]
+      },
+      "pdf_basis": "OUI Filter requires the first three octets in xx:xx:xx format."
+    },
+    {
+      "name": "packet_filter_pppoe_only",
+      "fields": {
+        "packfiltertype": "pppoe-only"
+      },
+      "pdf_basis": "Packet-Filter Type supports Accept All, PPPoE Only, and Custom Reject."
+    },
+    {
+      "name": "packet_filter_custom_reject_ip",
+      "fields": {
+        "packfiltertype": "custom-reject",
+        "customtype": "ip"
+      },
+      "pdf_basis": "Custom Reject must be paired with at least one reject type."
+    },
+    {
+      "name": "packet_filter_custom_reject_arp",
+      "fields": {
+        "packfiltertype": "custom-reject",
+        "customtype": "arp"
+      },
+      "pdf_basis": "Custom Reject options include protocol packet types such as IP and ARP."
+    },
+    {
+      "name": "lldp_admin_txrx",
+      "fields": {
+        "lldp_admin": "tx-rx"
+      },
+      "pdf_basis": "LLDP Admin Status has Disable, Tx-only, Rx-only, and Tx-Rx."
+    },
+    {
+      "name": "lldp_basic_tlv_with_txrx",
+      "fields": {
+        "lldp_admin": "tx-rx",
+        "lldp_management": "enable",
+        "lldp_notification": "enable",
+        "lldp_systemdsc": "enable",
+        "lldp_systemname": "enable"
+      },
+      "pdf_basis": "LLDP Basic TLV options include Management Address, System Description, and System Name."
+    },
+    {
+      "name": "lldp_org_tlv_with_txrx",
+      "fields": {
+        "lldp_admin": "tx-rx",
+        "lldp_org_dot1": "enable",
+        "lldp_org_dot3_link": "enable"
+      },
+      "pdf_basis": "LLDP Org-specific TLV options include IEEE 802.1 Port VLAN ID and IEEE 802.3 Link Aggregation."
+    },
+    {
+      "name": "dhcp_policy_pdf_values",
+      "fields": {
+        "opt82policy": "keep",
+        "ldrapolicy": "keep",
+        "lldralinklocal": "skip-src"
+      },
+      "pdf_basis": "DHCP option handling supports Drop/Replace/Keep; LinkLocal option includes Skip-src."
+    },
+    {
+      "name": "dhcp_snooping_untrust",
+      "fields": {
+        "snooping_dhcp": "untrust",
+        "snooping_dhcpv6": "untrust"
+      },
+      "pdf_basis": "Port DHCP screen uses Trust/Untrust for DHCP and DHCPv6."
+    },
+    {
+      "name": "vlan_pvid_with_vlan_precreated",
+      "fields": {
+        "pvid": 1314,
+        "pbit": 0
+      },
+      "pdf_basis": "PVID valid range is 1 to 4094; pbit valid range is 0 to 7."
+    },
+    {
+      "name": "vlan_list_fixed_with_vlan_precreated",
+      "fields": {
+        "vlan_list": [
+          {
+            "vid": 1314,
+            "vlanmode": "fixed"
+          }
+        ]
+      },
+      "pdf_basis": "VLAN membership requires a valid VLAN ID and mode."
+    },
+    {
+      "name": "vlan_translation_with_vlan_precreated",
+      "fields": {
+        "vlantrans_list": [
+          {
+            "cvid": 1314,
+            "spbit": 0,
+            "svlan": 1314,
+            "trans_mode": "uni-vlan",
+            "univid": 1314
+          }
+        ]
+      },
+      "pdf_basis": "VLAN translation uses VLAN IDs 1 to 4094 and spbit 0 to 7."
+    },
+    {
+      "name": "qos_profile_names_precreated",
+      "fields": {
+        "ratelimitname": "RestApi_NeoX_RateLimit",
+        "shapingname": "RestApi_NeoX_Shaping",
+        "weightname": "RestApi_NeoX_Weight"
+      },
+      "pdf_basis": "Port QoS selects existing Rate-Limit, Shaping, and Weight profiles."
+    },
+    {
+      "name": "ge_advanced_mtu_tel",
+      "fields": {
+        "mtu": 1518,
+        "tel": "0000"
+      },
+      "pdf_basis": "GE advanced screen exposes MTU and TEL-NO."
+    },
+    {
+      "name": "ddmi_threshold_pdf_ranges",
+      "fields": {
+        "temperature_alarm_high": "100",
+        "temperature_alarm_low": "-40",
+        "temperature_warn_high": "100",
+        "temperature_warn_low": "-40",
+        "txpower_alarm_high": "6.5",
+        "txpower_alarm_low": "-15.3",
+        "txpower_warn_high": "6.5",
+        "txpower_warn_low": "-15.3",
+        "rxpower_alarm_high": "0",
+        "rxpower_alarm_low": "-127",
+        "rxpower_warn_high": "0",
+        "rxpower_warn_low": "-127",
+        "voltage_alarm_high": "3.59",
+        "voltage_alarm_low": "2.8",
+        "voltage_warn_high": "3.59",
+        "voltage_warn_low": "2.8"
+      },
+      "pdf_basis": "DDMI/threshold ranges are taken from documented alarm-profile ranges and GE DDMI descriptions."
+    }
+  ]
+}

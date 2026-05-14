@@ -52,4 +52,18 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             role = "readonly"
         elif "noaccess" in item.keywords:
             role = "noaccess"
+        _register_parametrized_case(item)
         register_permission_role(item.nodeid, role)
+
+
+def _register_parametrized_case(item: pytest.Item) -> None:
+    callspec = getattr(item, "callspec", None)
+    params = getattr(callspec, "params", {})
+    case = params.get("case") if isinstance(params, dict) else None
+    if case is None:
+        return
+    register_node_case(
+        item.nodeid,
+        getattr(case, "case_id", None),
+        str(getattr(case, "name", "")),
+    )

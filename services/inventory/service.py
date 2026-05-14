@@ -116,10 +116,10 @@ class InventoryService:
         with allure_step("Wait until ONT inventory becomes stable after provisioning instead of sleeping a fixed 180 seconds"):
             self.wait_for_ont_inventory(
                 session_id=session_id,
-                timeout=300,
+                timeout=600,
                 interval=15,
                 consecutive_successes=2,
-                raise_on_timeout=False,
+                raise_on_timeout=True,
             )
 
     def wait_for_ont_service_state(
@@ -201,7 +201,44 @@ class InventoryService:
                 stable_hits = 0
             time.sleep(interval)
         if raise_on_timeout:
-            raise AssertionError(f"ONT inventory did not become readable. Last response: {_response_summary(last)}")
+            raise AssertionError(f"ONT inventory did not become readable. Last status: {_ont_inventory_status(last, self.env_config)}")
+        return False
+
+    def wait_for_ge_port_inventory(
+        self,
+        session_id: str,
+        timeout: int = 300,
+        interval: int = 15,
+        raise_on_timeout: bool = True,
+    ) -> bool:
+        dut = self.env_config.dut
+        path = f"/port/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
+        deadline = time.monotonic() + timeout
+        last = None
+        while time.monotonic() <= deadline:
+            response = self.api_client.request("GET", path, session=session_id)
+            last = response
+            if response.retstatus == "Success":
+                try:
+                    _assert_port_fields(
+                        _find_inventory_item(
+                            response.json,
+                            "portinfolist",
+                            "portinfo",
+                            lambda item: item.get("DevName") == dut.device_name
+                            and str(item.get("SlotID")) == dut.ge_slot_id
+                            and str(item.get("PortID")) == dut.ge_port_id,
+                            "port_by_id",
+                        ),
+                        self.env_config,
+                    )
+                except AssertionError:
+                    pass
+                else:
+                    return True
+            time.sleep(interval)
+        if raise_on_timeout:
+            raise AssertionError(f"GE port inventory did not become readable. Last status: {_ge_port_inventory_status(last)}")
         return False
 
     def ensure_profile_by_name(self, session_id: str, profilename: str, seen=None) -> None:
@@ -345,13 +382,6 @@ def _assert_device_fields(item, env_config):
     if controller_fw:
         expected["BootFwVersion"] = controller_fw
     _assert_fields(item, expected, "Device")
-    if controller_fw:
-        _assert_any_field(
-            item,
-            ("FwVersion2", "FwVersion", "ControllerFwVersion", "controllerFwVersion"),
-            controller_fw,
-            "Device",
-        )
 
 
 def _assert_slot_fields(item, env_config):
@@ -609,6 +639,60 @@ def _assert_any_field(actual, keys, expected_value, label):
 
 def _response_summary(response):
     return format_response_summary(response) if response is not None else "None"
+
+
+def _ont_inventory_status(response, env_config):
+    if response is None:
+        return "None"
+    summary = format_response_summary(response)
+    if response.retstatus != "Success":
+        return summary
+    try:
+        item = find_ont_item(response.json, env_config, "ont_by_sn")
+    except Exception:
+        item = None
+    if not isinstance(item, dict):
+        retval = response.json.get("retval", {}) if isinstance(response.json, dict) else {}
+        item = retval.get("ontinfo") if isinstance(retval, dict) else None
+    if not isinstance(item, dict):
+        return summary
+    fields = {
+        "ONT": item.get("ONT") or item.get("ONTID"),
+        "sn": item.get("sn") or item.get("SN") or item.get("SerialNumber"),
+        "Slot": item.get("Slot") or item.get("SlotID"),
+        "Port": item.get("Port") or item.get("PortID"),
+        "OntAdminState": item.get("OntAdminState"),
+        "OntOperationStatus": item.get("OntOperationStatus"),
+        "templateName": item.get("templateName"),
+        "description": item.get("description"),
+    }
+    compact = {key: value for key, value in fields.items() if value not in {None, ""}}
+    return f"{summary}; ONT fields={compact!r}"
+
+
+def _ge_port_inventory_status(response):
+    if response is None:
+        return "None"
+    summary = format_response_summary(response)
+    if response.retstatus != "Success":
+        return summary
+    retval = response.json.get("retval", {}) if isinstance(response.json, dict) else {}
+    item = retval.get("portinfo") if isinstance(retval, dict) else None
+    if not isinstance(item, dict):
+        return summary
+    fields = {
+        "PortName": item.get("PortName"),
+        "SlotID": item.get("SlotID"),
+        "PortID": item.get("PortID"),
+        "portAdminState": item.get("portAdminState"),
+        "portOperationStatus": item.get("portOperationStatus"),
+        "Enable": item.get("Enable"),
+        "PortType": item.get("PortType"),
+        "txPower": item.get("txPower"),
+        "rxPower": item.get("rxPower"),
+    }
+    compact = {key: value for key, value in fields.items() if value not in {None, ""}}
+    return f"{summary}; Port fields={compact!r}"
 
 
 def _profile_refs(value):

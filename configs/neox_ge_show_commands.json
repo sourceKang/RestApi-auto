@@ -1,0 +1,191 @@
+{
+  "source": {
+    "origin": "NeoX CLI help: show interface ge 1-?",
+    "target_scope": "NODE3 GE safe port",
+    "note": "Read-only commands used to verify GE parameters beyond running-config."
+  },
+  "commands": [
+    {
+      "feature": "acl",
+      "command_suffix": "acl"
+    },
+    {
+      "feature": "acl-egress",
+      "command_suffix": "acl-egress"
+    },
+    {
+      "feature": "alarm",
+      "command_suffix": "alarm"
+    },
+    {
+      "feature": "arp-inspection",
+      "command_suffix": "arp-inspection"
+    },
+    {
+      "feature": "bpdu-control",
+      "command_suffix": "bpdu-control"
+    },
+    {
+      "feature": "config",
+      "command_suffix": "config"
+    },
+    {
+      "feature": "ddmi",
+      "command_suffix": "ddmi"
+    },
+    {
+      "feature": "dhcp",
+      "command_suffix": "dhcp"
+    },
+    {
+      "feature": "dot1x",
+      "command_suffix": "dot1x"
+    },
+    {
+      "feature": "dscp",
+      "command_suffix": "dscp"
+    },
+    {
+      "feature": "fdb",
+      "command_suffix": "fdb"
+    },
+    {
+      "feature": "frame-type",
+      "command_suffix": "frame-type"
+    },
+    {
+      "feature": "igmp-mld",
+      "command_suffix": "igmp-mld"
+    },
+    {
+      "feature": "lldp",
+      "command_suffix": "lldp"
+    },
+    {
+      "feature": "loopguard",
+      "command_suffix": "loopguard"
+    },
+    {
+      "feature": "macff",
+      "command_suffix": "macff"
+    },
+    {
+      "feature": "mtu",
+      "command_suffix": "mtu"
+    },
+    {
+      "feature": "oam",
+      "command_suffix": "oam discovery"
+    },
+    {
+      "feature": "power-saving",
+      "command_suffix": "power-saving"
+    },
+    {
+      "feature": "pppoe",
+      "command_suffix": "pppoe"
+    },
+    {
+      "feature": "pvid",
+      "command_suffix": "pvid"
+    },
+    {
+      "feature": "qos",
+      "command_suffix": "qos"
+    },
+    {
+      "feature": "smcast",
+      "command_suffix": "smcast"
+    },
+    {
+      "feature": "statistics",
+      "command_suffix": "statistics"
+    },
+    {
+      "feature": "status",
+      "command_suffix": "status"
+    },
+    {
+      "feature": "storm-control",
+      "command_suffix": "storm-control"
+    },
+    {
+      "feature": "vlan",
+      "command_suffix": "vlan"
+    }
+  ],
+  "field_to_features": {
+    "acl_maclist": ["acl"],
+    "acl_ouilist": ["acl"],
+    "anti_spoofing": ["config"],
+    "arpinspection": ["arp-inspection"],
+    "bpdu": ["bpdu-control"],
+    "broadcast_rate": ["storm-control"],
+    "copycpbit": ["vlan"],
+    "dlf_rate": ["storm-control"],
+    "dot1xcontrol": ["dot1x"],
+    "dot1xreauthpeiod": ["dot1x"],
+    "dotlxactive": ["dot1x"],
+    "dotlxauthone": ["dot1x"],
+    "dotlxcircuitinfo": ["dot1x"],
+    "dotlxserverindex": ["dot1x"],
+    "dscp": ["dscp"],
+    "egress_profile_list": ["acl-egress"],
+    "fdb_list": ["fdb"],
+    "flow": ["config"],
+    "frametype": ["frame-type"],
+    "groupprivilege": ["igmp-mld"],
+    "igmp_bandwidth": ["igmp-mld"],
+    "igmp_grouppriprofile_list": ["igmp-mld"],
+    "igmp_mvid_list": ["igmp-mld"],
+    "ldrapolicy": ["dhcp"],
+    "lldp_admin": ["lldp"],
+    "lldp_management": ["lldp"],
+    "lldp_notification": ["lldp"],
+    "lldp_org_dot1": ["lldp"],
+    "lldp_org_dot3_link": ["lldp"],
+    "lldp_org_dot3_macphy": ["lldp"],
+    "lldp_org_dot3_maxframe": ["lldp"],
+    "lldp_portdesc": ["lldp"],
+    "lldp_systemcap": ["lldp"],
+    "lldp_systemdsc": ["lldp"],
+    "lldp_systemname": ["lldp"],
+    "lldralinklocal": ["dhcp"],
+    "loopguard": ["loopguard"],
+    "loopguard_policy": ["loopguard"],
+    "loopguard_recovertime": ["loopguard"],
+    "macfilter": ["acl"],
+    "macfiltermode": ["acl"],
+    "maxcount": ["igmp-mld"],
+    "maxgroup": ["igmp-mld"],
+    "maxmsg": ["igmp-mld"],
+    "mtu": ["mtu"],
+    "multicast_rate": ["storm-control"],
+    "opt82policy": ["dhcp"],
+    "ouifilter": ["acl"],
+    "ouifiltermode": ["acl"],
+    "outertpid": ["vlan"],
+    "packfiltertype": ["acl"],
+    "port_aclprofile_list": ["acl"],
+    "portenable": ["config", "status"],
+    "portname": ["config"],
+    "portspeed": ["config", "status"],
+    "pppoepolicy": ["pppoe"],
+    "pvid": ["pvid"],
+    "pwsaving": ["power-saving"],
+    "snooping_dhcp": ["dhcp"],
+    "snooping_dhcpv6": ["dhcp"],
+    "snooping_ipmacbinding": ["dhcp"],
+    "snooping_maxlease": ["dhcp"],
+    "snooping_vlanlist": ["dhcp"],
+    "spoofing_action": ["config"],
+    "staticipfilter_ipmacbinding": ["dhcp"],
+    "staticipfilter_list": ["dhcp"],
+    "vlan_list": ["vlan"],
+    "vlantrans_list": ["vlan"],
+    "vlantrunk_ether_list": ["vlan"],
+    "vlantrunk_subnet_list": ["vlan"],
+    "vlantrunk_untag_list": ["vlan"],
+    "vlantrunk_vlan_list": ["vlan"]
+  }
+}

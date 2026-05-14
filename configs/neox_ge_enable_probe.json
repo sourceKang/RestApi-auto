@@ -1,0 +1,125 @@
+{
+  "source": {
+    "base_payload": "configs/neox_ge_full_accepted_payload.json",
+    "show_commands": "configs/neox_ge_show_commands.json",
+    "strategy": "Prefer enable values where the field semantic supports enable/disable. Add one field or value change at a time, keep only Success responses, and collect running-config plus feature show outputs."
+  },
+  "candidates": [
+    {
+      "field": "flow",
+      "value": "enable"
+    },
+    {
+      "field": "copycpbit",
+      "value": "enable"
+    },
+    {
+      "field": "dotlxactive",
+      "value": "enable"
+    },
+    {
+      "field": "dotlxauthone",
+      "value": "enable"
+    },
+    {
+      "field": "dscp",
+      "value": "enable"
+    },
+    {
+      "field": "groupprivilege",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_management",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_notification",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_org_dot1",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_org_dot3_link",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_org_dot3_macphy",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_org_dot3_maxframe",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_portdesc",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_systemcap",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_systemdsc",
+      "value": "enable"
+    },
+    {
+      "field": "lldp_systemname",
+      "value": "enable"
+    },
+    {
+      "field": "loopguard",
+      "value": "enable"
+    },
+    {
+      "field": "macfilter",
+      "value": "enable"
+    },
+    {
+      "field": "ouifilter",
+      "value": "enable"
+    },
+    {
+      "field": "outertpid",
+      "value": "enable"
+    },
+    {
+      "field": "pwsaving",
+      "value": "enable"
+    },
+    {
+      "field": "snooping_ipmacbinding",
+      "value": "enable"
+    },
+    {
+      "field": "spoofing_action",
+      "value": "enable"
+    },
+    {
+      "field": "staticipfilter_ipmacbinding",
+      "value": "enable"
+    },
+    {
+      "field": "snooping_dhcp",
+      "value": "trust"
+    },
+    {
+      "field": "snooping_dhcpv6",
+      "value": "trust"
+    },
+    {
+      "field": "opt82policy",
+      "value": "keep"
+    },
+    {
+      "field": "pppoepolicy",
+      "value": "keep"
+    },
+    {
+      "field": "loopguard_policy",
+      "value": "dynamic"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+# NeoX new-feature test data index.
+#
+# Workflow for every new NeoX feature:
+# 1. Use Swagger/OpenAPI to determine REST endpoint, JSON key names, and schema shape.
+# 2. Use NeoX Series User's Guide to determine safe values, ranges, and CLI semantics.
+# 3. Apply the REST request only to the approved NODE3 target data.
+# 4. Verify the result with a read-only CLI show command on the device.
+# 5. Store passing data and observed failing data under configs/ for reuse.
+
+source:
+  swagger: "configs/neox_swagger_data.yaml"
+  user_guide_reference: "configs/neox_ug_parameter_reference.yaml"
+  user_guide_text: "reports/neox_ug_text.txt"
+
+features:
+  ge_config:
+    endpoint: "/configNeoXSeries/interface/ge/{devicename}/{slotid}/{portid}"
+    normal_data:
+      - "configs/neox_ge_enable_accepted_payload.json"
+      - "configs/neox_ge_full_accepted_payload.json"
+    abnormal_data:
+      - "configs/neox_ge_negative_cases.json"
+      - "configs/neox_ge_incremental_probe.json"
+      - "configs/neox_ge_pdf_retry_probe.json"
+    cli_reference:
+      - "configs/neox_ge_show_commands.json"
+    status: "GE accepted and failed probe data are recorded; GE full automation is intentionally stopped at current confirmed scope."
+
+  nni_config:
+    endpoint: "/configNeoXSeries/interface/nni/{devicename}/{slotid}/{portid}"
+    normal_data:
+      - "configs/neox_nni_full_accepted_payload.json"
+    abnormal_data: []
+    cli_reference:
+      - "show running-config interface nni {portid}"
+    status: "Confirmed on NODE3 NNI slot 4 with more than five parameters and CLI verification."
+
+  neox_qos_profiles:
+    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
+    normal_data:
+      - "configs/neox_profile_qos_minmax_cases.json"
+    abnormal_data: []
+    cli_reference:
+      - "show qos ratelimit-profile {profile_name}"
+      - "show qos shaping-profile {profile_name}"
+      - "show qos weight-profile {profile_name}"
+    status: "RateLimit, Shaping, and Weight min/max cases are REST-success and CLI-verified."
+
+  neox_basic_profiles:
+    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
+    normal_data:
+      - "configs/neox_profile_basic_cases.json"
+    abnormal_data: []
+    cli_reference:
+      - "show xpon ont-alarm-profile {profile_name}"
+      - "show xpon qos bwprof {profile_name}"
+      - "show xpon security-profile {profile_name}"
+      - "show xpon service-profile {profile_name}"
+    status: "ONT Alarm, Bandwidth, Security, Service, Multicast, IGMP Group Privilege, ACL, VoIP Common, VoIP Dial Plan, VoIP SIP, ONT, and Template profile basic cases are REST-success and CLI-verified or user-confirmed pending next automation run."
+
+  neox_profile_observed_failures:
+    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
+    normal_data: []
+    abnormal_data:
+      - "configs/neox_profile_observed_failures.json"
+      - "configs/neox_igmp_group_privilege_probe_cases.json"
+    cli_reference: []
+    status: "Observed profile payloads that currently return retstatus=Fail or schema errors; keep for follow-up and future negative tests."

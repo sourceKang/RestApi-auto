@@ -1,0 +1,203 @@
+{
+  "source": {
+    "derived_from": [
+      "NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf",
+      "configs/neox_swagger_data.yaml",
+      "configs/neox_ug_parameter_reference.yaml"
+    ],
+    "workflow": "Swagger determines JSON keys; NeoX UG determines value/range; CLI show verifies device state.",
+    "purpose": "NeoX non-QoS profile create success and CLI verification cases."
+  },
+  "cases": [
+    {
+      "profile_type": "ONTAlarmProfile",
+      "profile_name": "RestApi_NeoX_Alarm_Basic",
+      "payload": {
+        "Content": {
+          "lowcurr": "0",
+          "upcurr": "79",
+          "lowrxpower": "-127",
+          "uprxpower": "0",
+          "lowtemp": "-40",
+          "uptemp": "100",
+          "lowtxpower": "-15.3",
+          "uptxpower": "6.5",
+          "lowvolt": "2.8",
+          "upvol": "3.59"
+        }
+      },
+      "show_command": "show xpon ont-alarm-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "2.80", "3.59", "79", "-127.0"]
+    },
+    {
+      "profile_type": "ONTBandwidthProfile",
+      "profile_name": "RestApi_NeoX_Bw_Basic",
+      "payload": {
+        "Content": {
+          "sir": "0",
+          "air": "0",
+          "pir": "10240"
+        }
+      },
+      "show_command": "show xpon qos bwprof {profile_name}",
+      "expected_tokens": ["{profile_name}", "10240"]
+    },
+    {
+      "profile_type": "ONTSecurityProfile",
+      "profile_name": "RestApi_NeoX_Security_Basic",
+      "payload": {
+        "Content": {
+          "fdb": "1023"
+        }
+      },
+      "show_command": "show xpon security-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "disable", "1023"]
+    },
+    {
+      "profile_type": "ONTServiceProfile",
+      "profile_name": "RestApi_NeoX_Service_Basic",
+      "payload": {
+        "Content": {
+          "mode": "veip",
+          "uniport": "lan",
+          "lan": "1",
+          "vlan": "1314",
+          "pbit": "0"
+        }
+      },
+      "show_command": "show xpon service-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "1314", "veip", "port_lan: 1"]
+    },
+    {
+      "profile_type": "ONTMulticastProfile",
+      "profile_name": "RestApi_NeoX_Mcast_Basic",
+      "payload": {
+        "Content": {
+          "univid": "1314",
+          "igmp": "IGMPv2",
+          "mode": "transparent",
+          "txtagvid": "1314",
+          "txtagpbit": "0",
+          "maxgroup": "1",
+          "maxmsg": "1"
+        }
+      },
+      "show_command": "show xpon multicast-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "1314", "IGMPv2", "transparent"]
+    },
+    {
+      "profile_type": "IGMPGroupPrivilegeProfile",
+      "profile_name": "RApiIGMPPass",
+      "payload": {
+        "Content": {
+          "grpbandwidth1": "100",
+          "startip1": "225.2.4.1",
+          "endip1": "225.2.4.20",
+          "prvitype1": "permit"
+        }
+      },
+      "show_command": "show igmp-mld group-privilege-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "225.2.4.1", "225.2.4.20", "100"]
+    },
+    {
+      "profile_type": "ONTAclProfile",
+      "profile_name": "RestApi_NeoX_ACL_Basic",
+      "payload": {
+        "Content": {
+          "policy": "trust",
+          "interface": "both",
+          "protocol": "255",
+          "srcport": "65535",
+          "destport": "65535",
+          "srcmask": "32",
+          "destmask": "32",
+          "srcip": "10.10.10.1",
+          "destip": "10.10.10.2",
+          "srcmac": "10:10:10:10:10:01",
+          "destmac": "10:10:10:10:10:02",
+          "logging": "disable",
+          "counter": "disable"
+        }
+      },
+      "show_command": "show xpon ont-acl-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "Policy", "Drop", "Interface", "LAN"]
+    },
+    {
+      "profile_type": "ONTVoipCommonProfile",
+      "profile_name": "RApiVCommon",
+      "payload": {
+        "Content": {
+          "1codec": "G729",
+          "1packet": "10",
+          "1silence": "disable",
+          "buf": "500",
+          "dscp": "63",
+          "dtmf": "enable",
+          "echo": "enable",
+          "maxport": "65535",
+          "minport": "1"
+        }
+      },
+      "show_command": "show xpon voip-common-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "G729", "63", "65535"]
+    },
+    {
+      "profile_type": "ONTVoipDialPlanProfile",
+      "profile_name": "RApiDial",
+      "payload": {
+        "Content": {
+          "critical": "8000",
+          "format": "h248",
+          "identifier": "+88603(X.)",
+          "max": "256",
+          "partial": "32000"
+        }
+      },
+      "show_command": "show xpon voip-dial-plan {profile_name}",
+      "expected_tokens": ["{profile_name}", "256", "8000", "32000", "h248"]
+    },
+    {
+      "profile_type": "ONTVoipSipProfile",
+      "profile_name": "RApiSip",
+      "payload": {
+        "Content": {
+          "hosturi": "10.0.0.1",
+          "proxyaddr": "10.0.0.1",
+          "registrar": "10.0.0.1",
+          "regexptime": "3600",
+          "pridns": "8.8.8.8",
+          "secdns": "8.8.4.4"
+        }
+      },
+      "show_command": "show xpon voip-sip-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "10.0.0.1", "8.8.8.8", "3600"]
+    },
+    {
+      "profile_type": "ONTONTProfile",
+      "profile_name": "RestApi_NeoX_ONT_Basic",
+      "payload": {
+        "Content": {
+          "fwlevel": "medium",
+          "telnetport": "23"
+        }
+      },
+      "show_command": "show xpon ont-profile {profile_name}",
+      "expected_tokens": ["{profile_name}", "Firewall", "Service", "Loopguard"]
+    },
+    {
+      "profile_type": "ONTTemplateProfile",
+      "profile_name": "RestApi_NeoX_Tpl_Basic",
+      "payload": {
+        "Content": {
+          "dsop": "ont",
+          "enc_algorithm": "none",
+          "encscope_service": "disable",
+          "encscope_omci": "disable",
+          "encscope_iphost": "disable"
+        }
+      },
+      "show_command": "show xpon template {profile_name}",
+      "expected_tokens": ["{profile_name}", "QoS Downstream Option", "encryption algorithm"]
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "source": {
+    "observed": "2026-05-14",
+    "target_scope": "NODE3 NeoX profile endpoint",
+    "workflow": "Swagger determines JSON keys; NeoX UG determines value/range; CLI show verifies only after REST success.",
+    "purpose": "Observed payloads that are not yet accepted by the NeoX profile API. Keep for follow-up and future negative tests."
+  },
+  "cases": [
+    {
+      "profile_type": "ONTAclProfile",
+      "profile_name": "RestApi_NeoX_ACL_Basic",
+      "retstatus": "Fail",
+      "retresult": "",
+      "observed_reason": "Non-empty ACL payload still needs field-level value mapping; empty Content creates the default ACL profile successfully.",
+      "payload": {
+        "Content": {
+          "enable": "active",
+          "policy": "trust",
+          "interface": "lan",
+          "protocol": "255",
+          "srcport": "1",
+          "destport": "65535",
+          "srcmask": "32",
+          "destmask": "32",
+          "srcip": "192.0.2.1",
+          "destip": "192.0.2.2",
+          "srcmac": "10:10:10:10:10:01",
+          "destmac": "10:10:10:10:10:02",
+          "logging": "active",
+          "counter": "active"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTAclProfile",
+      "profile_name": "RestApi_NeoX_ACL_Basic",
+      "retstatus": "Fail",
+      "retresult": "",
+      "observed_reason": "Non-empty ACL payload still needs field-level value mapping; empty Content creates the default ACL profile successfully.",
+      "payload": {
+        "Content": {
+          "enable": "enable",
+          "policy": "trust",
+          "interface": "lan",
+          "protocol": "255",
+          "srcport": "1",
+          "destport": "65535",
+          "srcmask": "32",
+          "destmask": "32"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTVoipCommonProfile",
+      "profile_name": "RestApi_NeoX_VoipCommon_Basic",
+      "retstatus": "Fail",
+      "retresult": "",
+      "observed_reason": "This payload used legacy 1/0 style values for enable/disable fields; NeoX UG values such as enable/disable are accepted.",
+      "payload": {
+        "Content": {
+          "1codec": "G729",
+          "1packet": "10",
+          "1silence": "1",
+          "buf": "500",
+          "dscp": "63",
+          "dtmf": "1",
+          "echo": "1",
+          "maxport": "65535",
+          "minport": "1"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTVoipDialPlanProfile",
+      "profile_name": "RestApi_NeoX_DialPlan_Basic",
+      "retstatus": "Fail",
+      "retresult": "",
+      "observed_reason": "VoIP dial plan profile names are limited to 1-15 characters in the NeoX UG; short names are accepted.",
+      "payload": {
+        "Content": {
+          "critical": "8000",
+          "format": "h248",
+          "identifier": "+88603(X.)",
+          "max": "256",
+          "partial": "32000"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTVoipSipProfile",
+      "profile_name": "RestApi_NeoX_SIP_Basic",
+      "retstatus": "Fail",
+      "retresult": "",
+      "observed_reason": "VoIP SIP profile names are limited to 1-15 characters in the NeoX UG; short names are accepted.",
+      "payload": {
+        "Content": {
+          "hosturi": "10.0.0.1",
+          "proxyaddr": "10.0.0.1",
+          "registrar": "10.0.0.1",
+          "regexptime": "3600",
+          "pridns": "8.8.8.8",
+          "secdns": "8.8.4.4"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTUNIProfile",
+      "profile_name": "RestApi_NeoX_UNI_Probe",
+      "retstatus": "Timeout",
+      "retresult": "HTTPS read timed out after 20 seconds",
+      "observed_reason": "Empty Content request did not return within the bounded probe timeout. Keep out of success automation until a smaller accepted payload is identified.",
+      "payload": {
+        "Content": {}
+      }
+    },
+    {
+      "profile_type": "IGMPGroupPrivilegeProfile",
+      "profile_name": "RestApi_NeoX_IGMP_Probe",
+      "retstatus": "Timeout",
+      "retresult": "HTTPS read timed out after 20 seconds",
+      "observed_reason": "Empty Content request did not return within the bounded probe timeout. Keep out of success automation until a smaller accepted payload is identified.",
+      "payload": {
+        "Content": {}
+      }
+    },
+    {
+      "profile_type": "ONTAclProfile",
+      "profile_name": "RApiACLDisable",
+      "retstatus": "Fail",
+      "retresult": "disable inactive : % Invalid command \"disable\"",
+      "observed_reason": "NeoX Swagger exposes enable, but both enable=enable and enable=disable are translated into invalid CLI inactive commands. Omit enable for the accepted non-empty ACL payload.",
+      "payload": {
+        "Content": {
+          "enable": "disable"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTONTProfile",
+      "profile_name": "RApiONTNonEmpty",
+      "retstatus": "Fail",
+      "retresult": "Invalid field: snmpenable",
+      "observed_reason": "Swagger summary used snmpenable as a sample field, but live NeoX endpoint rejects it. Use fwlevel/telnetport for the current non-empty smoke payload.",
+      "payload": {
+        "Content": {
+          "snmpenable": "disable"
+        }
+      }
+    },
+    {
+      "profile_type": "ONTTemplateProfile",
+      "profile_name": "RApiTplPir128",
+      "retstatus": "Fail",
+      "retresult": "ds-pir 128 : ds-pir *128 %% Invalid input detected at marker",
+      "observed_reason": "UG says dspir supports 0 or 128-2400000, but live template endpoint rejects dspir in this REST flow. Omit dspir for the accepted non-empty template payload.",
+      "payload": {
+        "Content": {
+          "dspir": "128"
+        }
+      }
+    }
+  ]
+}

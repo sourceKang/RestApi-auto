@@ -28,7 +28,7 @@ RETRY_CONFIG_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_p
 ENABLE_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_enable_accepted_payload.json"
 
 
-def test_ge_pdf_derived_retry_probe_collects_failed_field_evidence(
+def test_ge_pdf_derived_probe_set_readwrite(
     api_client,
     env_config,
     neox_config_service,

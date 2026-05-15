@@ -26,11 +26,22 @@ pytestmark = [
 QOS_MINMAX_CASES_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_profile_qos_minmax_cases.json"
 
 
-def test_neox_qos_profile_minmax_create_and_cli_verify(
+def load_qos_profile_cases() -> list[dict[str, Any]]:
+    config = json.loads(QOS_MINMAX_CASES_FILE.read_text(encoding="utf-8"))
+    return [case for case in config["cases"] if case.get("enabled") is not False]
+
+
+def qos_profile_case_id(case: dict[str, Any]) -> str:
+    return f"{case['profile_type']}::{case['boundary']}::{case['profile_name']}"
+
+
+@pytest.mark.parametrize("case", load_qos_profile_cases(), ids=qos_profile_case_id)
+def test_neox_qos_profile_minmax_create_readwrite(
     api_client,
     env_config,
     neox_config_service,
     session_manager,
+    case,
 ):
     neox_config_service.verify_required_target_data()
     ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
@@ -39,42 +50,51 @@ def test_neox_qos_profile_minmax_create_and_cli_verify(
         pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run QoS profile CLI verification.")
 
     cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-    config = json.loads(QOS_MINMAX_CASES_FILE.read_text(encoding="utf-8"))
-    results = []
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
-        for case in config["cases"]:
-            if case.get("enabled") is False:
-                continue
-            path = neox_profile_path(neox_config_service, case["profile_type"], case["profile_name"])
-            api_client.request("DELETE", path, session=readwrite_session)
-            response = api_client.request("POST", path, session=readwrite_session, json=case["payload"])
-            assert_api_success(response)
+        path = neox_profile_path(neox_config_service, case["profile_type"], case["profile_name"])
+        api_client.request("DELETE", path, session=readwrite_session)
+        response = api_client.request("POST", path, session=readwrite_session, json=case["payload"])
+        assert_api_success(response)
 
-            command = case["show_command"].format(profile_name=case["profile_name"])
-            [cli_result] = cli.run_commands([command])
-            expected_tokens = [token.format(profile_name=case["profile_name"]) for token in case["expected_tokens"]]
-            missing = [token for token in expected_tokens if token not in cli_result.output]
-            results.append(
-                {
-                    "case": case["profile_name"],
-                    "profile_type": case["profile_type"],
-                    "boundary": case["boundary"],
-                    "path": path,
-                    "payload": redact(case["payload"]),
-                    "response": response_summary(response),
-                    "cli": {
-                        "command": command,
-                        "output": cli_result.output,
-                        "expected_tokens": expected_tokens,
-                        "missing_tokens": missing,
-                    },
-                }
-            )
-            api_client.request("DELETE", path, session=readwrite_session)
-            assert not missing, f"Missing QoS profile CLI tokens for {case['profile_name']}: {missing}"
+        command = case["show_command"].format(profile_name=case["profile_name"])
+        [cli_result] = cli.run_commands([command])
+        expected_tokens = [token.format(profile_name=case["profile_name"]) for token in case["expected_tokens"]]
+        missing = [token for token in expected_tokens if token not in cli_result.output]
+        result = {
+            "case": case["profile_name"],
+            "profile_type": case["profile_type"],
+            "boundary": case["boundary"],
+            "path": path,
+            "payload": redact(case["payload"]),
+            "response": response_summary(response),
+            "cli": {
+                "command": command,
+                "output": cli_result.output,
+                "expected_tokens": expected_tokens,
+                "missing_tokens": missing,
+            },
+        }
+        api_client.request("DELETE", path, session=readwrite_session)
+        assert not missing, f"Missing QoS profile CLI tokens for {case['profile_name']}: {missing}"
 
-    report_path = write_qos_profile_report(neox_config_service, results)
-    assert results, f"No QoS profile cases executed. Report: {report_path}"
+    write_qos_profile_report(neox_config_service, [result])
+
+
+@pytest.mark.parametrize("case", load_qos_profile_cases(), ids=qos_profile_case_id)
+def test_neox_qos_profile_minmax_clear_readwrite(
+    api_client,
+    neox_config_service,
+    session_manager,
+    case,
+):
+    neox_config_service.verify_required_target_data()
+    with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
+        path = neox_profile_path(neox_config_service, case["profile_type"], case["profile_name"])
+        api_client.request("DELETE", path, session=readwrite_session)
+        response = api_client.request("POST", path, session=readwrite_session, json=case["payload"])
+        assert_api_success(response)
+        response = api_client.request("DELETE", path, session=readwrite_session)
+        assert_api_success(response)
 
 
 def neox_profile_path(neox_config_service, profile_type: str, profile_name: str) -> str:

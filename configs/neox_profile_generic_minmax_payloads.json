@@ -1,0 +1,255 @@
+{
+  "source": {
+    "derived_from": [
+      "configs/neox_swagger_data.yaml",
+      "configs/neox_ug_parameter_reference.yaml",
+      "configs/neox_profile_qos_minmax_cases.json",
+      "configs/neox_profile_basic_cases.json"
+    ],
+    "purpose": "Generic NeoX profile min/max payloads for readwrite create verification."
+  },
+  "profiles": {
+    "IGMPGroupPrivilegeProfile": {
+      "min": {
+        "Content": {
+          "grpbandwidth1": "1",
+          "startip1": "225.1.1.1",
+          "endip1": "225.1.1.1",
+          "prvitype1": "permit"
+        }
+      },
+      "max": {
+        "Content": {
+          "grpbandwidth1": "100",
+          "startip1": "225.2.4.1",
+          "endip1": "225.2.4.20",
+          "prvitype1": "permit"
+        }
+      }
+    },
+    "ONTAclProfile": {
+      "min": {
+        "Content": {
+          "policy": "trust",
+          "interface": "lan",
+          "protocol": "0",
+          "srcport": "1",
+          "destport": "1",
+          "srcmask": "1",
+          "destmask": "1"
+        }
+      },
+      "max": {
+        "Content": {
+          "policy": "trust",
+          "interface": "both",
+          "protocol": "255",
+          "srcport": "65535",
+          "destport": "65535",
+          "srcmask": "32",
+          "destmask": "32",
+          "srcip": "10.10.10.1",
+          "destip": "10.10.10.2",
+          "srcmac": "10:10:10:10:10:01",
+          "destmac": "10:10:10:10:10:02",
+          "logging": "disable",
+          "counter": "disable"
+        }
+      }
+    },
+    "ONTAlarmProfile": {
+      "min": {
+        "Content": {
+          "lowcurr": "0",
+          "upcurr": "1",
+          "lowrxpower": "-127",
+          "uprxpower": "-126",
+          "lowtemp": "-40",
+          "uptemp": "-39",
+          "lowtxpower": "-15.3",
+          "uptxpower": "-15.2",
+          "lowvolt": "2.8",
+          "upvol": "2.81"
+        }
+      },
+      "max": {
+        "Content": {
+          "lowcurr": "0",
+          "upcurr": "79",
+          "lowrxpower": "-127",
+          "uprxpower": "0",
+          "lowtemp": "-40",
+          "uptemp": "100",
+          "lowtxpower": "-15.3",
+          "uptxpower": "6.5",
+          "lowvolt": "2.8",
+          "upvol": "3.59"
+        }
+      }
+    },
+    "ONTBandwidthProfile": {
+      "min": {
+        "Content": {
+          "sir": "0",
+          "air": "0",
+          "pir": "256"
+        }
+      },
+      "max": {
+        "Content": {
+          "sir": "0",
+          "air": "0",
+          "pir": "10000000"
+        }
+      }
+    },
+    "ONTMulticastProfile": {
+      "min": {
+        "Content": {
+          "univid": "1",
+          "igmp": "IGMPv2",
+          "mode": "transparent",
+          "txtagvid": "1",
+          "txtagpbit": "0",
+          "maxgroup": "1",
+          "maxmsg": "1"
+        }
+      },
+      "max": {
+        "Content": {
+          "univid": "4094",
+          "igmp": "IGMPv3",
+          "mode": "transparent",
+          "txtagvid": "4094",
+          "txtagpbit": "7",
+          "maxgroup": "512",
+          "maxmsg": "64"
+        }
+      }
+    },
+    "ONTONTProfile": {
+      "min": {
+        "Content": {
+          "fwlevel": "low",
+          "telnetport": "23"
+        }
+      },
+      "max": {
+        "Content": {
+          "fwlevel": "medium",
+          "telnetport": "23"
+        }
+      }
+    },
+    "ONTSecurityProfile": {
+      "min": {
+        "Content": {
+          "fdb": "1"
+        }
+      },
+      "max": {
+        "Content": {
+          "fdb": "1023"
+        }
+      }
+    },
+    "ONTServiceProfile": {
+      "min": {
+        "Content": {
+          "mode": "veip",
+          "uniport": "lan",
+          "lan": "1",
+          "vlan": "1",
+          "pbit": "0"
+        }
+      },
+      "max": {
+        "Content": {
+          "mode": "veip",
+          "uniport": "lan",
+          "lan": "1",
+          "vlan": "4094",
+          "pbit": "7"
+        }
+      }
+    },
+    "RateLimitProfile": {
+      "min": {
+        "Content": {
+          "ingressactive": "active",
+          "cirrate": "64",
+          "cbsrate": "64",
+          "eirrate": "64",
+          "ebsrate": "64",
+          "egressactive": "active",
+          "egressrate": "64",
+          "burstrate": "64"
+        }
+      },
+      "max": {
+        "Content": {
+          "ingressactive": "active",
+          "cirrate": "10000000",
+          "cbsrate": "16000000",
+          "eirrate": "10000000",
+          "ebsrate": "16000000",
+          "egressactive": "active",
+          "egressrate": "10000000",
+          "burstrate": "128000"
+        }
+      }
+    },
+    "ShapingProfile": {
+      "min": {
+        "Content": {
+          "rate0": "0",
+          "rate1": "0",
+          "rate2": "0",
+          "rate3": "0",
+          "rate4": "0",
+          "rate5": "0",
+          "rate6": "0",
+          "rate7": "0"
+        }
+      },
+      "max": {
+        "Content": {
+          "rate0": "100000000",
+          "rate1": "100000000",
+          "rate2": "100000000",
+          "rate3": "100000000",
+          "rate4": "100000000",
+          "rate5": "100000000",
+          "rate6": "100000000",
+          "rate7": "100000000"
+        }
+      }
+    },
+    "WeightProfile": {
+      "min": {
+        "Content": {
+          "weight0": "1",
+          "weight1": "1",
+          "weight2": "1",
+          "weight3": "1",
+          "weight4": "1",
+          "weight5": "1",
+          "weight6": "1",
+          "weight7": "1"
+        }
+      },
+      "max": {
+        "Content": {
+          "weight0": "50",
+          "weight1": "50",
+          "weight2": "50",
+          "weight3": "50",
+          "weight4": "50",
+          "weight5": "50",
+          "weight6": "50",
+          "weight7": "50"
+        }
+      }
+    }
+  }
+}

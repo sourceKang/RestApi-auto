@@ -92,7 +92,7 @@ FIELD_VALUE_OVERRIDES: dict[str, Any] = {
 }
 
 
-def test_ge_full_parameter_probe_collects_api_and_cli_results(
+def test_ge_full_parameter_probe_set_readwrite(
     api_client,
     env_config,
     neox_config_service,

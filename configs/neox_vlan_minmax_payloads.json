@@ -1,0 +1,30 @@
+{
+  "source": {
+    "derived_from": [
+      "configs/neox_swagger_data.yaml"
+    ],
+    "purpose": "VLAN min/max create payloads. All VlanPort fields are populated."
+  },
+  "cases": {
+    "min": {
+      "vid": "1",
+      "payload": {
+        "vlanname": "REST_API_VLAN_MIN",
+        "fixedport": "1",
+        "untaggedport": "1",
+        "forbiddenport": "2",
+        "tpid": "default-tpid"
+      }
+    },
+    "max": {
+      "vid": "4094",
+      "payload": {
+        "vlanname": "REST_API_VLAN_MAX",
+        "fixedport": "1",
+        "untaggedport": "1",
+        "forbiddenport": "2",
+        "tpid": "qinq-tpid"
+      }
+    }
+  }
+}

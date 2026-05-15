@@ -25,7 +25,7 @@ pytestmark = [
 FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_nni_full_accepted_payload.json"
 
 
-def test_nni_config_api_is_applied_to_device_running_config(
+def test_nni_config_max_create_readwrite(
     api_client,
     env_config,
     neox_config_service,

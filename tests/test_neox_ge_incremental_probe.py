@@ -23,7 +23,7 @@ pytestmark = [
 CONFIG_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_incremental_probe.json"
 
 
-def test_ge_incrementally_adds_parameters_and_collects_responses(
+def test_ge_incremental_probe_set_readwrite(
     api_client,
     neox_config_service,
     readwrite_session,

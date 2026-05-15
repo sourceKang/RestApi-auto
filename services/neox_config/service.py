@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import copy
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -8,6 +11,14 @@ import pytest
 from config_loader.profile import load_profile_definitions
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.cleanup import CleanupRegistry
+
+
+CONFIGS_DIR = Path(__file__).resolve().parents[2] / "configs"
+NNI_MIN_PAYLOAD_FILE = CONFIGS_DIR / "neox_nni_min_accepted_payload.json"
+NNI_MAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_nni_full_accepted_payload.json"
+VLAN_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_vlan_minmax_payloads.json"
+ONT_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_ont_minmax_payloads.json"
+PROFILE_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_profile_generic_minmax_payloads.json"
 
 
 NEOX_PROFILE_TYPES = [
@@ -277,6 +288,10 @@ class NeoXConfigService:
         target = self.target()
         return f"/configNeoxSeries/vlan/{target.device_name}/{target.vlan_id}"
 
+    def vlan_path_for_vid(self, vid: str) -> str:
+        target = self.target()
+        return f"/configNeoxSeries/vlan/{target.device_name}/{vid}"
+
     def neox_profile_path(self, profile_type: str) -> str:
         target = self.target()
         return f"/configNeoXSeries/profile/{target.device_name}/{profile_type}/{self.neox_profile_name(profile_type)}"
@@ -365,8 +380,22 @@ def nni_port_payload() -> dict[str, Any]:
     return {"Content": {"portenable": "enable", "auto_nego": "disable", "flow": "disable", "mode": "uplink"}}
 
 
+def nni_min_payload() -> dict[str, Any]:
+    return load_json_payload(NNI_MIN_PAYLOAD_FILE)
+
+
+def nni_max_payload() -> dict[str, Any]:
+    return load_json_payload(NNI_MAX_PAYLOAD_FILE)
+
+
 def vlan_payload() -> dict[str, Any]:
     return {"vlanname": "REST_API_VLAN", "fixedport": "*", "untaggedport": "", "forbiddenport": "", "tpid": "default-tpid"}
+
+
+def vlan_case(case_name: str) -> tuple[str, dict[str, Any]]:
+    data = json.loads(VLAN_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    case = data["cases"][case_name]
+    return str(case["vid"]), copy.deepcopy(case["payload"])
 
 
 def ont_config_payload(target: NeoXTarget) -> dict[str, Any]:
@@ -381,6 +410,34 @@ def ont_config_payload(target: NeoXTarget) -> dict[str, Any]:
             "ontdescription": "REST_API_NEOX_ONT",
         }
     }
+
+
+def ont_min_payload(target: NeoXTarget) -> dict[str, Any]:
+    return materialize_ont_payload("min", target)
+
+
+def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
+    return materialize_ont_payload("max", target)
+
+
+def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
+    data = json.loads(PROFILE_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["profiles"][profile_type][boundary])
+
+
+def materialize_ont_payload(case_name: str, target: NeoXTarget) -> dict[str, Any]:
+    data = json.loads(ONT_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    payload = copy.deepcopy(data["cases"][case_name]["payload"])
+    content = payload["Content"]
+    for key, value in list(content.items()):
+        if isinstance(value, str):
+            content[key] = value.format(ont_sn=target.ont_sn, ont_password=target.ont_password)
+    return payload
+
+
+def load_json_payload(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["payload"])
 
 
 def normalize_neox_profile_content(profile_type: str, content: dict[str, Any]) -> dict[str, Any]:

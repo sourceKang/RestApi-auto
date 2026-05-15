@@ -27,7 +27,7 @@ FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "
 ENABLE_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_enable_accepted_payload.json"
 
 
-def test_ge_config_api_is_applied_to_device_running_config(
+def test_ge_config_min_create_readwrite(
     api_client,
     env_config,
     neox_config_service,
@@ -57,7 +57,7 @@ def test_ge_config_api_is_applied_to_device_running_config(
     assert not missing, f"Missing GE running-config lines: {missing}. Report: {report_path}"
 
 
-def test_ge_full_accepted_payload_is_applied_to_device_running_config(
+def test_ge_config_max_create_readwrite(
     api_client,
     env_config,
     neox_config_service,
@@ -89,7 +89,7 @@ def test_ge_full_accepted_payload_is_applied_to_device_running_config(
     assert not missing, f"Missing GE running-config lines: {missing}. Report: {report_path}"
 
 
-def test_ge_enable_accepted_payload_is_applied_and_visible_in_cli(
+def test_ge_config_set_readwrite(
     api_client,
     env_config,
     neox_config_service,

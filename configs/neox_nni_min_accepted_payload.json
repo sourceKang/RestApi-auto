@@ -1,0 +1,18 @@
+{
+  "source": {
+    "derived_from": [
+      "configs/neox_swagger_data.yaml",
+      "configs/neox_ug_parameter_reference.yaml"
+    ],
+    "purpose": "NNI minimum create payload for NODE3 readwrite verification."
+  },
+  "payload": {
+    "Content": {
+      "portenable": "enable",
+      "auto_nego": "disable",
+      "flow": "disable",
+      "portspeed": "auto",
+      "mode": "uplink"
+    }
+  }
+}

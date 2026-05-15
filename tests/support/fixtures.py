@@ -10,6 +10,8 @@ from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
 from utils.cleanup import CleanupRegistry
+from utils.case_metadata import format_case_title
+from utils.reporting import REPORT_STATE
 
 
 @pytest.fixture(autouse=True)
@@ -37,6 +39,14 @@ def allure_node_context(env_config, request):
             allure.dynamic.label("summary_group", "PERM-RO")
         elif "noaccess" in request.node.keywords:
             allure.dynamic.label("summary_group", "PERM-NA")
+        registrations = REPORT_STATE.case_registry.get(request.node.nodeid, [])
+        if registrations:
+            for registration in registrations:
+                allure.dynamic.label("case_id", registration.case_id)
+                allure.dynamic.testcase(registration.case_id, registration.case_id)
+            name = registrations[0].name
+            allure.dynamic.label("case_name", name)
+            allure.dynamic.title(format_case_title([registration.case_id for registration in registrations], name))
     except Exception:
         pass
 

@@ -29,11 +29,29 @@ features:
   nni_config:
     endpoint: "/configNeoXSeries/interface/nni/{devicename}/{slotid}/{portid}"
     normal_data:
+      - "configs/neox_nni_min_accepted_payload.json"
       - "configs/neox_nni_full_accepted_payload.json"
     abnormal_data: []
     cli_reference:
       - "show running-config interface nni {portid}"
     status: "Confirmed on NODE3 NNI slot 4 with more than five parameters and CLI verification."
+
+  vlan_config:
+    endpoint: "/configNeoxSeries/vlan/{devicename}/{vid}"
+    normal_data:
+      - "configs/neox_vlan_minmax_payloads.json"
+    abnormal_data: []
+    cli_reference: []
+    status: "Min uses VLAN 1 and max uses VLAN 4094; all VlanPort fields are populated."
+
+  ont_config:
+    endpoint: "/configNeoXSeries/interface/remote/{devicename}/{slotid}/{portid}/{ontid}"
+    normal_data:
+      - "configs/neox_ont_minmax_payloads.json"
+    abnormal_data: []
+    cli_reference:
+      - "show running-config interface xpon {slotid}-{portid}"
+    status: "Min and max ONT create payload templates are recorded; target SN/password are injected at runtime."
 
   neox_qos_profiles:
     endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
@@ -57,6 +75,14 @@ features:
       - "show xpon security-profile {profile_name}"
       - "show xpon service-profile {profile_name}"
     status: "ONT Alarm, Bandwidth, Security, Service, Multicast, IGMP Group Privilege, ACL, VoIP Common, VoIP Dial Plan, VoIP SIP, ONT, and Template profile basic cases are REST-success and CLI-verified or user-confirmed pending next automation run."
+
+  neox_profile_generic_minmax:
+    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
+    normal_data:
+      - "configs/neox_profile_generic_minmax_payloads.json"
+    abnormal_data: []
+    cli_reference: []
+    status: "Generic min/max payloads are split by profile type for readwrite create verification."
 
   neox_profile_observed_failures:
     endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"

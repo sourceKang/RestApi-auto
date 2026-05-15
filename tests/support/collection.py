@@ -2,6 +2,7 @@
 
 import pytest
 
+from cases.neox_case_ids import neox_case_for_item
 from cases.registry import RAD_SUMMARY_CASES
 from tests.support.preflight import skip_unready_dut_items
 from utils.reporting import register_node_case, register_permission_role
@@ -53,6 +54,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         elif "noaccess" in item.keywords:
             role = "noaccess"
         _register_parametrized_case(item)
+        _register_neox_case(item)
         register_permission_role(item.nodeid, role)
 
 
@@ -67,3 +69,10 @@ def _register_parametrized_case(item: pytest.Item) -> None:
         getattr(case, "case_id", None),
         str(getattr(case, "name", "")),
     )
+
+
+def _register_neox_case(item: pytest.Item) -> None:
+    case = neox_case_for_item(item)
+    if case is None:
+        return
+    register_node_case(item.nodeid, case.case_id, case.name)

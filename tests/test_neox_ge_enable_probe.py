@@ -27,7 +27,7 @@ FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "
 SHOW_COMMANDS_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_show_commands.json"
 
 
-def test_ge_enable_oriented_probe_collects_feature_show_outputs(
+def test_ge_enable_probe_set_readwrite(
     api_client,
     env_config,
     neox_config_service,

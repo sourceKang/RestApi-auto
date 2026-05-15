@@ -1,0 +1,33 @@
+{
+  "source": {
+    "derived_from": [
+      "Swagger ONTInfo schema",
+      "configs/neox_ug_parameter_reference.yaml"
+    ],
+    "purpose": "ONT min/max create payload templates. Runtime target SN/password are injected by tests."
+  },
+  "cases": {
+    "min": {
+      "payload": {
+        "Content": {
+          "sn": "{ont_sn}",
+          "registmethod": "A",
+          "registid": "{ont_password}"
+        }
+      }
+    },
+    "max": {
+      "payload": {
+        "Content": {
+          "sn": "{ont_sn}",
+          "registmethod": "A",
+          "registid": "{ont_password}",
+          "onttype": "auto",
+          "ontenable": "enable",
+          "adminstate": "enable",
+          "ontdescription": "REST_API_NEOX_ONT_MAX"
+        }
+      }
+    }
+  }
+}

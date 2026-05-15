@@ -25,7 +25,7 @@ GE_NEGATIVE_PROBES = [
 ]
 
 
-def test_ge_invalid_payloads_collect_failure_responses(
+def test_ge_negative_payload_probe_set_readwrite(
     api_client,
     neox_config_service,
     readwrite_session,

@@ -28,7 +28,7 @@ ACL_RETRY_CONFIG_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_
 ENABLE_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_enable_accepted_payload.json"
 
 
-def test_ge_acl_retry_probe_collects_oui_and_custom_packet_filter_results(
+def test_ge_acl_retry_probe_set_readwrite(
     api_client,
     env_config,
     neox_config_service,

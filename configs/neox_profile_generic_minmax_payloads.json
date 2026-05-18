@@ -173,6 +173,116 @@
         }
       }
     },
+    "ONTTemplateProfile": {
+      "min": {
+        "Content": {
+          "dsop": "ont",
+          "enc_algorithm": "none",
+          "encscope_service": "disable",
+          "encscope_omci": "disable",
+          "encscope_iphost": "disable"
+        }
+      },
+      "max": {
+        "Content": {
+          "dsop": "ont",
+          "enc_algorithm": "none",
+          "encscope_service": "disable",
+          "encscope_omci": "disable",
+          "encscope_iphost": "disable"
+        }
+      }
+    },
+    "ONTUNIProfile": {
+      "min": {
+        "Content": {
+          "lanenable": "no",
+          "potsenable": "no",
+          "veipenable": "no",
+          "videoenable": "no",
+          "xlanenable": "no"
+        }
+      },
+      "max": {
+        "Content": {
+          "lanenable": "no",
+          "potsenable": "no",
+          "veipenable": "no",
+          "videoenable": "no",
+          "xlanenable": "no"
+        }
+      }
+    },
+    "ONTVoipCommonProfile": {
+      "min": {
+        "Content": {
+          "1codec": "G729",
+          "1packet": "10",
+          "1silence": "disable",
+          "buf": "500",
+          "dscp": "63",
+          "dtmf": "enable",
+          "echo": "enable",
+          "maxport": "65535",
+          "minport": "1"
+        }
+      },
+      "max": {
+        "Content": {
+          "1codec": "G729",
+          "1packet": "10",
+          "1silence": "disable",
+          "buf": "500",
+          "dscp": "63",
+          "dtmf": "enable",
+          "echo": "enable",
+          "maxport": "65535",
+          "minport": "1"
+        }
+      }
+    },
+    "ONTVoipDialPlanProfile": {
+      "min": {
+        "Content": {
+          "critical": "8000",
+          "format": "h248",
+          "identifier": "+88603(X.)",
+          "max": "256",
+          "partial": "32000"
+        }
+      },
+      "max": {
+        "Content": {
+          "critical": "8000",
+          "format": "h248",
+          "identifier": "+88603(X.)",
+          "max": "256",
+          "partial": "32000"
+        }
+      }
+    },
+    "ONTVoipSipProfile": {
+      "min": {
+        "Content": {
+          "hosturi": "10.0.0.1",
+          "proxyaddr": "10.0.0.1",
+          "registrar": "10.0.0.1",
+          "regexptime": "3600",
+          "pridns": "8.8.8.8",
+          "secdns": "8.8.4.4"
+        }
+      },
+      "max": {
+        "Content": {
+          "hosturi": "10.0.0.1",
+          "proxyaddr": "10.0.0.1",
+          "registrar": "10.0.0.1",
+          "regexptime": "3600",
+          "pridns": "8.8.8.8",
+          "secdns": "8.8.4.4"
+        }
+      }
+    },
     "RateLimitProfile": {
       "min": {
         "Content": {

@@ -19,6 +19,7 @@ NNI_MAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_nni_full_accepted_payload.json"
 VLAN_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_vlan_minmax_payloads.json"
 ONT_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_ont_minmax_payloads.json"
 PROFILE_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_profile_generic_minmax_payloads.json"
+PROFILE_CLI_VERIFY_FILE = CONFIGS_DIR / "neox_profile_cli_verify.json"
 
 
 NEOX_PROFILE_TYPES = [
@@ -41,19 +42,7 @@ NEOX_PROFILE_TYPES = [
 ]
 
 
-NEOX_PROFILE_READWRITE_TYPES = [
-    "IGMPGroupPrivilegeProfile",
-    "ONTAclProfile",
-    "ONTAlarmProfile",
-    "ONTBandwidthProfile",
-    "ONTMulticastProfile",
-    "ONTONTProfile",
-    "ONTSecurityProfile",
-    "ONTServiceProfile",
-    "RateLimitProfile",
-    "ShapingProfile",
-    "WeightProfile",
-]
+NEOX_PROFILE_READWRITE_TYPES = list(NEOX_PROFILE_TYPES)
 
 
 NEOX_PROFILE_CONFIG_REFS = {
@@ -423,6 +412,12 @@ def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
 def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
     data = json.loads(PROFILE_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
     return copy.deepcopy(data["profiles"][profile_type][boundary])
+
+
+def neox_profile_cli_verify_case(profile_type: str, boundary: str) -> dict[str, Any]:
+    data = json.loads(PROFILE_CLI_VERIFY_FILE.read_text(encoding="utf-8"))
+    case = data["profiles"][profile_type][boundary]
+    return copy.deepcopy(case)
 
 
 def materialize_ont_payload(case_name: str, target: NeoXTarget) -> dict[str, Any]:

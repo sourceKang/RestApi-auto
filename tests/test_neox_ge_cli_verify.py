@@ -35,10 +35,7 @@ def test_ge_config_min_create_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE CLI verification.")
+    ssh_username, ssh_password = ge_cli_credentials(env_config)
 
     cleanup_registry.add(lambda: api_client.request("DELETE", neox_config_service.ge_path(), session=readwrite_session))
     api_client.request("DELETE", neox_config_service.ge_path(), session=readwrite_session)
@@ -65,10 +62,7 @@ def test_ge_config_max_create_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE CLI verification.")
+    ssh_username, ssh_password = ge_cli_credentials(env_config)
 
     config = json.loads(FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
     payload = config["payload"]
@@ -89,6 +83,7 @@ def test_ge_config_max_create_readwrite(
     assert not missing, f"Missing GE running-config lines: {missing}. Report: {report_path}"
 
 
+@pytest.mark.neox_probe
 def test_ge_config_set_readwrite(
     api_client,
     env_config,
@@ -97,10 +92,7 @@ def test_ge_config_set_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE CLI verification.")
+    ssh_username, ssh_password = ge_cli_credentials(env_config)
 
     payload = load_enable_accepted_payload()
     content = payload["Content"]
@@ -215,6 +207,14 @@ def ge_cli_checks(content: dict[str, Any]) -> list[str]:
     if "frametype" in content:
         checks.append(f"frame-type {content['frametype']}")
     return checks
+
+
+def ge_cli_credentials(env_config) -> tuple[str, str]:
+    ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
+    ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
+    if not ssh_username or not ssh_password:
+        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run GE CLI verification.")
+    return ssh_username, ssh_password
 
 
 def load_enable_accepted_payload() -> dict[str, Any]:

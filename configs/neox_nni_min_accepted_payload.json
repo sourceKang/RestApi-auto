@@ -14,5 +14,12 @@
       "portspeed": "auto",
       "mode": "uplink"
     }
-  }
+  },
+  "running_config_visible_lines": [
+    "enable",
+    "auto-negotiation disable",
+    "flow-control disable",
+    "speed auto",
+    "mode uplink"
+  ]
 }

@@ -109,15 +109,6 @@ def test_nni_config_clear_readwrite(neox_config_service, api_client, readwrite_s
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
-def test_nni_config_min_create_readwrite(neox_config_service, api_client, readwrite_session, cleanup_registry):
-    neox_config_service.verify_node3_target()
-    cleanup_registry.add(lambda: api_client.request("DELETE", neox_config_service.nni_path(), session=readwrite_session))
-    response = api_client.request("POST", neox_config_service.nni_path(), session=readwrite_session, json=nni_min_payload())
-    assert_api_success(response)
-
-
-@pytest.mark.mutating
-@pytest.mark.readwrite
 def test_nni_config_error_readwrite(neox_config_service, api_client, readwrite_session):
     neox_config_service.verify_node3_target()
     response = api_client.request(

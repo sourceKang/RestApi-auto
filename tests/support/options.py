@@ -33,6 +33,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run NeoX configuration tests that may mutate NODE3 device state.",
     )
     parser.addoption(
+        "--run-neox-probe",
+        action="store_true",
+        default=False,
+        help="Run exploratory NeoX probe tests outside the official 80-case plan.",
+    )
+    parser.addoption(
         "--skip-dut-preflight",
         action="store_true",
         default=False,

@@ -10,7 +10,6 @@
 - REST API 自動化測試架構需簡單、直覺、好維護、好擴充。
 - 測試案例應聚焦於「測什麼」，避免重複處理登入、request、config、response parsing。
 - 新測試優先使用 `services` fixture 呼叫 `services/` 裡的 domain service。
-- 不要主動新增 dependencies，除非使用者同意或專案已經使用。
 
 ## 新架構分層
 
@@ -34,7 +33,6 @@
 ## 設定與敏感資料
 
 - EMS node、user、slot、port、ONT、topology 等資料需集中管理。
-- 不要把 API keys、tokens、passwords、session IDs 或私人 credentials 寫入檔案。
 - 需要輸出 request/response/report 時，必須使用 redaction helper 或既有遮罩規則。
 - 環境差異應透過 config/profile/pytest option 處理，不要在測試中寫死正式或特定設備資訊。
 - `reports/` 視為 generated output；除非使用者明確要求，不要把 Allure 產物或 HTML/txt 報表當作原始碼修改重點或提交內容。
@@ -51,4 +49,3 @@
 - 修改 Python 程式後，至少執行 compile check。
 - 修改 fixture、client、config loader 或 case registry 後，需執行或建議對應 pytest。
 - 若測試會連外部 EMS 或設備，執行前需確認目標 node/profile 與風險。
-- 回覆需說明改了什麼，以及已執行或建議執行的驗證方式。

@@ -22,7 +22,24 @@ pytestmark = [
 ]
 
 
+MIN_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_nni_min_accepted_payload.json"
 FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_nni_full_accepted_payload.json"
+
+
+def test_nni_config_min_create_readwrite(
+    api_client,
+    env_config,
+    neox_config_service,
+    session_manager,
+):
+    verify_nni_config_create_readwrite(
+        api_client,
+        env_config,
+        neox_config_service,
+        session_manager,
+        MIN_ACCEPTED_PAYLOAD_FILE,
+        "min",
+    )
 
 
 def test_nni_config_max_create_readwrite(
@@ -31,6 +48,24 @@ def test_nni_config_max_create_readwrite(
     neox_config_service,
     session_manager,
 ):
+    verify_nni_config_create_readwrite(
+        api_client,
+        env_config,
+        neox_config_service,
+        session_manager,
+        FULL_ACCEPTED_PAYLOAD_FILE,
+        "max",
+    )
+
+
+def verify_nni_config_create_readwrite(
+    api_client,
+    env_config,
+    neox_config_service,
+    session_manager,
+    payload_file: Path,
+    boundary: str,
+) -> None:
     neox_config_service.verify_required_target_data()
     ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
     ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
@@ -38,7 +73,7 @@ def test_nni_config_max_create_readwrite(
         pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run NNI CLI verification.")
 
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
-        config = json.loads(FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
+        config = json.loads(payload_file.read_text(encoding="utf-8"))
         payload = config["payload"]
         expected_lines = config["running_config_visible_lines"]
         response = api_client.request("POST", neox_config_service.nni_path(), session=readwrite_session, json=payload)
@@ -58,6 +93,7 @@ def test_nni_config_max_create_readwrite(
             result.output,
             expected_lines,
             missing,
+            boundary,
         )
 
         assert not missing, f"Missing NNI running-config lines: {missing}. Report: {report_path}"
@@ -71,12 +107,13 @@ def write_nni_cli_verify_report(
     cli_output: str,
     expected_lines: list[str],
     missing_lines: list[str],
+    boundary: str,
 ) -> Path:
     root = Path(__file__).resolve().parents[1]
     reports_dir = root / "reports" / "device-verification"
     reports_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = reports_dir / f"nni_cli_verify_{timestamp}.json"
+    path = reports_dir / f"nni_cli_verify_{boundary}_{timestamp}.json"
     target = neox_config_service.target()
     data = {
         "target": {
@@ -88,6 +125,7 @@ def write_nni_cli_verify_report(
         },
         "rest_api": {
             "path": neox_config_service.nni_path(),
+            "boundary": boundary,
             "request_content": redact(payload["Content"]),
             "response": {
                 "status_code": api_response.status_code,

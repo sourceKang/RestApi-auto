@@ -16,6 +16,7 @@ COMMANDS_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_show_
 
 pytestmark = [
     pytest.mark.neox_config,
+    pytest.mark.neox_probe,
 ]
 
 

@@ -17,6 +17,7 @@ from utils.redaction import redact
 pytestmark = [
     pytest.mark.neox_config,
     pytest.mark.neox_profile,
+    pytest.mark.neox_probe,
     pytest.mark.destructive,
     pytest.mark.mutating,
     pytest.mark.readwrite,

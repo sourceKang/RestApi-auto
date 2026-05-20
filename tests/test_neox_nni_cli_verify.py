@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import json
-import os
-from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from clients.ssh_cli import SshCliClient
 from models.api import SessionRole
+from tests.support.neox_cli_verification import (
+    missing_tokens,
+    neox_cli_credentials,
+    run_neox_cli_commands,
+    write_neox_cli_verify_report,
+)
 from utils.assertions import assert_api_success
-from utils.redaction import redact
 
 
 pytestmark = [
@@ -67,10 +68,7 @@ def verify_nni_config_create_readwrite(
     boundary: str,
 ) -> None:
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run NNI CLI verification.")
+    credentials = neox_cli_credentials(env_config, "NNI")
 
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
         config = json.loads(payload_file.read_text(encoding="utf-8"))
@@ -81,65 +79,23 @@ def verify_nni_config_create_readwrite(
 
         target = neox_config_service.target()
         command = f"show running-config interface nni {target.nni_port_id}"
-        cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-        [result] = cli.run_commands([command])
+        output_by_command = run_neox_cli_commands(env_config, credentials, [command])
 
-        missing = [expected for expected in expected_lines if expected not in result.output]
-        report_path = write_nni_cli_verify_report(
+        missing = missing_tokens(output_by_command[command], expected_lines)
+        report_path = write_neox_cli_verify_report(
             neox_config_service,
+            "nni",
+            boundary,
+            neox_config_service.nni_path(),
             payload,
             response,
-            command,
-            result.output,
-            expected_lines,
-            missing,
-            boundary,
+            output_by_command,
+            {command: expected_lines},
+            {command: missing},
+            target_extra={
+                "nni_slot_id": target.nni_slot_id,
+                "nni_port_id": target.nni_port_id,
+            },
         )
 
         assert not missing, f"Missing NNI running-config lines: {missing}. Report: {report_path}"
-
-
-def write_nni_cli_verify_report(
-    neox_config_service,
-    payload: dict[str, Any],
-    api_response,
-    command: str,
-    cli_output: str,
-    expected_lines: list[str],
-    missing_lines: list[str],
-    boundary: str,
-) -> Path:
-    root = Path(__file__).resolve().parents[1]
-    reports_dir = root / "reports" / "device-verification"
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = reports_dir / f"nni_cli_verify_{boundary}_{timestamp}.json"
-    target = neox_config_service.target()
-    data = {
-        "target": {
-            "node": neox_config_service.env_config.dut.node_key,
-            "device_ip": neox_config_service.env_config.dut.device_ip,
-            "device_name": target.device_name,
-            "nni_slot_id": target.nni_slot_id,
-            "nni_port_id": target.nni_port_id,
-        },
-        "rest_api": {
-            "path": neox_config_service.nni_path(),
-            "boundary": boundary,
-            "request_content": redact(payload["Content"]),
-            "response": {
-                "status_code": api_response.status_code,
-                "retstatus": api_response.retstatus,
-                "retresult": api_response.retresult,
-            },
-        },
-        "cli": {
-            "transport": "ssh",
-            "command": command,
-            "output": cli_output,
-            "expected_lines": expected_lines,
-            "missing_lines": missing_lines,
-        },
-    }
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path

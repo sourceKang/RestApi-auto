@@ -129,6 +129,8 @@ profiles:
         range: ["2.80", "3.59"]
   ONTSecurityProfile:
     source_lines: "7883-7897"
+    live_notes:
+      - "NODE3 NeoX profile endpoint accepted fdb=1023, but spoofingdisable returned Fail for enable/disable/1/0 on 2026-05-19. Keep spoofingdisable out of success max payload until the live mapping is confirmed."
     fields:
       spoofingdisable:
         manual_name: "Anti Mac Spoofing"
@@ -180,12 +182,22 @@ profiles:
         range: ["1", "4094"]
       pbit:
         range: ["0", "7"]
+      xlanvlan1:
+        range: ["1", "4094"]
+        note: "Swagger field accepted by NeoX REST endpoint; value may include optional pbit suffix such as 4094/7."
       fdb:
         range: ["1", "255"]
-      ds_ratelimit:
+      lan_ds_ratelimit:
         range: ["128", "1000000"]
-      storm_control:
+      lan_storm_control:
         range: ["32", "1000000"]
+      xlan_veip_ds_ratelimit:
+        range: ["128", "10000000"]
+      xlan_veip_storm_control:
+        range: ["32", "10000000"]
+      active:
+        allowed: ["no", ""]
+        note: "NeoX REST value is prepended to the CLI inactive command for LAN/XLAN/VEIP/POTS/VIDEO active fields. 'no' maps to active state; empty string maps to inactive state."
   ONTTemplateProfile:
     source_lines: "6854-7006"
     fields:
@@ -253,7 +265,25 @@ profiles:
         max_length: 28
   ONTVoipSipProfile:
     source_lines: "8812-8902"
+    live_notes:
+      - "NODE3 accepted all 17 Swagger fields on 2026-05-19 when direct/callpresent/callwait/callprog/cid were sent as empty strings; non-empty values for those list fields returned Fail with an empty retresult."
     fields:
+      bridgeduri:
+        max_length: 63
+      callpresent:
+        note: "Swagger field; live NeoX success payload uses empty string."
+      callprog:
+        note: "Swagger field; live NeoX success payload uses empty string."
+      callwait:
+        note: "Swagger field; live NeoX success payload uses empty string."
+      cid:
+        note: "Swagger field; live NeoX success payload uses empty string."
+      direct:
+        note: "Swagger field; live NeoX success payload uses empty string."
+      directuri:
+        max_length: 63
+      factory:
+        max_length: 63
       proxyaddr:
         max_length: 63
       outaddr:

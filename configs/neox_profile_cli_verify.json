@@ -135,7 +135,7 @@
       },
       "max": {
         "show_command": "show xpon voip-sip-profile {profile_name}",
-        "expected_tokens": ["{profile_name}", "10.0.0.1", "8.8.8.8", "3600"]
+        "expected_tokens": ["{profile_name}", "10.0.0.1", "8.8.8.8", "3600", "720", "200.0.11.2", "ALU"]
       }
     },
     "RateLimitProfile": {

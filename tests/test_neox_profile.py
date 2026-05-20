@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
+from models.api import SessionRole
 from services.neox_config.service import (
     NEOX_PROFILE_READWRITE_TYPES,
     NEOX_PROFILE_TYPES,
     neox_profile_cli_verify_case,
-    neox_profile_minmax_payload,
 )
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.redaction import redact
@@ -47,6 +47,7 @@ def test_neox_profile_min_create_readwrite(
     neox_config_service,
     api_client,
     env_config,
+    session_manager,
     readwrite_session,
     cleanup_registry,
     profile_type,
@@ -55,10 +56,10 @@ def test_neox_profile_min_create_readwrite(
     ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
     neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
     path = neox_config_service.neox_profile_path(profile_type)
-    payload = neox_profile_minmax_payload(profile_type, "min")
-    cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+    payload = neox_config_service.neox_profile_boundary_payload(profile_type, "min")
+    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
     api_client.request("DELETE", path, session=readwrite_session)
-    response = api_client.request("POST", path, session=readwrite_session, json=payload)
+    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
     assert_api_success(response)
     verify_neox_profile_cli(
         neox_config_service,
@@ -79,6 +80,7 @@ def test_neox_profile_max_create_readwrite(
     neox_config_service,
     api_client,
     env_config,
+    session_manager,
     readwrite_session,
     cleanup_registry,
     profile_type,
@@ -87,10 +89,10 @@ def test_neox_profile_max_create_readwrite(
     ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
     neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
     path = neox_config_service.neox_profile_path(profile_type)
-    payload = neox_profile_minmax_payload(profile_type, "max")
-    cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+    payload = neox_config_service.neox_profile_boundary_payload(profile_type, "max")
+    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
     api_client.request("DELETE", path, session=readwrite_session)
-    response = api_client.request("POST", path, session=readwrite_session, json=payload)
+    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
     assert_api_success(response)
     verify_neox_profile_cli(
         neox_config_service,
@@ -110,6 +112,7 @@ def test_neox_profile_max_create_readwrite(
 def test_neox_profile_clear_readwrite(
     neox_config_service,
     api_client,
+    session_manager,
     readwrite_session,
     cleanup_registry,
     profile_type,
@@ -118,11 +121,11 @@ def test_neox_profile_clear_readwrite(
     neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
     path = neox_config_service.neox_profile_path(profile_type)
     payload = neox_config_service.neox_profile_payload(profile_type)
-    cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
     api_client.request("DELETE", path, session=readwrite_session)
-    response = api_client.request("POST", path, session=readwrite_session, json=payload)
+    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
     assert_api_success(response)
-    response = api_client.request("DELETE", path, session=readwrite_session)
+    response = delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session)
     assert_api_success(response)
 
 
@@ -139,6 +142,30 @@ def test_neox_profile_error_readwrite(
     path = neox_config_service.neox_profile_path(profile_type)
     response = api_client.request("POST", path, session=readwrite_session, json={"Content": {"__invalid_field__": "invalid"}})
     assert_api_failure(response, accepted_messages=("invalid field",))
+
+
+def post_neox_profile(api_client, profile_type: str, path: str, session_id: str, payload: dict[str, Any]):
+    original_timeout = api_client.timeout
+    if profile_type == "ONTUNIProfile":
+        api_client.timeout = neox_profile_post_timeout(original_timeout, read_timeout=1200)
+    try:
+        return api_client.request("POST", path, session=session_id, json=payload)
+    finally:
+        api_client.timeout = original_timeout
+
+
+def delete_neox_profile(api_client, session_manager, profile_type: str, path: str, session_id: str):
+    if profile_type != "ONTUNIProfile":
+        return api_client.request("DELETE", path, session=session_id)
+    with session_manager.role_session(SessionRole.READWRITE) as fresh_session:
+        return api_client.request("DELETE", path, session=fresh_session)
+
+
+def neox_profile_post_timeout(timeout, read_timeout: float):
+    if isinstance(timeout, tuple):
+        connect_timeout = timeout[0]
+        return (connect_timeout, max(float(timeout[1]), read_timeout))
+    return (float(timeout), read_timeout)
 
 
 def neox_profile_cli_credentials(env_config) -> tuple[str, str]:

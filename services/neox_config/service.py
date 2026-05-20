@@ -75,10 +75,10 @@ NEOX_PROFILE_NAMES = {
     "ONTSecurityProfile": "RestApi_NeoX_ONTSecurity",
     "ONTServiceProfile": "RestApi_NeoX_ONTService",
     "ONTTemplateProfile": "RestApi_NeoX_ONTTemplate",
-    "ONTUNIProfile": "RestApi_NeoX_ONTUNI",
-    "ONTVoipCommonProfile": "RestApi_NeoX_VoipCommon",
-    "ONTVoipDialPlanProfile": "RestApi_NeoX_VoipDialPlan",
-    "ONTVoipSipProfile": "RestApi_NeoX_VoipSip",
+    "ONTUNIProfile": "RestUNI",
+    "ONTVoipCommonProfile": "RestVoipCom",
+    "ONTVoipDialPlanProfile": "RestVoipDP",
+    "ONTVoipSipProfile": "RestVoipSip",
     "RateLimitProfile": "RestApi_NeoX_RateLimit",
     "ShapingProfile": "RestApi_NeoX_Shaping",
     "WeightProfile": "RestApi_NeoX_Weight",
@@ -93,7 +93,6 @@ NEOX_PROFILE_DEPENDENCIES = {
         "ONTONTProfile",
         "ONTSecurityProfile",
         "ONTServiceProfile",
-        "ONTUNIProfile",
     ],
 }
 
@@ -156,31 +155,19 @@ class NeoXConfigService:
 
     def verify_ge_config_rejected(self, session_id: str) -> None:
         self.verify_node3_target()
-        response = self.api_client.request("POST", self.ge_path(), session=session_id, json=ge_port_payload())
-        assert_api_failure(response)
-        response = self.api_client.request("DELETE", self.ge_path(), session=session_id)
-        assert_api_failure(response)
+        self._verify_mutation_rejected(session_id, self.ge_path(), ge_port_payload())
 
     def verify_nni_config_rejected(self, session_id: str) -> None:
         self.verify_node3_target()
-        response = self.api_client.request("POST", self.nni_path(), session=session_id, json=nni_port_payload())
-        assert_api_failure(response)
-        response = self.api_client.request("DELETE", self.nni_path(), session=session_id)
-        assert_api_failure(response)
+        self._verify_mutation_rejected(session_id, self.nni_path(), nni_port_payload())
 
     def verify_vlan_config_rejected(self, session_id: str) -> None:
         self.verify_node3_target()
-        response = self.api_client.request("POST", self.vlan_path(), session=session_id, json=vlan_payload())
-        assert_api_failure(response)
-        response = self.api_client.request("DELETE", self.vlan_path(), session=session_id)
-        assert_api_failure(response)
+        self._verify_mutation_rejected(session_id, self.vlan_path(), vlan_payload())
 
     def verify_ont_config_rejected(self, session_id: str) -> None:
         self.verify_node3_target()
-        response = self.api_client.request("POST", self.ont_path(), session=session_id, json=ont_config_payload(self.target()))
-        assert_api_failure(response)
-        response = self.api_client.request("DELETE", self.ont_path(), session=session_id)
-        assert_api_failure(response)
+        self._verify_mutation_rejected(session_id, self.ont_path(), ont_config_payload(self.target()))
 
     def verify_neox_profile_rejected(self, session_id: str, profile_type: str) -> None:
         self.verify_node3_target()
@@ -193,35 +180,73 @@ class NeoXConfigService:
 
     def verify_ge_config_set_and_clear(self, session_id: str, cleanup_registry: CleanupRegistry) -> None:
         self.verify_node3_target()
-        cleanup_registry.add(lambda: self.api_client.request("DELETE", self.ge_path(), session=session_id))
-        response = self.api_client.request("POST", self.ge_path(), session=session_id, json=ge_port_payload())
-        assert_api_success(response)
-        response = self.api_client.request("DELETE", self.ge_path(), session=session_id)
-        assert_api_success(response)
+        self._verify_set_and_clear(session_id, cleanup_registry, self.ge_path(), ge_port_payload())
+
+    def verify_ge_config_invalid_payload(self, session_id: str) -> None:
+        self.verify_node3_target()
+        self._verify_invalid_payload(
+            session_id,
+            self.ge_path(),
+            {"Content": {"portenable": "invalid"}},
+        )
 
     def verify_nni_config_set_and_clear(self, session_id: str, cleanup_registry: CleanupRegistry) -> None:
         self.verify_node3_target()
-        cleanup_registry.add(lambda: self.api_client.request("DELETE", self.nni_path(), session=session_id))
-        response = self.api_client.request("POST", self.nni_path(), session=session_id, json=nni_port_payload())
-        assert_api_success(response)
-        response = self.api_client.request("DELETE", self.nni_path(), session=session_id)
-        assert_api_success(response)
+        self._verify_set_and_clear(session_id, cleanup_registry, self.nni_path(), nni_min_payload())
+
+    def verify_nni_config_invalid_payload(self, session_id: str) -> None:
+        self.verify_node3_target()
+        self._verify_invalid_payload(
+            session_id,
+            self.nni_path(),
+            {"Content": {"portenable": "invalid"}},
+        )
 
     def verify_vlan_create_and_delete(self, session_id: str, cleanup_registry: CleanupRegistry) -> None:
         self.verify_node3_target()
-        cleanup_registry.add(lambda: self.api_client.request("DELETE", self.vlan_path(), session=session_id))
-        response = self.api_client.request("POST", self.vlan_path(), session=session_id, json=vlan_payload())
+        self._verify_set_and_clear(session_id, cleanup_registry, self.vlan_path(), vlan_payload())
+
+    def verify_vlan_case_created(self, session_id: str, cleanup_registry: CleanupRegistry, case_name: str) -> None:
+        self.verify_node3_target()
+        vid, payload = vlan_case(case_name)
+        path = self.vlan_path_for_vid(vid)
+        cleanup_registry.add(lambda: self.api_client.request("DELETE", path, session=session_id))
+        response = self.api_client.request("POST", path, session=session_id, json=payload)
         assert_api_success(response)
-        response = self.api_client.request("DELETE", self.vlan_path(), session=session_id)
-        assert_api_success(response)
+
+    def verify_vlan_case_set_and_clear(self, session_id: str, cleanup_registry: CleanupRegistry, case_name: str) -> None:
+        self.verify_node3_target()
+        vid, payload = vlan_case(case_name)
+        self._verify_set_and_clear(session_id, cleanup_registry, self.vlan_path_for_vid(vid), payload)
+
+    def verify_vlan_config_invalid_payload(self, session_id: str) -> None:
+        self.verify_node3_target()
+        self._verify_invalid_payload(
+            session_id,
+            self.vlan_path_for_vid("4094"),
+            {"vlanname": "REST_API_BAD_VLAN", "tpid": "invalid-tpid"},
+        )
 
     def verify_ont_create_and_delete(self, session_id: str, cleanup_registry: CleanupRegistry) -> None:
         self.verify_node3_target()
+        self._verify_set_and_clear(session_id, cleanup_registry, self.ont_path(), ont_config_payload(self.target()))
+
+    def verify_ont_case_created(self, session_id: str, cleanup_registry: CleanupRegistry, case_name: str) -> None:
+        self.verify_node3_target()
+        payload = materialize_ont_payload(case_name, self.target())
         cleanup_registry.add(lambda: self.api_client.request("DELETE", self.ont_path(), session=session_id))
-        response = self.api_client.request("POST", self.ont_path(), session=session_id, json=ont_config_payload(self.target()))
+        response = self.api_client.request("POST", self.ont_path(), session=session_id, json=payload)
         assert_api_success(response)
-        response = self.api_client.request("DELETE", self.ont_path(), session=session_id)
-        assert_api_success(response)
+
+    def verify_ont_config_set_and_clear(self, session_id: str, cleanup_registry: CleanupRegistry) -> None:
+        self.verify_node3_target()
+        self._verify_set_and_clear(session_id, cleanup_registry, self.ont_path(), ont_config_payload(self.target()))
+
+    def verify_ont_config_invalid_payload(self, session_id: str) -> None:
+        self.verify_node3_target()
+        payload = ont_config_payload(self.target())
+        payload["Content"]["registmethod"] = "invalid"
+        self._verify_invalid_payload(session_id, self.ont_path(), payload)
 
     def verify_neox_profile_create_and_delete(
         self,
@@ -258,6 +283,29 @@ class NeoXConfigService:
             )
             assert_api_success(response)
 
+    def _verify_mutation_rejected(self, session_id: str, path: str, payload: dict[str, Any]) -> None:
+        response = self.api_client.request("POST", path, session=session_id, json=payload)
+        assert_api_failure(response)
+        response = self.api_client.request("DELETE", path, session=session_id)
+        assert_api_failure(response)
+
+    def _verify_set_and_clear(
+        self,
+        session_id: str,
+        cleanup_registry: CleanupRegistry,
+        path: str,
+        payload: dict[str, Any],
+    ) -> None:
+        cleanup_registry.add(lambda: self.api_client.request("DELETE", path, session=session_id))
+        response = self.api_client.request("POST", path, session=session_id, json=payload)
+        assert_api_success(response)
+        response = self.api_client.request("DELETE", path, session=session_id)
+        assert_api_success(response)
+
+    def _verify_invalid_payload(self, session_id: str, path: str, payload: dict[str, Any]) -> None:
+        response = self.api_client.request("POST", path, session=session_id, json=payload)
+        assert_api_failure(response, accepted_messages=("invalid json input",))
+
     def ge_path(self) -> str:
         target = self.target()
         return f"/configNeoXSeries/interface/ge/{target.device_name}/{target.ge_slot_id}/{target.ge_port_id}"
@@ -292,11 +340,16 @@ class NeoXConfigService:
             content.update(self.neox_template_refs())
         return {"Content": content}
 
+    def neox_profile_boundary_payload(self, profile_type: str, boundary: str) -> dict[str, Any]:
+        payload = neox_profile_minmax_payload(profile_type, boundary)
+        if profile_type == "ONTTemplateProfile":
+            payload.setdefault("Content", {}).update(self.neox_template_refs())
+        return payload
+
     def neox_template_refs(self) -> dict[str, str]:
         return {
             "alarmprof": self.neox_profile_name("ONTAlarmProfile"),
             "secprof": self.neox_profile_name("ONTSecurityProfile"),
-            "uniprof": self.neox_profile_name("ONTUNIProfile"),
             "ontprof": self.neox_profile_name("ONTONTProfile"),
             "mprof1": self.neox_profile_name("ONTMulticastProfile"),
             "sprof1": self.neox_profile_name("ONTServiceProfile"),
@@ -490,15 +543,15 @@ NEOX_CONTENT_OVERRIDES = {
     "ONTSecurityProfile": {"fdb": "1023"},
     "ONTServiceProfile": {"mode": "veip", "uniport": "lan", "lan": "1", "vlan": "1314", "pbit": "0"},
     "ONTTemplateProfile": {},
-    "ONTUNIProfile": {},
+    "ONTUNIProfile": {"xlanvlan1": "1"},
     "ONTVoipCommonProfile": {
         "1codec": "G729",
         "1packet": "10",
-        "1silence": "1",
+        "1silence": "disable",
         "buf": "500",
         "dscp": "63",
-        "dtmf": "1",
-        "echo": "1",
+        "dtmf": "enable",
+        "echo": "enable",
         "maxport": "65535",
         "minport": "1",
     },

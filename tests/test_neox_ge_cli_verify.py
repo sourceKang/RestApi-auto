@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import json
-import os
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from clients.ssh_cli import SshCliClient
 from services.neox_config.service import ge_port_payload, vlan_payload
+from tests.support.neox_cli_verification import (
+    missing_tokens,
+    missing_tokens_by_command,
+    neox_cli_credentials,
+    run_neox_cli_commands,
+    write_neox_cli_verify_report,
+)
 from utils.assertions import assert_api_success
-from utils.redaction import redact
 
 
 pytestmark = [
@@ -35,7 +38,7 @@ def test_ge_config_min_create_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username, ssh_password = ge_cli_credentials(env_config)
+    credentials = neox_cli_credentials(env_config, "GE")
 
     cleanup_registry.add(lambda: api_client.request("DELETE", neox_config_service.ge_path(), session=readwrite_session))
     api_client.request("DELETE", neox_config_service.ge_path(), session=readwrite_session)
@@ -45,11 +48,21 @@ def test_ge_config_min_create_readwrite(
 
     target = neox_config_service.target()
     command = f"show running-config interface ge {target.ge_slot_id}-{target.ge_port_id}"
-    cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-    [result] = cli.run_commands([command])
+    output_by_command = run_neox_cli_commands(env_config, credentials, [command])
     checks = ge_cli_checks(payload["Content"])
-    missing = [expected for expected in checks if expected not in result.output]
-    report_path = write_cli_verify_report(neox_config_service, payload, response, command, result.output, checks, missing)
+    missing = missing_tokens(output_by_command[command], checks)
+    report_path = write_neox_cli_verify_report(
+        neox_config_service,
+        "ge",
+        "min",
+        neox_config_service.ge_path(),
+        payload,
+        response,
+        output_by_command,
+        {command: checks},
+        {command: missing},
+        target_extra={"ge_slot_id": target.ge_slot_id, "ge_port_id": target.ge_port_id},
+    )
 
     assert not missing, f"Missing GE running-config lines: {missing}. Report: {report_path}"
 
@@ -62,7 +75,7 @@ def test_ge_config_max_create_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username, ssh_password = ge_cli_credentials(env_config)
+    credentials = neox_cli_credentials(env_config, "GE")
 
     config = json.loads(FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
     payload = config["payload"]
@@ -75,10 +88,20 @@ def test_ge_config_max_create_readwrite(
 
     target = neox_config_service.target()
     command = f"show running-config interface ge {target.ge_slot_id}-{target.ge_port_id}"
-    cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-    [result] = cli.run_commands([command])
-    missing = [expected for expected in expected_lines if expected not in result.output]
-    report_path = write_cli_verify_report(neox_config_service, payload, response, command, result.output, expected_lines, missing)
+    output_by_command = run_neox_cli_commands(env_config, credentials, [command])
+    missing = missing_tokens(output_by_command[command], expected_lines)
+    report_path = write_neox_cli_verify_report(
+        neox_config_service,
+        "ge",
+        "max",
+        neox_config_service.ge_path(),
+        payload,
+        response,
+        output_by_command,
+        {command: expected_lines},
+        {command: missing},
+        target_extra={"ge_slot_id": target.ge_slot_id, "ge_port_id": target.ge_port_id},
+    )
 
     assert not missing, f"Missing GE running-config lines: {missing}. Report: {report_path}"
 
@@ -92,7 +115,7 @@ def test_ge_config_set_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username, ssh_password = ge_cli_credentials(env_config)
+    credentials = neox_cli_credentials(env_config, "GE")
 
     payload = load_enable_accepted_payload()
     content = payload["Content"]
@@ -153,33 +176,28 @@ def test_ge_config_set_readwrite(
         "pvid": f"show interface ge {target.ge_slot_id}-{target.ge_port_id} pvid",
         "fdb": f"show interface ge {target.ge_slot_id}-{target.ge_port_id} fdb",
     }
-    cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-    command_results = cli.run_commands(list(command_by_name.values()))
-    output_by_name = {
-        name: result.output
-        for name, result in zip(command_by_name, command_results)
-    }
+    output_by_command = run_neox_cli_commands(env_config, credentials, list(command_by_name.values()))
     expected_by_output = {
-        "running-config": expected_running_lines,
-        "config": ["Flow-Ctrl", "enable", "REST_GE_39"],
-        "dot1x": ["1-39", "REST_GE_39"],
-        "dscp": ["DSCP mode Enable"],
-        "frame-type": ["1-39"],
-        "pvid": ["1-39", "1314", "0"],
-        "fdb": ["Maximum MAC entry counts by NNI-VLAN 1314 : 1"],
+        command_by_name["running-config"]: expected_running_lines,
+        command_by_name["config"]: ["Flow-Ctrl", "enable", "REST_GE_39"],
+        command_by_name["dot1x"]: ["1-39", "REST_GE_39"],
+        command_by_name["dscp"]: ["DSCP mode Enable"],
+        command_by_name["frame-type"]: ["1-39"],
+        command_by_name["pvid"]: ["1-39", "1314", "0"],
+        command_by_name["fdb"]: ["Maximum MAC entry counts by NNI-VLAN 1314 : 1"],
     }
-    missing_by_output = {
-        name: [expected for expected in expected_lines if expected not in output_by_name.get(name, "")]
-        for name, expected_lines in expected_by_output.items()
-    }
-    report_path = write_cli_multi_verify_report(
+    missing_by_output = missing_tokens_by_command(output_by_command, expected_by_output)
+    report_path = write_neox_cli_verify_report(
         neox_config_service,
+        "ge",
+        "probe",
+        neox_config_service.ge_path(),
         payload,
         response,
-        command_by_name,
-        output_by_name,
+        output_by_command,
         expected_by_output,
         missing_by_output,
+        target_extra={"ge_slot_id": target.ge_slot_id, "ge_port_id": target.ge_port_id},
     )
 
     missing = {name: lines for name, lines in missing_by_output.items() if lines}
@@ -209,14 +227,6 @@ def ge_cli_checks(content: dict[str, Any]) -> list[str]:
     return checks
 
 
-def ge_cli_credentials(env_config) -> tuple[str, str]:
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run GE CLI verification.")
-    return ssh_username, ssh_password
-
-
 def load_enable_accepted_payload() -> dict[str, Any]:
     data = json.loads(ENABLE_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
     payload = data["payload"]
@@ -234,94 +244,3 @@ def load_enable_accepted_payload() -> dict[str, Any]:
 def unique_mac() -> str:
     value = int(time.time()) & 0xFFFFFF
     return f"02:13:{(value >> 16) & 0xFF:02x}:{(value >> 8) & 0xFF:02x}:{value & 0xFF:02x}:39"
-
-
-def write_cli_verify_report(
-    neox_config_service,
-    payload: dict[str, Any],
-    api_response,
-    command: str,
-    cli_output: str,
-    expected_lines: list[str],
-    missing_lines: list[str],
-) -> Path:
-    root = Path(__file__).resolve().parents[1]
-    reports_dir = root / "reports" / "device-verification"
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = reports_dir / f"ge_cli_verify_{timestamp}.json"
-    target = neox_config_service.target()
-    data = {
-        "target": {
-            "node": neox_config_service.env_config.dut.node_key,
-            "device_ip": neox_config_service.env_config.dut.device_ip,
-            "device_name": target.device_name,
-            "ge_slot_id": target.ge_slot_id,
-            "ge_port_id": target.ge_port_id,
-        },
-        "rest_api": {
-            "path": neox_config_service.ge_path(),
-            "request_content": redact(payload["Content"]),
-            "response": {
-                "status_code": api_response.status_code,
-                "retstatus": api_response.retstatus,
-                "retresult": api_response.retresult,
-            },
-        },
-        "cli": {
-            "transport": "ssh",
-            "command": command,
-            "output": cli_output,
-            "expected_lines": expected_lines,
-            "missing_lines": missing_lines,
-        },
-    }
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path
-
-
-def write_cli_multi_verify_report(
-    neox_config_service,
-    payload: dict[str, Any],
-    api_response,
-    command_by_name: dict[str, str],
-    output_by_name: dict[str, str],
-    expected_by_output: dict[str, list[str]],
-    missing_by_output: dict[str, list[str]],
-) -> Path:
-    root = Path(__file__).resolve().parents[1]
-    reports_dir = root / "reports" / "device-verification"
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = reports_dir / f"ge_cli_multi_verify_{timestamp}.json"
-    target = neox_config_service.target()
-    data = {
-        "target": {
-            "node": neox_config_service.env_config.dut.node_key,
-            "device_ip": neox_config_service.env_config.dut.device_ip,
-            "device_name": target.device_name,
-            "ge_slot_id": target.ge_slot_id,
-            "ge_port_id": target.ge_port_id,
-        },
-        "rest_api": {
-            "path": neox_config_service.ge_path(),
-            "request_content": redact(payload["Content"]),
-            "response": {
-                "status_code": api_response.status_code,
-                "retstatus": api_response.retstatus,
-                "retresult": api_response.retresult,
-            },
-        },
-        "cli": {
-            name: {
-                "transport": "ssh",
-                "command": command_by_name[name],
-                "output": output_by_name.get(name, ""),
-                "expected_lines": expected_by_output.get(name, []),
-                "missing_lines": missing_by_output.get(name, []),
-            }
-            for name in command_by_name
-        },
-    }
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    return path

@@ -878,12 +878,12 @@
     "RateLimitProfile": {
       "min": {
         "Content": {
-          "ingressactive": "active",
+          "ingressactive": "",
           "cirrate": "64",
           "cbsrate": "64",
           "eirrate": "64",
           "ebsrate": "64",
-          "egressactive": "active",
+          "egressactive": "",
           "egressrate": "64",
           "burstrate": "64"
         }

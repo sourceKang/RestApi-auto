@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
+from utils.allure_helpers import attach_json
 from utils.redaction import redact
 
 
@@ -90,4 +91,5 @@ def write_neox_cli_verify_report(
         },
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    attach_json(f"NeoX CLI verification {feature}/{case_name}", data)
     return path

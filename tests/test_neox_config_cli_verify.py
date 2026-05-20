@@ -45,7 +45,10 @@ def test_vlan_config_create_cli_verified(
     command = f"show vlan {vid}"
     output_by_command = run_neox_cli_commands(env_config, (ssh_username, ssh_password), [command])
     expected_tokens = vlan_expected_tokens(vid, payload)
+    expected_port_states = vlan_expected_port_states(payload)
+    expected_checks = expected_tokens + vlan_port_state_checks(expected_port_states)
     missing = missing_tokens(output_by_command[command], expected_tokens)
+    missing.extend(missing_vlan_port_states(output_by_command[command], vid, expected_port_states))
     report_path = write_neox_cli_verify_report(
         neox_config_service,
         "vlan",
@@ -54,7 +57,7 @@ def test_vlan_config_create_cli_verified(
         payload,
         response,
         output_by_command,
-        {command: expected_tokens},
+        {command: expected_checks},
         {command: missing},
     )
 
@@ -117,11 +120,66 @@ def vlan_expected_tokens(vid: str, payload: dict[str, Any]) -> list[str]:
         tokens.append("QinQ")
     elif payload.get("tpid") == "default-tpid":
         tokens.append("default")
-    for field in ("fixedport", "untaggedport", "forbiddenport"):
-        value = payload.get(field)
-        if value not in (None, ""):
-            tokens.append(str(value))
     return tokens
+
+
+def vlan_expected_port_states(payload: dict[str, Any]) -> dict[int, str]:
+    fixed_ports = parse_vlan_ports(payload.get("fixedport"))
+    untagged_ports = parse_vlan_ports(payload.get("untaggedport"))
+    forbidden_ports = parse_vlan_ports(payload.get("forbiddenport"))
+    conflicts = untagged_ports & forbidden_ports
+    if conflicts:
+        raise AssertionError(f"VLAN payload has overlapping untaggedport/forbiddenport values: {sorted(conflicts)}")
+
+    states: dict[int, str] = {}
+    for port in range(1, 13):
+        if port in forbidden_ports:
+            states[port] = "X"
+        elif port in fixed_ports and port in untagged_ports:
+            states[port] = "U"
+        elif port in fixed_ports:
+            states[port] = "T"
+        else:
+            states[port] = "."
+    return states
+
+
+def parse_vlan_ports(value: Any) -> set[int]:
+    if value in (None, ""):
+        return set()
+    ports: set[int] = set()
+    for part in str(value).replace(" ", "").split(","):
+        if not part:
+            continue
+        if "~" in part:
+            start, end = part.split("~", 1)
+            ports.update(range(int(start), int(end) + 1))
+        else:
+            ports.add(int(part))
+    return ports
+
+
+def vlan_port_state_checks(expected_states: dict[int, str]) -> list[str]:
+    return [f"port {port}={state}" for port, state in sorted(expected_states.items())]
+
+
+def missing_vlan_port_states(output: str, vid: str, expected_states: dict[int, str]) -> list[str]:
+    actual_states = parse_vlan_cli_port_states(output, vid)
+    if not actual_states and expected_states:
+        return [f"vlan {vid} port table"]
+    return [
+        f"port {port}={expected_state}"
+        for port, expected_state in sorted(expected_states.items())
+        if actual_states.get(port) != expected_state
+    ]
+
+
+def parse_vlan_cli_port_states(output: str, vid: str) -> dict[int, str]:
+    for line in output.splitlines():
+        parts = line.split()
+        if len(parts) >= 13 and parts[0] == vid:
+            return {port: parts[port] for port in range(1, 13)}
+    return {}
 
 
 def ont_running_config_tokens(remote_xont: str, content: dict[str, Any]) -> list[str]:

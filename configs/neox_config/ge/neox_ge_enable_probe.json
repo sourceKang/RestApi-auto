@@ -1,7 +1,7 @@
 {
   "source": {
-    "base_payload": "configs/neox_ge_full_accepted_payload.json",
-    "show_commands": "configs/neox_ge_show_commands.json",
+    "base_payload": "configs/neox_config/ge/neox_ge_full_accepted_payload.json",
+    "show_commands": "configs/neox_config/ge/neox_ge_show_commands.json",
     "strategy": "Prefer enable values where the field semantic supports enable/disable. Add one field or value change at a time, keep only Success responses, and collect running-config plus feature show outputs."
   },
   "candidates": [

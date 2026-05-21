@@ -1,0 +1,34 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTAlarmProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "lowcurr": "0",
+      "upcurr": "1",
+      "lowrxpower": "-127",
+      "uprxpower": "-126",
+      "lowtemp": "-40",
+      "uptemp": "-39",
+      "lowtxpower": "-15.3",
+      "uptxpower": "-15.2",
+      "lowvolt": "2.8",
+      "upvol": "2.81"
+    }
+  },
+  "max": {
+    "Content": {
+      "lowcurr": "0",
+      "upcurr": "79",
+      "lowrxpower": "-127",
+      "uprxpower": "0",
+      "lowtemp": "-40",
+      "uptemp": "100",
+      "lowtxpower": "-15.3",
+      "uptxpower": "6.5",
+      "lowvolt": "2.8",
+      "upvol": "3.59"
+    }
+  }
+}

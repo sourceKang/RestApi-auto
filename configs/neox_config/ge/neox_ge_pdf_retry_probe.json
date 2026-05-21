@@ -2,8 +2,8 @@
   "source": {
     "derived_from": [
       "NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf",
-      "configs/neox_ge_full_accepted_payload.json",
-      "configs/neox_ge_enable_accepted_payload.json"
+      "configs/neox_config/ge/neox_ge_full_accepted_payload.json",
+      "configs/neox_config/ge/neox_ge_enable_accepted_payload.json"
     ],
     "purpose": "Retry GE fields that failed in the full probe with values and preconditions inferred from the NeoX user guide.",
     "notes": [

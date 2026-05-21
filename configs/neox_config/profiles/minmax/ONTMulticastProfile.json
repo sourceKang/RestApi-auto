@@ -1,0 +1,28 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTMulticastProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "univid": "1",
+      "igmp": "IGMPv2",
+      "mode": "transparent",
+      "txtagvid": "1",
+      "txtagpbit": "0",
+      "maxgroup": "1",
+      "maxmsg": "1"
+    }
+  },
+  "max": {
+    "Content": {
+      "univid": "4094",
+      "igmp": "IGMPv3",
+      "mode": "transparent",
+      "txtagvid": "4094",
+      "txtagpbit": "7",
+      "maxgroup": "512",
+      "maxmsg": "64"
+    }
+  }
+}

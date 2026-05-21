@@ -1,0 +1,20 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTBandwidthProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "sir": "0",
+      "air": "0",
+      "pir": "256"
+    }
+  },
+  "max": {
+    "Content": {
+      "sir": "0",
+      "air": "0",
+      "pir": "10000000"
+    }
+  }
+}

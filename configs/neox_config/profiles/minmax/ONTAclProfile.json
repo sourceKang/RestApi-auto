@@ -1,0 +1,34 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTAclProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "policy": "trust",
+      "interface": "lan",
+      "protocol": "0",
+      "srcport": "1",
+      "destport": "1",
+      "srcmask": "1",
+      "destmask": "1"
+    }
+  },
+  "max": {
+    "Content": {
+      "policy": "trust",
+      "interface": "both",
+      "protocol": "255",
+      "srcport": "65535",
+      "destport": "65535",
+      "srcmask": "32",
+      "destmask": "32",
+      "srcip": "10.10.10.1",
+      "destip": "10.10.10.2",
+      "srcmac": "10:10:10:10:10:01",
+      "destmac": "10:10:10:10:10:02",
+      "logging": "disable",
+      "counter": "disable"
+    }
+  }
+}

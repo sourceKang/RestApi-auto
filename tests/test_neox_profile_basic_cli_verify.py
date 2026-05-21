@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -10,6 +9,9 @@ import pytest
 
 from clients.ssh_cli import SshCliClient
 from models.api import SessionRole
+from services.neox_config.service import PROFILE_BASIC_CASES_FILE
+from tests.support.neox_cli_verification import neox_cli_credentials
+from tests.support.neox_profile_api import delete_profile_if_exists
 from utils.assertions import assert_api_success
 from utils.redaction import redact
 
@@ -24,7 +26,7 @@ pytestmark = [
 ]
 
 
-BASIC_PROFILE_CASES_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_profile_basic_cases.json"
+BASIC_PROFILE_CASES_FILE = PROFILE_BASIC_CASES_FILE
 
 
 def load_basic_profile_cases() -> list[dict[str, Any]]:
@@ -45,15 +47,12 @@ def test_neox_basic_profile_max_create_readwrite(
     case,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run profile CLI verification.")
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "basic profile CLI verification")
 
     cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
         path = neox_profile_path(neox_config_service, case["profile_type"], case["profile_name"])
-        api_client.request("DELETE", path, session=readwrite_session)
+        delete_profile_if_exists(api_client, path, readwrite_session)
         response = api_client.request("POST", path, session=readwrite_session, json=case["payload"])
         assert_api_success(response)
 
@@ -91,7 +90,7 @@ def test_neox_basic_profile_clear_readwrite(
     neox_config_service.verify_required_target_data()
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
         path = neox_profile_path(neox_config_service, case["profile_type"], case["profile_name"])
-        api_client.request("DELETE", path, session=readwrite_session)
+        delete_profile_if_exists(api_client, path, readwrite_session)
         response = api_client.request("POST", path, session=readwrite_session, json=case["payload"])
         assert_api_success(response)
         response = api_client.request("DELETE", path, session=readwrite_session)

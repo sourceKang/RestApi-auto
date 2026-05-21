@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from services.neox_config.service import ge_port_payload
+from services.neox_config.service import GE_NEGATIVE_CASES_FILE, ge_port_payload
 from utils.redaction import redact
 
 
@@ -22,7 +22,7 @@ pytestmark = [
 
 
 GE_NEGATIVE_PROBES = [
-    # Fallback only; primary cases come from configs/neox_ge_negative_cases.json.
+    # Fallback only; primary cases come from configs/neox_config/ge/neox_ge_negative_cases.json.
 ]
 
 
@@ -61,8 +61,7 @@ def invalid_ge_payload(field: str, value: Any) -> dict[str, Any]:
 
 
 def load_negative_cases() -> list[dict[str, Any]]:
-    root = Path(__file__).resolve().parents[1]
-    path = root / "configs" / "neox_ge_negative_cases.json"
+    path = GE_NEGATIVE_CASES_FILE
     if not path.exists():
         return [{"name": name, "field": field, "value": value} for name, field, value in GE_NEGATIVE_PROBES]
     data = json.loads(path.read_text(encoding="utf-8"))

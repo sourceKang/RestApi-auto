@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -9,9 +8,11 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
+from services.neox_config.service import GE_SHOW_COMMANDS_FILE
+from tests.support.neox_cli_verification import neox_cli_credentials
 
 
-COMMANDS_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_show_commands.json"
+COMMANDS_FILE = GE_SHOW_COMMANDS_FILE
 
 
 pytestmark = [
@@ -22,10 +23,7 @@ pytestmark = [
 
 def test_ge_show_feature_commands_discovery(env_config, neox_config_service):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE CLI discovery.")
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "GE CLI discovery")
 
     config = json.loads(COMMANDS_FILE.read_text(encoding="utf-8"))
     target = neox_config_service.target()

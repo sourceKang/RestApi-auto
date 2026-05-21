@@ -2,7 +2,7 @@
   "source": {
     "derived_from": [
       "reports/cli-discovery/ge_config_interface_help_20260513_173218.json",
-      "configs/neox_ge_enable_accepted_payload.json"
+      "configs/neox_config/ge/neox_ge_enable_accepted_payload.json"
     ],
     "purpose": "Focused retry for GE fields that map to one CLI command and must be sent together."
   },

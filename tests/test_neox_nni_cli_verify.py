@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from models.api import SessionRole
+from services.neox_config.service import NNI_MAX_PAYLOAD_FILE, NNI_MIN_PAYLOAD_FILE
 from tests.support.neox_cli_verification import (
     missing_tokens,
     neox_cli_credentials,
@@ -23,8 +24,8 @@ pytestmark = [
 ]
 
 
-MIN_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_nni_min_accepted_payload.json"
-FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_nni_full_accepted_payload.json"
+MIN_ACCEPTED_PAYLOAD_FILE = NNI_MIN_PAYLOAD_FILE
+FULL_ACCEPTED_PAYLOAD_FILE = NNI_MAX_PAYLOAD_FILE
 
 
 def test_nni_config_min_create_readwrite(

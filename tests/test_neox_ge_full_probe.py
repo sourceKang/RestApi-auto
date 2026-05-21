@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -9,6 +8,8 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
+from services.neox_config.service import GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE, GE_SWAGGER_PAYLOAD_FILE
+from tests.support.neox_cli_verification import neox_cli_credentials
 from utils.assertions import assert_api_success
 from utils.redaction import redact
 
@@ -22,8 +23,8 @@ pytestmark = [
 ]
 
 
-SWAGGER_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_swagger_payload.json"
-ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_accepted_incremental_payload.json"
+SWAGGER_PAYLOAD_FILE = GE_SWAGGER_PAYLOAD_FILE
+ACCEPTED_PAYLOAD_FILE = GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE
 
 
 FIELD_VALUE_OVERRIDES: dict[str, Any] = {
@@ -101,10 +102,7 @@ def test_ge_full_parameter_probe_set_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE full CLI probe.")
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "GE full CLI probe")
 
     target = neox_config_service.target()
     command = f"show running-config interface ge {target.ge_slot_id}-{target.ge_port_id}"

@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 from config_loader.simple_yaml import load_simple_yaml
-from services.neox_config.service import NEOX_CONTENT_OVERRIDES, ge_port_payload, nni_port_payload
+from services.neox_config.service import (
+    GE_SWAGGER_PAYLOAD_FILE,
+    NEOX_CONTENT_OVERRIDES,
+    NEOX_UG_PARAMETER_REFERENCE_FILE,
+    ge_port_payload,
+    nni_port_payload,
+)
 
 
-REFERENCE_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ug_parameter_reference.yaml"
-GE_SWAGGER_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_swagger_payload.json"
+REFERENCE_FILE = NEOX_UG_PARAMETER_REFERENCE_FILE
 
 
 def test_neox_ug_reference_loads():

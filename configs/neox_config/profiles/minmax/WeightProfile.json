@@ -1,0 +1,30 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX WeightProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "weight0": "1",
+      "weight1": "1",
+      "weight2": "1",
+      "weight3": "1",
+      "weight4": "1",
+      "weight5": "1",
+      "weight6": "1",
+      "weight7": "1"
+    }
+  },
+  "max": {
+    "Content": {
+      "weight0": "50",
+      "weight1": "50",
+      "weight2": "50",
+      "weight3": "50",
+      "weight4": "50",
+      "weight5": "50",
+      "weight6": "50",
+      "weight7": "50"
+    }
+  }
+}

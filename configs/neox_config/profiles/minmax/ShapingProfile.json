@@ -1,0 +1,30 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ShapingProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "rate0": "0",
+      "rate1": "0",
+      "rate2": "0",
+      "rate3": "0",
+      "rate4": "0",
+      "rate5": "0",
+      "rate6": "0",
+      "rate7": "0"
+    }
+  },
+  "max": {
+    "Content": {
+      "rate0": "100000000",
+      "rate1": "100000000",
+      "rate2": "100000000",
+      "rate3": "100000000",
+      "rate4": "100000000",
+      "rate5": "100000000",
+      "rate6": "100000000",
+      "rate7": "100000000"
+    }
+  }
+}

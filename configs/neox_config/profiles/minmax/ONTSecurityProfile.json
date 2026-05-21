@@ -1,0 +1,16 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTSecurityProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "fdb": "1"
+    }
+  },
+  "max": {
+    "Content": {
+      "fdb": "1023"
+    }
+  }
+}

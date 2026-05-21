@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +9,12 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
+from services.neox_config.service import (
+    GE_ENABLE_PROBE_FILE,
+    GE_FULL_ACCEPTED_PAYLOAD_FILE,
+    GE_SHOW_COMMANDS_FILE,
+)
+from tests.support.neox_cli_verification import neox_cli_credentials
 from utils.assertions import assert_api_success
 from utils.redaction import redact
 
@@ -23,9 +28,9 @@ pytestmark = [
 ]
 
 
-ENABLE_PROBE_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_enable_probe.json"
-FULL_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_full_accepted_payload.json"
-SHOW_COMMANDS_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_show_commands.json"
+ENABLE_PROBE_FILE = GE_ENABLE_PROBE_FILE
+FULL_ACCEPTED_PAYLOAD_FILE = GE_FULL_ACCEPTED_PAYLOAD_FILE
+SHOW_COMMANDS_FILE = GE_SHOW_COMMANDS_FILE
 
 
 def test_ge_enable_probe_set_readwrite(
@@ -36,10 +41,7 @@ def test_ge_enable_probe_set_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE enable probe.")
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "GE enable probe")
 
     target = neox_config_service.target()
     running_command = f"show running-config interface ge {target.ge_slot_id}-{target.ge_port_id}"

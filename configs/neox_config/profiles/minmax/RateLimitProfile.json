@@ -1,0 +1,30 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX RateLimitProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "ingressactive": "",
+      "cirrate": "64",
+      "cbsrate": "64",
+      "eirrate": "64",
+      "ebsrate": "64",
+      "egressactive": "",
+      "egressrate": "64",
+      "burstrate": "64"
+    }
+  },
+  "max": {
+    "Content": {
+      "ingressactive": "active",
+      "cirrate": "10000000",
+      "cbsrate": "16000000",
+      "eirrate": "10000000",
+      "ebsrate": "16000000",
+      "egressactive": "active",
+      "egressrate": "10000000",
+      "burstrate": "128000"
+    }
+  }
+}

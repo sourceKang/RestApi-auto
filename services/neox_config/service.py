@@ -14,12 +14,64 @@ from utils.cleanup import CleanupRegistry
 
 
 CONFIGS_DIR = Path(__file__).resolve().parents[2] / "configs"
-NNI_MIN_PAYLOAD_FILE = CONFIGS_DIR / "neox_nni_min_accepted_payload.json"
-NNI_MAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_nni_full_accepted_payload.json"
-VLAN_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_vlan_minmax_payloads.json"
-ONT_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_ont_minmax_payloads.json"
-PROFILE_MINMAX_PAYLOAD_FILE = CONFIGS_DIR / "neox_profile_generic_minmax_payloads.json"
-PROFILE_CLI_VERIFY_FILE = CONFIGS_DIR / "neox_profile_cli_verify.json"
+NEOX_CONFIG_DIR = CONFIGS_DIR / "neox_config"
+NEOX_GE_CONFIG_DIR = NEOX_CONFIG_DIR / "ge"
+NEOX_NNI_CONFIG_DIR = NEOX_CONFIG_DIR / "nni"
+NEOX_VLAN_CONFIG_DIR = NEOX_CONFIG_DIR / "vlan"
+NEOX_ONT_CONFIG_DIR = NEOX_CONFIG_DIR / "ont"
+NEOX_PROFILE_CONFIG_DIR = NEOX_CONFIG_DIR / "profiles"
+NEOX_REFERENCE_CONFIG_DIR = NEOX_CONFIG_DIR / "reference"
+GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_accepted_incremental_payload.json"
+GE_ACL_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_acl_retry_probe.json"
+GE_ENABLE_ACCEPTED_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_enable_accepted_payload.json"
+GE_ENABLE_PROBE_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_enable_probe.json"
+GE_FULL_ACCEPTED_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_full_accepted_payload.json"
+GE_INCREMENTAL_PROBE_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_incremental_probe.json"
+GE_NEGATIVE_CASES_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_negative_cases.json"
+GE_PAIRED_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_paired_retry_probe.json"
+GE_PDF_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_pdf_retry_probe.json"
+GE_SHOW_COMMANDS_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_show_commands.json"
+GE_SWAGGER_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_swagger_payload.json"
+NNI_MIN_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_min_accepted_payload.json"
+NNI_MAX_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_full_accepted_payload.json"
+VLAN_MINMAX_PAYLOAD_FILE = NEOX_VLAN_CONFIG_DIR / "neox_vlan_minmax_payloads.json"
+ONT_MINMAX_PAYLOAD_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_minmax_payloads.json"
+PROFILE_BASIC_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_basic_cases.json"
+PROFILE_QOS_MINMAX_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_qos_minmax_cases.json"
+PROFILE_MINMAX_PAYLOAD_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_generic_minmax_payloads.json"
+PROFILE_OBSERVED_FAILURES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_observed_failures.json"
+IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_igmp_group_privilege_probe_cases.json"
+PROFILE_MINMAX_PAYLOAD_DIR = NEOX_PROFILE_CONFIG_DIR / "minmax"
+PROFILE_CLI_VERIFY_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_cli_verify.json"
+NEOX_FEATURE_TEST_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_feature_test_data.yaml"
+NEOX_SWAGGER_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_swagger_data.yaml"
+NEOX_UG_PARAMETER_REFERENCE_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_ug_parameter_reference.yaml"
+NEOX_CONFIG_DATA_FILES = (
+    GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE,
+    GE_ACL_RETRY_CONFIG_FILE,
+    GE_ENABLE_ACCEPTED_PAYLOAD_FILE,
+    GE_ENABLE_PROBE_FILE,
+    GE_FULL_ACCEPTED_PAYLOAD_FILE,
+    GE_INCREMENTAL_PROBE_FILE,
+    GE_NEGATIVE_CASES_FILE,
+    GE_PAIRED_RETRY_CONFIG_FILE,
+    GE_PDF_RETRY_CONFIG_FILE,
+    GE_SHOW_COMMANDS_FILE,
+    GE_SWAGGER_PAYLOAD_FILE,
+    NNI_MIN_PAYLOAD_FILE,
+    NNI_MAX_PAYLOAD_FILE,
+    VLAN_MINMAX_PAYLOAD_FILE,
+    ONT_MINMAX_PAYLOAD_FILE,
+    PROFILE_BASIC_CASES_FILE,
+    PROFILE_QOS_MINMAX_CASES_FILE,
+    PROFILE_MINMAX_PAYLOAD_FILE,
+    PROFILE_OBSERVED_FAILURES_FILE,
+    IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE,
+    PROFILE_CLI_VERIFY_FILE,
+    NEOX_FEATURE_TEST_DATA_FILE,
+    NEOX_SWAGGER_DATA_FILE,
+    NEOX_UG_PARAMETER_REFERENCE_FILE,
+)
 
 
 NEOX_PROFILE_TYPES = [
@@ -259,7 +311,7 @@ class NeoXConfigService:
         path = self.neox_profile_path(profile_type)
         payload = self.neox_profile_payload(profile_type)
         cleanup_registry.add(lambda: self.api_client.request("DELETE", path, session=session_id))
-        self.api_client.request("DELETE", path, session=session_id)
+        self.delete_neox_profile_if_exists(path, session_id)
         response = self.api_client.request("POST", path, session=session_id, json=payload)
         assert_api_success(response)
         response = self.api_client.request("DELETE", path, session=session_id)
@@ -274,7 +326,7 @@ class NeoXConfigService:
         for dependency_type in NEOX_PROFILE_DEPENDENCIES.get(profile_type, []):
             path = self.neox_profile_path(dependency_type)
             cleanup_registry.add(lambda p=path: self.api_client.request("DELETE", p, session=session_id))
-            self.api_client.request("DELETE", path, session=session_id)
+            self.delete_neox_profile_if_exists(path, session_id)
             response = self.api_client.request(
                 "POST",
                 path,
@@ -282,6 +334,12 @@ class NeoXConfigService:
                 json=self.neox_profile_payload(dependency_type),
             )
             assert_api_success(response)
+
+    def delete_neox_profile_if_exists(self, path: str, session_id: str):
+        response = self.api_client.request("GET", path, session=session_id)
+        if isinstance(response.json, dict) and response.json.get("retstatus") == "Success":
+            return self.api_client.request("DELETE", path, session=session_id)
+        return response
 
     def _verify_mutation_rejected(self, session_id: str, path: str, payload: dict[str, Any]) -> None:
         response = self.api_client.request("POST", path, session=session_id, json=payload)
@@ -463,6 +521,10 @@ def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
 
 
 def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
+    split_path = PROFILE_MINMAX_PAYLOAD_DIR / f"{profile_type}.json"
+    if split_path.exists():
+        data = json.loads(split_path.read_text(encoding="utf-8"))
+        return copy.deepcopy(data[boundary])
     data = json.loads(PROFILE_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
     return copy.deepcopy(data["profiles"][profile_type][boundary])
 
@@ -490,7 +552,7 @@ def load_json_payload(path: Path) -> dict[str, Any]:
 
 def normalize_neox_profile_content(profile_type: str, content: dict[str, Any]) -> dict[str, Any]:
     if profile_type in NEOX_CONTENT_OVERRIDES:
-        return NEOX_CONTENT_OVERRIDES[profile_type]
+        return dict(NEOX_CONTENT_OVERRIDES[profile_type])
     prefix = NEOX_PREFIXES.get(profile_type)
     if not prefix:
         return dict(content)

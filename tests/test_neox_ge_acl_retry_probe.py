@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -11,7 +10,8 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import SshCliClient
-from services.neox_config.service import vlan_payload
+from services.neox_config.service import GE_ACL_RETRY_CONFIG_FILE, GE_ENABLE_ACCEPTED_PAYLOAD_FILE, vlan_payload
+from tests.support.neox_cli_verification import neox_cli_credentials
 from utils.assertions import assert_api_success
 from utils.redaction import redact
 
@@ -25,8 +25,8 @@ pytestmark = [
 ]
 
 
-ACL_RETRY_CONFIG_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_acl_retry_probe.json"
-ENABLE_ACCEPTED_PAYLOAD_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_enable_accepted_payload.json"
+ACL_RETRY_CONFIG_FILE = GE_ACL_RETRY_CONFIG_FILE
+ENABLE_ACCEPTED_PAYLOAD_FILE = GE_ENABLE_ACCEPTED_PAYLOAD_FILE
 
 
 def test_ge_acl_retry_probe_set_readwrite(
@@ -37,10 +37,7 @@ def test_ge_acl_retry_probe_set_readwrite(
     cleanup_registry,
 ):
     neox_config_service.verify_required_target_data()
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
-    if not ssh_username or not ssh_password:
-        pytest.skip("Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD to run GE ACL retry probe.")
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "GE ACL retry probe")
 
     retry_config = json.loads(ACL_RETRY_CONFIG_FILE.read_text(encoding="utf-8"))
     target = neox_config_service.target()

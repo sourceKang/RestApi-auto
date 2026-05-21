@@ -1,8 +1,8 @@
 {
   "source": {
     "derived_from": [
-      "configs/neox_swagger_data.yaml",
-      "configs/neox_ug_parameter_reference.yaml"
+      "configs/neox_config/reference/neox_swagger_data.yaml",
+      "configs/neox_config/reference/neox_ug_parameter_reference.yaml"
     ],
     "purpose": "NNI minimum create payload for NODE3 readwrite verification."
   },

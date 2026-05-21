@@ -1,0 +1,22 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX IGMPGroupPrivilegeProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "grpbandwidth1": "1",
+      "startip1": "225.1.1.1",
+      "endip1": "225.1.1.1",
+      "prvitype1": "permit"
+    }
+  },
+  "max": {
+    "Content": {
+      "grpbandwidth1": "100",
+      "startip1": "225.2.4.1",
+      "endip1": "225.2.4.20",
+      "prvitype1": "permit"
+    }
+  }
+}

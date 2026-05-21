@@ -10,7 +10,7 @@
 source:
   pdf: "D:\\Download\\NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf"
   extracted_text: "reports/neox_ug_text.txt"
-  swagger_reference: "configs/neox_swagger_data.yaml"
+  swagger_reference: "configs/neox_config/reference/neox_swagger_data.yaml"
 
 ge_port:
   source_lines: "11086-11143"
@@ -129,8 +129,7 @@ profiles:
         range: ["2.80", "3.59"]
   ONTSecurityProfile:
     source_lines: "7883-7897"
-    live_notes:
-      - "NODE3 NeoX profile endpoint accepted fdb=1023, but spoofingdisable returned Fail for enable/disable/1/0 on 2026-05-19. Keep spoofingdisable out of success max payload until the live mapping is confirmed."
+    live_note: "NODE3 NeoX profile endpoint accepted fdb=1023, but spoofingdisable returned Fail for enable/disable/1/0 on 2026-05-19. Keep spoofingdisable out of success max payload until the live mapping is confirmed."
     fields:
       spoofingdisable:
         manual_name: "Anti Mac Spoofing"
@@ -265,8 +264,7 @@ profiles:
         max_length: 28
   ONTVoipSipProfile:
     source_lines: "8812-8902"
-    live_notes:
-      - "NODE3 accepted all 17 Swagger fields on 2026-05-19 when direct/callpresent/callwait/callprog/cid were sent as empty strings; non-empty values for those list fields returned Fail with an empty retresult."
+    live_note: "NODE3 accepted all 17 Swagger fields on 2026-05-19 when direct/callpresent/callwait/callprog/cid were sent as empty strings; non-empty values for those list fields returned Fail with an empty retresult."
     fields:
       bridgeduri:
         max_length: 63

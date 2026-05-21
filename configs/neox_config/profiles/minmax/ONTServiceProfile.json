@@ -1,0 +1,24 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTServiceProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "mode": "veip",
+      "uniport": "lan",
+      "lan": "1",
+      "vlan": "1",
+      "pbit": "0"
+    }
+  },
+  "max": {
+    "Content": {
+      "mode": "veip",
+      "uniport": "lan",
+      "lan": "1",
+      "vlan": "4094",
+      "pbit": "7"
+    }
+  }
+}

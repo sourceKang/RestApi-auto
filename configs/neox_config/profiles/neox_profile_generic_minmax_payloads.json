@@ -1,10 +1,10 @@
 {
   "source": {
     "derived_from": [
-      "configs/neox_swagger_data.yaml",
-      "configs/neox_ug_parameter_reference.yaml",
-      "configs/neox_profile_qos_minmax_cases.json",
-      "configs/neox_profile_basic_cases.json"
+      "configs/neox_config/reference/neox_swagger_data.yaml",
+      "configs/neox_config/reference/neox_ug_parameter_reference.yaml",
+      "configs/neox_config/profiles/neox_profile_qos_minmax_cases.json",
+      "configs/neox_config/profiles/neox_profile_basic_cases.json"
     ],
     "purpose": "Generic NeoX profile min/max payloads for readwrite create verification."
   },

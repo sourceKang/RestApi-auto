@@ -2,8 +2,8 @@
   "source": {
     "derived_from": [
       "NeoX Series_UG_V1-02_Ed1_2026-04-14.pdf",
-      "configs/neox_swagger_data.yaml",
-      "configs/neox_ug_parameter_reference.yaml"
+      "configs/neox_config/reference/neox_swagger_data.yaml",
+      "configs/neox_config/reference/neox_ug_parameter_reference.yaml"
     ],
     "workflow": "Swagger determines JSON keys; NeoX UG determines value/range; CLI show verifies device state.",
     "purpose": "NeoX non-QoS profile create success and CLI verification cases."

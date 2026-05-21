@@ -1,7 +1,7 @@
 {
   "source": {
     "derived_from": [
-      "configs/neox_swagger_data.yaml"
+      "configs/neox_config/reference/neox_swagger_data.yaml"
     ],
     "purpose": "VLAN min/max create payloads. All VlanPort fields are populated."
   },

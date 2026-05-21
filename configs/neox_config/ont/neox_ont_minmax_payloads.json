@@ -2,7 +2,7 @@
   "source": {
     "derived_from": [
       "Swagger ONTInfo schema",
-      "configs/neox_ug_parameter_reference.yaml"
+      "configs/neox_config/reference/neox_ug_parameter_reference.yaml"
     ],
     "purpose": "ONT min/max create payload templates. Runtime target SN/password are injected by tests."
   },

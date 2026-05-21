@@ -1,0 +1,32 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTVoipCommonProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "1codec": "G729",
+      "1packet": "10",
+      "1silence": "disable",
+      "buf": "500",
+      "dscp": "63",
+      "dtmf": "enable",
+      "echo": "enable",
+      "maxport": "65535",
+      "minport": "1"
+    }
+  },
+  "max": {
+    "Content": {
+      "1codec": "G729",
+      "1packet": "10",
+      "1silence": "disable",
+      "buf": "500",
+      "dscp": "63",
+      "dtmf": "enable",
+      "echo": "enable",
+      "maxport": "65535",
+      "minport": "1"
+    }
+  }
+}

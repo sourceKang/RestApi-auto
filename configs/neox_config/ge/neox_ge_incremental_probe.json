@@ -1,6 +1,6 @@
 {
   "source": {
-    "swagger_example": "configs/neox_ge_swagger_payload.json",
+    "swagger_example": "configs/neox_config/ge/neox_ge_swagger_payload.json",
     "strategy": "Start with a known passing base payload, then add one GE field at a time. Keep successful fields in the next request and record failed fields for future negative tests.",
     "target_scope": "NODE3 GE safe port"
   },

@@ -1,0 +1,18 @@
+{
+  "source": {
+    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "purpose": "NeoX ONTONTProfile success min/max payloads for readwrite create verification."
+  },
+  "min": {
+    "Content": {
+      "fwlevel": "low",
+      "telnetport": "23"
+    }
+  },
+  "max": {
+    "Content": {
+      "fwlevel": "medium",
+      "telnetport": "23"
+    }
+  }
+}

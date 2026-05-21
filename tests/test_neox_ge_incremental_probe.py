@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from services.neox_config.service import GE_INCREMENTAL_PROBE_FILE
 from utils.assertions import assert_api_success
 from utils.redaction import redact
 
@@ -21,7 +22,7 @@ pytestmark = [
 ]
 
 
-CONFIG_FILE = Path(__file__).resolve().parents[1] / "configs" / "neox_ge_incremental_probe.json"
+CONFIG_FILE = GE_INCREMENTAL_PROBE_FILE
 
 
 def test_ge_incremental_probe_set_readwrite(

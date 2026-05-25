@@ -10,6 +10,7 @@ from services.neox_config.service import (
     NEOX_CONTENT_OVERRIDES,
     NEOX_UG_PARAMETER_REFERENCE_FILE,
     ge_port_payload,
+    neox_profile_minmax_payload,
     nni_port_payload,
 )
 
@@ -75,6 +76,21 @@ def test_neox_profile_override_payloads_use_documented_ranges():
     pir = Decimal(str(bandwidth["pir"]))
     assert pir >= sir + air
     assert sir + air <= Decimal("8509952")
+
+
+def test_ont_uni_profile_payloads_are_minimal_and_nonempty():
+    expected_keys = set(NEOX_CONTENT_OVERRIDES["ONTUNIProfile"])
+    payloads = {
+        "default": {"Content": NEOX_CONTENT_OVERRIDES["ONTUNIProfile"]},
+        "min": neox_profile_minmax_payload("ONTUNIProfile", "min"),
+        "max": neox_profile_minmax_payload("ONTUNIProfile", "max"),
+    }
+
+    for label, payload in payloads.items():
+        content = payload["Content"]
+        assert set(content) == expected_keys, label
+        assert len(content) == 10, label
+        assert all(value not in (None, "") for value in content.values()), label
 
 
 def assert_allowed(content: dict[str, Any], fields: dict[str, Any], profile_type: str | None = None) -> None:

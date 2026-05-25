@@ -579,6 +579,20 @@ NEOX_PREFIXES = {
 }
 
 
+ONT_UNI_SMOKE_CONTENT = {
+    "xlanethertype1": "ipoe",
+    "xlanunivlan1": "1",
+    "xlanuniport1": "1",
+    "xlanvlan1": "1",
+    "xlanactive1": "no",
+    "xlanfdb1": "255",
+    "xlandspir1": "128",
+    "xlanbroadcast1": "32",
+    "xlanmulticast1": "32",
+    "xlandlf1": "32",
+}
+
+
 NEOX_CONTENT_OVERRIDES = {
     "IGMPGroupPrivilegeProfile": {},
     "ONTAclProfile": {},
@@ -600,7 +614,7 @@ NEOX_CONTENT_OVERRIDES = {
     "ONTSecurityProfile": {"fdb": "1023"},
     "ONTServiceProfile": {"mode": "veip", "uniport": "lan", "lan": "1", "vlan": "1314", "pbit": "0"},
     "ONTTemplateProfile": {},
-    "ONTUNIProfile": {"xlanvlan1": "1"},
+    "ONTUNIProfile": ONT_UNI_SMOKE_CONTENT,
     "ONTVoipCommonProfile": {
         "1codec": "G729",
         "1packet": "10",

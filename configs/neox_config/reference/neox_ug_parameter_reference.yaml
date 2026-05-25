@@ -184,6 +184,24 @@ profiles:
       xlanvlan1:
         range: ["1", "4094"]
         note: "Swagger field accepted by NeoX REST endpoint; value may include optional pbit suffix such as 4094/7."
+      xlanethertype1:
+        allowed: ["ipoe", "arp", "pppoe", "ipv6"]
+      xlanunivlan1:
+        range: ["1", "4094"]
+      xlanuniport1:
+        range: ["1", "8"]
+      xlanactive1:
+        allowed: ["no", ""]
+      xlanfdb1:
+        range: ["1", "255"]
+      xlandspir1:
+        range: ["128", "10000000"]
+      xlanbroadcast1:
+        range: ["32", "10000000"]
+      xlanmulticast1:
+        range: ["32", "10000000"]
+      xlandlf1:
+        range: ["32", "10000000"]
       fdb:
         range: ["1", "255"]
       lan_ds_ratelimit:

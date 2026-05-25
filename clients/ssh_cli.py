@@ -39,6 +39,7 @@ class SshCliClient:
             banner_timeout=self.timeout,
             auth_timeout=self.timeout,
         )
+        channel = None
         try:
             channel = client.invoke_shell(width=200, height=120)
             channel.settimeout(3)
@@ -48,8 +49,14 @@ class SshCliClient:
                 channel.send(command + "\n")
                 results.append(CliCommandResult(command=command, output=self._read_available(channel)))
             channel.send("exit\n")
+            self._read_available(channel, first_wait=0.2, idle_wait=0.2, max_wait=2)
             return results
         finally:
+            if channel is not None:
+                channel.close()
+            transport = client.get_transport()
+            if transport is not None:
+                transport.close()
             client.close()
 
     @staticmethod

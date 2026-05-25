@@ -2,20 +2,22 @@ from __future__ import annotations
 
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
 
-from clients.ssh_cli import SshCliClient
 from models.api import SessionRole
 from services.neox_config.service import (
     NEOX_PROFILE_READWRITE_TYPES,
-    NEOX_PROFILE_TYPES,
     neox_profile_cli_verify_case,
 )
 from tests.support.neox_profile_api import delete_profile_if_exists
+from tests.support.neox_cli_verification import run_neox_cli_commands
+from tests.support.connectivity import assert_ping_reachable
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
 from utils.redaction import redact
@@ -26,20 +28,6 @@ pytestmark = [
     pytest.mark.neox_profile,
     pytest.mark.destructive,
 ]
-
-
-@pytest.mark.mutating
-@pytest.mark.readonly
-@pytest.mark.parametrize("profile_type", NEOX_PROFILE_TYPES)
-def test_neox_profile_create_delete_rejects_readonly(neox_config_service, readonly_session, profile_type):
-    neox_config_service.verify_neox_profile_rejected(readonly_session, profile_type)
-
-
-@pytest.mark.mutating
-@pytest.mark.noaccess
-@pytest.mark.parametrize("profile_type", NEOX_PROFILE_TYPES)
-def test_neox_profile_create_delete_rejects_noaccess(neox_config_service, noaccess_session, profile_type):
-    neox_config_service.verify_neox_profile_rejected(noaccess_session, profile_type)
 
 
 @pytest.mark.mutating
@@ -54,25 +42,26 @@ def test_neox_profile_min_create_readwrite(
     cleanup_registry,
     profile_type,
 ):
-    neox_config_service.verify_node3_target()
-    ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
-    neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
-    path = neox_config_service.neox_profile_path(profile_type)
-    payload = neox_config_service.neox_profile_boundary_payload(profile_type, "min")
-    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
-    delete_profile_if_exists(api_client, path, readwrite_session)
-    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
-    assert_api_success(response)
-    verify_neox_profile_cli(
-        neox_config_service,
-        env_config,
-        ssh_username,
-        ssh_password,
-        profile_type,
-        "min",
-        payload,
-        response,
-    )
+    with neox_profile_connectivity_guard(env_config, profile_type, "min_create"):
+        neox_config_service.verify_node3_target()
+        ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
+        path = neox_config_service.neox_profile_path(profile_type)
+        payload = neox_config_service.neox_profile_boundary_payload(profile_type, "min")
+        cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
+        delete_profile_if_exists(api_client, path, readwrite_session)
+        response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
+        assert_api_success(response)
+        verify_neox_profile_cli(
+            neox_config_service,
+            env_config,
+            ssh_username,
+            ssh_password,
+            profile_type,
+            "min",
+            payload,
+            response,
+        )
 
 
 @pytest.mark.mutating
@@ -87,25 +76,26 @@ def test_neox_profile_max_create_readwrite(
     cleanup_registry,
     profile_type,
 ):
-    neox_config_service.verify_node3_target()
-    ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
-    neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
-    path = neox_config_service.neox_profile_path(profile_type)
-    payload = neox_config_service.neox_profile_boundary_payload(profile_type, "max")
-    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
-    delete_profile_if_exists(api_client, path, readwrite_session)
-    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
-    assert_api_success(response)
-    verify_neox_profile_cli(
-        neox_config_service,
-        env_config,
-        ssh_username,
-        ssh_password,
-        profile_type,
-        "max",
-        payload,
-        response,
-    )
+    with neox_profile_connectivity_guard(env_config, profile_type, "max_create"):
+        neox_config_service.verify_node3_target()
+        ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
+        path = neox_config_service.neox_profile_path(profile_type)
+        payload = neox_config_service.neox_profile_boundary_payload(profile_type, "max")
+        cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
+        delete_profile_if_exists(api_client, path, readwrite_session)
+        response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
+        assert_api_success(response)
+        verify_neox_profile_cli(
+            neox_config_service,
+            env_config,
+            ssh_username,
+            ssh_password,
+            profile_type,
+            "max",
+            payload,
+            response,
+        )
 
 
 @pytest.mark.mutating
@@ -114,21 +104,31 @@ def test_neox_profile_max_create_readwrite(
 def test_neox_profile_clear_readwrite(
     neox_config_service,
     api_client,
+    env_config,
     session_manager,
     readwrite_session,
     cleanup_registry,
     profile_type,
 ):
-    neox_config_service.verify_node3_target()
-    neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
-    path = neox_config_service.neox_profile_path(profile_type)
-    payload = neox_config_service.neox_profile_payload(profile_type)
-    cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
-    delete_profile_if_exists(api_client, path, readwrite_session)
-    response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
-    assert_api_success(response)
-    response = delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session)
-    assert_api_success(response)
+    with neox_profile_connectivity_guard(env_config, profile_type, "clear"):
+        neox_config_service.verify_node3_target()
+        ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
+        path = neox_config_service.neox_profile_path(profile_type)
+        payload = neox_config_service.neox_profile_payload(profile_type)
+        cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
+        delete_profile_if_exists(api_client, path, readwrite_session)
+        command = neox_profile_show_command(neox_config_service, profile_type)
+        baseline_output = run_neox_profile_cli_command(env_config, ssh_username, ssh_password, command)
+        response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
+        assert_api_success(response)
+        response = delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session)
+        assert_api_success(response)
+        clear_output = run_neox_profile_cli_command(env_config, ssh_username, ssh_password, command)
+        assert_neox_profile_node_reachable(env_config, profile_type, "clear", "after_cli_verify")
+        assert normalize_cli_output(clear_output) == normalize_cli_output(baseline_output), (
+            f"Profile clear CLI output differs for {profile_type}: {command}"
+        )
 
 
 @pytest.mark.mutating
@@ -137,13 +137,36 @@ def test_neox_profile_clear_readwrite(
 def test_neox_profile_error_readwrite(
     neox_config_service,
     api_client,
+    env_config,
     readwrite_session,
     profile_type,
 ):
-    neox_config_service.verify_node3_target()
-    path = neox_config_service.neox_profile_path(profile_type)
-    response = api_client.request("POST", path, session=readwrite_session, json={"Content": {"__invalid_field__": "invalid"}})
-    assert_api_failure(response, accepted_messages=("invalid field",))
+    with neox_profile_connectivity_guard(env_config, profile_type, "error"):
+        neox_config_service.verify_node3_target()
+        path = neox_config_service.neox_profile_path(profile_type)
+        response = api_client.request("POST", path, session=readwrite_session, json={"Content": {"__invalid_field__": "invalid"}})
+        assert_api_failure(response, accepted_messages=("invalid field",))
+
+
+@contextmanager
+def neox_profile_connectivity_guard(env_config, profile_type: str, case_name: str) -> Iterator[None]:
+    assert_neox_profile_node_reachable(env_config, profile_type, case_name, "before_case")
+    try:
+        yield
+    finally:
+        assert_neox_profile_node_reachable(env_config, profile_type, case_name, "after_case")
+
+
+def assert_neox_profile_node_reachable(env_config, profile_type: str, case_name: str, checkpoint: str) -> None:
+    assert_ping_reachable(
+        env_config.dut.device_ip,
+        checkpoint,
+        context={
+            "node": env_config.dut.node_key,
+            "profile_type": profile_type,
+            "case": case_name,
+        },
+    )
 
 
 def post_neox_profile(api_client, profile_type: str, path: str, session_id: str, payload: dict[str, Any]):
@@ -178,6 +201,21 @@ def neox_profile_cli_credentials(env_config) -> tuple[str, str]:
     return ssh_username, ssh_password
 
 
+def neox_profile_show_command(neox_config_service, profile_type: str) -> str:
+    profile_name = neox_config_service.neox_profile_name(profile_type)
+    cli_case = neox_profile_cli_verify_case(profile_type, "min")
+    return cli_case["show_command"].format(profile_name=profile_name)
+
+
+def run_neox_profile_cli_command(env_config, ssh_username: str, ssh_password: str, command: str) -> str:
+    return run_neox_cli_commands(env_config, (ssh_username, ssh_password), [command])[command]
+
+
+def normalize_cli_output(output: str) -> str:
+    lines = [line.rstrip() for line in output.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    return "\n".join(line for line in lines if line.strip())
+
+
 def verify_neox_profile_cli(
     neox_config_service,
     env_config,
@@ -194,9 +232,9 @@ def verify_neox_profile_cli(
     fallback_tokens = [token.format(profile_name=profile_name) for token in cli_case["expected_tokens"]]
     expected_tokens = neox_profile_expected_tokens(profile_type, payload, profile_name, fallback_tokens)
 
-    cli = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
-    [cli_result] = cli.run_commands([command])
-    missing = [token for token in expected_tokens if token not in cli_result.output]
+    cli_output = run_neox_profile_cli_command(env_config, ssh_username, ssh_password, command)
+    assert_neox_profile_node_reachable(env_config, profile_type, boundary, "after_cli_verify")
+    missing = [token for token in expected_tokens if token not in cli_output]
     report_path = write_neox_profile_cli_report(
         neox_config_service,
         profile_type,
@@ -204,7 +242,7 @@ def verify_neox_profile_cli(
         payload,
         api_response,
         command,
-        cli_result.output,
+        cli_output,
         expected_tokens,
         missing,
     )

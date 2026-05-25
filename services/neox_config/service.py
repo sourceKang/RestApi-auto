@@ -38,10 +38,9 @@ VLAN_MINMAX_PAYLOAD_FILE = NEOX_VLAN_CONFIG_DIR / "neox_vlan_minmax_payloads.jso
 ONT_MINMAX_PAYLOAD_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_minmax_payloads.json"
 PROFILE_BASIC_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_basic_cases.json"
 PROFILE_QOS_MINMAX_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_qos_minmax_cases.json"
-PROFILE_MINMAX_PAYLOAD_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_generic_minmax_payloads.json"
-PROFILE_OBSERVED_FAILURES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_observed_failures.json"
-IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_igmp_group_privilege_probe_cases.json"
 PROFILE_MINMAX_PAYLOAD_DIR = NEOX_PROFILE_CONFIG_DIR / "minmax"
+PROFILE_OBSERVED_FAILURES_FILE = NEOX_PROFILE_CONFIG_DIR / "observed" / "neox_profile_observed_failures.json"
+IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "observed" / "neox_igmp_group_privilege_probe_cases.json"
 PROFILE_CLI_VERIFY_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_cli_verify.json"
 NEOX_FEATURE_TEST_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_feature_test_data.yaml"
 NEOX_SWAGGER_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_swagger_data.yaml"
@@ -64,7 +63,6 @@ NEOX_CONFIG_DATA_FILES = (
     ONT_MINMAX_PAYLOAD_FILE,
     PROFILE_BASIC_CASES_FILE,
     PROFILE_QOS_MINMAX_CASES_FILE,
-    PROFILE_MINMAX_PAYLOAD_FILE,
     PROFILE_OBSERVED_FAILURES_FILE,
     IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE,
     PROFILE_CLI_VERIFY_FILE,
@@ -522,11 +520,8 @@ def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
 
 def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
     split_path = PROFILE_MINMAX_PAYLOAD_DIR / f"{profile_type}.json"
-    if split_path.exists():
-        data = json.loads(split_path.read_text(encoding="utf-8"))
-        return copy.deepcopy(data[boundary])
-    data = json.loads(PROFILE_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
-    return copy.deepcopy(data["profiles"][profile_type][boundary])
+    data = json.loads(split_path.read_text(encoding="utf-8"))
+    return copy.deepcopy(data[boundary])
 
 
 def neox_profile_cli_verify_case(profile_type: str, boundary: str) -> dict[str, Any]:

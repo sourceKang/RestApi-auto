@@ -84,7 +84,7 @@ nodes:
       report_slots: []
 
   NODE3:
-    device_name: "北京_NeoX-03_169.58"
+    device_name: "Taiwan_NeoX-03_169.58"
     device_ip: "192.168.169.58"
     chassis: "NeoX-03"
     submap_name: "!!!AutoMuskSubmap"

@@ -29,3 +29,7 @@ def test_summary_case_ids_are_registered_as_fixed_contracts():
         ("EMS1-7110", "noaccess", "noaccess_permission_summary"),
     )
     assert {"EMS1-7056", "EMS1-7107", "EMS1-7108"} <= cases.automated_case_ids()
+
+
+def test_openapi_yaml_case_id_is_registered():
+    assert "EMS1-7116" in cases.automated_case_ids()

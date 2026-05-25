@@ -79,16 +79,16 @@ features:
   neox_profile_generic_minmax:
     endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
     normal_data:
-      - "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json"
+      - "configs/neox_config/profiles/minmax/"
     abnormal_data: []
     cli_reference: []
-    status: "Generic min/max payloads are split by profile type for readwrite create verification."
+    status: "Generic min/max payloads are split by profile type for readwrite create verification; the old aggregate JSON was removed to avoid duplicate sources."
 
   neox_profile_observed_failures:
     endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
     normal_data: []
     abnormal_data:
-      - "configs/neox_config/profiles/neox_profile_observed_failures.json"
-      - "configs/neox_config/profiles/neox_igmp_group_privilege_probe_cases.json"
+      - "configs/neox_config/profiles/observed/neox_profile_observed_failures.json"
+      - "configs/neox_config/profiles/observed/neox_igmp_group_privilege_probe_cases.json"
     cli_reference: []
     status: "Observed profile payloads that currently return retstatus=Fail or schema errors; keep for follow-up and future negative tests."

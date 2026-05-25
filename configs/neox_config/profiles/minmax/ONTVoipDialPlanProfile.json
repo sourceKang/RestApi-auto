@@ -1,6 +1,6 @@
 {
   "source": {
-    "derived_from": "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+    "derived_from": "configs/neox_config/profiles/minmax/",
     "purpose": "NeoX ONTVoipDialPlanProfile success min/max payloads for readwrite create verification."
   },
   "min": {

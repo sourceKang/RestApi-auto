@@ -1,7 +1,7 @@
 {
   "source": {
     "derived_from": [
-      "configs/neox_config/profiles/neox_profile_generic_minmax_payloads.json",
+      "configs/neox_config/profiles/minmax/",
       "configs/neox_config/profiles/neox_profile_basic_cases.json",
       "configs/neox_config/profiles/neox_profile_qos_minmax_cases.json"
     ],

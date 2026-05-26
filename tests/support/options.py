@@ -39,6 +39,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run exploratory NeoX probe tests outside the official 80-case plan.",
     )
     parser.addoption(
+        "--neox-profile-delay-seconds",
+        action="store",
+        type=float,
+        default=float(os.environ.get("NEOX_PROFILE_DELAY_SECONDS", "10") or 10),
+        help="Delay between NeoX profile test cases. Can also be set with NEOX_PROFILE_DELAY_SECONDS.",
+    )
+    parser.addoption(
         "--skip-dut-preflight",
         action="store_true",
         default=False,

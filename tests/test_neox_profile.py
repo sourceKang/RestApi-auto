@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -41,8 +42,9 @@ def test_neox_profile_min_create_readwrite(
     readwrite_session,
     cleanup_registry,
     profile_type,
+    request,
 ):
-    with neox_profile_connectivity_guard(env_config, profile_type, "min_create"):
+    with neox_profile_connectivity_guard(env_config, profile_type, "min_create", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
         neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
@@ -75,8 +77,9 @@ def test_neox_profile_max_create_readwrite(
     readwrite_session,
     cleanup_registry,
     profile_type,
+    request,
 ):
-    with neox_profile_connectivity_guard(env_config, profile_type, "max_create"):
+    with neox_profile_connectivity_guard(env_config, profile_type, "max_create", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
         neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
@@ -109,8 +112,9 @@ def test_neox_profile_clear_readwrite(
     readwrite_session,
     cleanup_registry,
     profile_type,
+    request,
 ):
-    with neox_profile_connectivity_guard(env_config, profile_type, "clear"):
+    with neox_profile_connectivity_guard(env_config, profile_type, "clear", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_profile_cli_credentials(env_config)
         neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
@@ -140,8 +144,9 @@ def test_neox_profile_error_readwrite(
     env_config,
     readwrite_session,
     profile_type,
+    request,
 ):
-    with neox_profile_connectivity_guard(env_config, profile_type, "error"):
+    with neox_profile_connectivity_guard(env_config, profile_type, "error", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         path = neox_config_service.neox_profile_path(profile_type)
         response = api_client.request("POST", path, session=readwrite_session, json={"Content": {"__invalid_field__": "invalid"}})
@@ -149,12 +154,45 @@ def test_neox_profile_error_readwrite(
 
 
 @contextmanager
-def neox_profile_connectivity_guard(env_config, profile_type: str, case_name: str) -> Iterator[None]:
+def neox_profile_connectivity_guard(
+    env_config,
+    profile_type: str,
+    case_name: str,
+    delay_seconds: float,
+) -> Iterator[None]:
     assert_neox_profile_node_reachable(env_config, profile_type, case_name, "before_case")
     try:
         yield
     finally:
-        assert_neox_profile_node_reachable(env_config, profile_type, case_name, "after_case")
+        try:
+            assert_neox_profile_node_reachable(env_config, profile_type, case_name, "after_case")
+        finally:
+            delay_between_neox_profile_cases(env_config, profile_type, case_name, delay_seconds)
+
+
+def neox_profile_delay_seconds(request) -> float:
+    value = request.config.getoption("--neox-profile-delay-seconds")
+    if value < 0:
+        pytest.fail("--neox-profile-delay-seconds must be greater than or equal to 0")
+    return float(value)
+
+
+def delay_between_neox_profile_cases(env_config, profile_type: str, case_name: str, delay_seconds: float) -> None:
+    if delay_seconds <= 0:
+        return
+    started = time.monotonic()
+    time.sleep(delay_seconds)
+    attach_json(
+        "NeoX profile inter-case delay",
+        {
+            "node": env_config.dut.node_key,
+            "device_ip": env_config.dut.device_ip,
+            "profile_type": profile_type,
+            "case": case_name,
+            "requested_seconds": delay_seconds,
+            "actual_seconds": round(time.monotonic() - started, 3),
+        },
+    )
 
 
 def assert_neox_profile_node_reachable(env_config, profile_type: str, case_name: str, checkpoint: str) -> None:

@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeoX Config Refactor Preview</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --text: #1d2430;
+      --muted: #5f6b7a;
+      --border: #d7dde5;
+      --old: #fff4f1;
+      --new: #eefaf3;
+      --old-line: #c8503a;
+      --new-line: #248a4b;
+      --code: #111827;
+      --code-bg: #f3f5f8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header .wrap {
+      padding: 28px 0 22px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    main {
+      padding: 24px 0 48px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .summary section,
+    .compare,
+    .flow,
+    .notes {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .summary section {
+      padding: 14px 16px;
+    }
+
+    .summary strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .compare {
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .compare-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fbfcfd;
+    }
+
+    .compare-title code,
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .col {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .col.old {
+      background: var(--old);
+      border-right: 1px solid var(--border);
+    }
+
+    .col.new {
+      background: var(--new);
+    }
+
+    pre {
+      margin: 0;
+      padding: 13px 14px;
+      overflow: auto;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre;
+    }
+
+    .old pre {
+      border-left: 4px solid var(--old-line);
+    }
+
+    .new pre {
+      border-left: 4px solid var(--new-line);
+    }
+
+    .flow {
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .flow-grid div {
+      min-height: 72px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .notes {
+      padding: 16px;
+    }
+
+    @media (max-width: 860px) {
+      .summary,
+      .cols,
+      .flow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .col.old {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>NeoX Config 自動化測試重構預覽</h1>
+      <p>這份 HTML 是修改前的設計預覽，不代表程式碼已經套用。目標是先把「目前寫法」和「預計修改後寫法」放在同一頁比較。</p>
+      <div class="summary">
+        <section>
+          <strong>主要目標</strong>
+          <span>讓測試檔只描述測試流程，細節搬到 helper/service。</span>
+        </section>
+        <section>
+          <strong>低風險原則</strong>
+          <span>不改 case id、不移除 --run-neox-config 保護、不主動跑 live tests。</span>
+        </section>
+        <section>
+          <strong>驗證方式</strong>
+          <span>重構後先跑 Python compile check，再視需要跑指定 pytest。</span>
+        </section>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="flow">
+      <h2>預計修改後的資料流</h2>
+      <p>目前資料流是合理的，重構重點是把散在測試檔內的 CLI/token/report 邏輯集中。</p>
+      <div class="flow-grid">
+        <div><strong>configs/neox_config</strong><br>JSON/YAML 測試資料與 reference</div>
+        <div><strong>services/neox_config</strong><br>target、path、payload、profile metadata</div>
+        <div><strong>tests/support</strong><br>SSH CLI、report、共用 assertion helper</div>
+        <div><strong>tests/test_neox_*.py</strong><br>測試流程與 pytest parameterization</div>
+        <div><strong>reports</strong><br>device verification JSON 產物</div>
+      </div>
+    </section>
+
+    <h2>差異 1：test_neox_config.py 測試檔瘦身</h2>
+    <section class="compare">
+      <div class="compare-title">
+        <strong>GE/VLAN/ONT CLI expectation 從測試檔抽出</strong>
+        <code>tests/test_neox_config.py</code>
+      </div>
+      <div class="cols">
+        <div class="col old">
+          <h3>目前寫法</h3>
+          <pre><code>def test_vlan_config_max_create_readwrite(...):
+    with neox_config_connectivity_guard(...):
+        verify_vlan_config_create_cli_verified(...)
+
+def verify_vlan_config_create_cli_verified(...):
+    ...
+    expected_tokens = vlan_expected_tokens(vid, payload)
+    expected_port_states = vlan_expected_port_states(payload)
+    expected_checks = expected_tokens + vlan_port_state_checks(expected_port_states)
+    missing = missing_tokens(output_by_command[command], expected_tokens)
+    missing.extend(missing_vlan_port_states(...))
+    ...
+
+def vlan_expected_tokens(...): ...
+def vlan_expected_port_states(...): ...
+def parse_vlan_ports(...): ...
+def missing_vlan_port_states(...): ...
+def parse_vlan_cli_port_states(...): ...
+def ont_running_config_tokens(...): ...
+def ge_cli_checks(...): ...</code></pre>
+        </div>
+        <div class="col new">
+          <h3>預計修改後</h3>
+          <pre><code>from services.neox_config.cli_expectations import (
+    ge_cli_checks,
+    normalize_cli_output,
+    ont_running_config_tokens,
+    vlan_cli_expectation,
+)
+
+def test_vlan_config_max_create_readwrite(...):
+    with neox_config_connectivity_guard(...):
+        verify_vlan_config_create_cli_verified(...)
+
+def verify_vlan_config_create_cli_verified(...):
+    ...
+    expectation = vlan_cli_expectation(vid, payload, output_by_command[command])
+    report_path = write_neox_cli_verify_report(
+        ...,
+        {command: expectation.expected_checks},
+        {command: expectation.missing},
+    )
+    assert not expectation.missing, ...</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <h2>差異 2：profile expected tokens 集中</h2>
+    <section class="compare">
+      <div class="compare-title">
+        <strong>把 profile-specific token mapping 搬離測試檔</strong>
+        <code>tests/test_neox_profile.py</code>
+      </div>
+      <div class="cols">
+        <div class="col old">
+          <h3>目前寫法</h3>
+          <pre><code>def verify_neox_profile_cli(...):
+    ...
+    expected_tokens = neox_profile_expected_tokens(
+        profile_type,
+        payload,
+        profile_name,
+        fallback_tokens,
+    )
+    ...
+
+def neox_profile_expected_tokens(...):
+    content = payload.get("Content", {})
+    tokens = [profile_name]
+    if profile_type == "IGMPGroupPrivilegeProfile":
+        tokens.extend(content_values(...))
+    elif profile_type == "ONTAclProfile":
+        tokens.extend(ont_acl_profile_tokens(content))
+    elif profile_type == "ONTAlarmProfile":
+        tokens.extend(ont_alarm_profile_tokens(content))
+    ...
+    return unique_tokens(tokens)</code></pre>
+        </div>
+        <div class="col new">
+          <h3>預計修改後</h3>
+          <pre><code>from services.neox_config.profile_expectations import (
+    neox_profile_expected_tokens,
+)
+
+def verify_neox_profile_cli(...):
+    ...
+    expected_tokens = neox_profile_expected_tokens(
+        profile_type=profile_type,
+        payload=payload,
+        profile_name=profile_name,
+        fallback_tokens=fallback_tokens,
+    )
+    ...
+
+# profile token mapping 改放在：
+# services/neox_config/profile_expectations.py</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <h2>差異 3：NeoX service.py 拆分責任</h2>
+    <section class="compare">
+      <div class="compare-title">
+        <strong>service.py 保留 service，路徑常數與 payload helper 拆小檔</strong>
+        <code>services/neox_config/service.py</code>
+      </div>
+      <div class="cols">
+        <div class="col old">
+          <h3>目前寫法</h3>
+          <pre><code># service.py 同時包含：
+CONFIGS_DIR = ...
+NEOX_CONFIG_DIR = ...
+GE_FULL_ACCEPTED_PAYLOAD_FILE = ...
+NNI_MIN_PAYLOAD_FILE = ...
+NEOX_PROFILE_TYPES = [...]
+NEOX_PROFILE_NAMES = {...}
+NEOX_CONTENT_OVERRIDES = {...}
+
+class NeoXConfigService:
+    def ge_path(...): ...
+    def nni_path(...): ...
+    def neox_profile_payload(...): ...
+
+def ge_port_payload(): ...
+def vlan_case(...): ...
+def materialize_ont_payload(...): ...
+def normalize_neox_profile_content(...): ...</code></pre>
+        </div>
+        <div class="col new">
+          <h3>預計修改後</h3>
+          <pre><code>services/neox_config/
+  __init__.py
+  paths.py              # config path constants
+  payloads.py           # GE/NNI/VLAN/ONT payload loaders
+  profiles.py           # profile types/names/overrides
+  cli_expectations.py   # GE/VLAN/ONT CLI token helpers
+  profile_expectations.py
+  service.py            # NeoXConfigService only
+
+# tests 仍可從 services.neox_config.service import 舊名稱
+# 必要時 service.py 先 re-export，降低一次性改動風險。</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <h2>差異 4：重複 helper 合併</h2>
+    <section class="compare">
+      <div class="compare-title">
+        <strong>delete_profile_if_exists 與 normalize_cli_output 集中</strong>
+        <span class="tag">去重複</span>
+      </div>
+      <div class="cols">
+        <div class="col old">
+          <h3>目前寫法</h3>
+          <pre><code># services/neox_config/service.py
+def delete_neox_profile_if_exists(...): ...
+
+# tests/support/neox_profile_api.py
+def delete_profile_if_exists(...): ...
+
+# tests/test_neox_config.py
+def normalize_cli_output(...): ...
+
+# tests/test_neox_profile.py
+def normalize_cli_output(...): ...</code></pre>
+        </div>
+        <div class="col new">
+          <h3>預計修改後</h3>
+          <pre><code># tests/support/neox_profile_api.py 或 service 擇一保留
+def delete_profile_if_exists(...): ...
+
+# tests/support/neox_cli_verification.py
+def normalize_cli_output(output: str) -&gt; str:
+    lines = [...]
+    return "\n".join(...)
+
+# 測試檔只 import 共用 helper</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <h2>差異 5：Profile CLI report writer 統一</h2>
+    <section class="compare">
+      <div class="compare-title">
+        <strong>減少 profile 測試內自寫 JSON report</strong>
+        <code>tests/support/neox_cli_verification.py</code>
+      </div>
+      <div class="cols">
+        <div class="col old">
+          <h3>目前寫法</h3>
+          <pre><code># tests/support/neox_cli_verification.py
+def write_neox_cli_verify_report(...):
+    # GE/NNI/VLAN/ONT 使用
+
+# tests/test_neox_profile.py
+def write_neox_profile_cli_report(...):
+    # profile 自己再寫一次 reports/device-verification JSON
+    # target/rest_api/cli 結構與通用 writer 類似</code></pre>
+        </div>
+        <div class="col new">
+          <h3>預計修改後</h3>
+          <pre><code># tests/support/neox_cli_verification.py
+def write_neox_cli_verify_report(
+    neox_config_service,
+    feature: str,
+    case_name: str,
+    api_path: str,
+    payload: dict,
+    api_response,
+    output_by_command: dict[str, str],
+    expected_by_command: dict[str, list[str]],
+    missing_by_command: dict[str, list[str]],
+    target_extra: dict | None = None,
+    metadata: dict | None = None,
+) -&gt; Path:
+    ...
+
+# profile 也呼叫同一個 writer</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="notes">
+      <h2>建議實作順序</h2>
+      <ul>
+        <li>先抽共用純函式：<code>normalize_cli_output</code>、GE/VLAN/ONT expectation helpers。</li>
+        <li>再抽 profile expected token mapping，保持測試行為不變。</li>
+        <li>最後才整理 <code>service.py</code> 的常數與 payload helper，避免一次移動太多造成 import 風險。</li>
+        <li>每一步跑 compile check；不自動跑會動設備的 NeoX live tests。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

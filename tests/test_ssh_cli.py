@@ -80,6 +80,29 @@ def test_ssh_cli_closes_channel_transport_and_client(monkeypatch: pytest.MonkeyP
     assert fake_client.closed
 
 
+def test_ssh_cli_confirms_logout_prompt(monkeypatch: pytest.MonkeyPatch):
+    channel = FakeChannel()
+    fake_client = FakeSshClient(channel)
+    install_fake_paramiko(monkeypatch, fake_client)
+    outputs = iter(
+        [
+            "banner",
+            "show output",
+            "Warning!! The system configuration MAY be modified\nlogout system now(y/n)? >",
+            "logout",
+        ]
+    )
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(lambda *args, **kwargs: next(outputs)))
+
+    results = SshCliClient("host", "user", "password").run_commands(["show version"])
+
+    assert results == [CliCommandResult(command="show version", output="show output")]
+    assert channel.sent == ["show version\n", "exit\n", "y\n"]
+    assert channel.closed
+    assert fake_client.transport.closed
+    assert fake_client.closed
+
+
 def test_ssh_cli_closes_session_when_command_send_fails(monkeypatch: pytest.MonkeyPatch):
     channel = FakeChannel(fail_on_send="show")
     fake_client = FakeSshClient(channel)

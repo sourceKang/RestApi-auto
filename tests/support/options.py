@@ -39,6 +39,19 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run exploratory NeoX probe tests outside the official 80-case plan.",
     )
     parser.addoption(
+        "--neox-config-delay-seconds",
+        action="store",
+        type=float,
+        default=float(os.environ.get("NEOX_CONFIG_DELAY_SECONDS", "0") or 0),
+        help="Delay after each NeoX config test case. Can also be set with NEOX_CONFIG_DELAY_SECONDS.",
+    )
+    parser.addoption(
+        "--skip-neox-cli-verify",
+        action="store_true",
+        default=False,
+        help="Run NeoX config REST API workflows without SSH CLI verification.",
+    )
+    parser.addoption(
         "--neox-profile-delay-seconds",
         action="store",
         type=float,

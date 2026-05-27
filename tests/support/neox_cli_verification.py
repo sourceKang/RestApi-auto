@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,26 @@ def neox_cli_credentials(env_config, feature: str) -> tuple[str, str]:
 
 def run_neox_cli_commands(env_config, credentials: tuple[str, str], commands: list[str]) -> dict[str, str]:
     ssh_username, ssh_password = credentials
-    results = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password).run_commands(commands)
+    client = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
+    started = time.monotonic()
+    try:
+        results = client.run_commands(commands)
+    except Exception as error:
+        attach_json(
+            "NeoX SSH failure diagnostics",
+            {
+                "node": env_config.dut.node_key,
+                "device_name": env_config.dut.device_name,
+                "target": env_config.dut.device_ip,
+                "username": ssh_username,
+                "commands": commands,
+                "timeout_seconds": client.timeout,
+                "duration_seconds": round(time.monotonic() - started, 3),
+                "error_type": type(error).__name__,
+                "error": str(error),
+            },
+        )
+        raise
     return {result.command: result.output for result in results}
 
 
@@ -55,6 +75,7 @@ def write_neox_cli_verify_report(
     expected_by_command: dict[str, list[str]],
     missing_by_command: dict[str, list[str]],
     target_extra: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> Path:
     reports_dir = Path(__file__).resolve().parents[2] / "reports" / "device-verification"
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -90,6 +111,8 @@ def write_neox_cli_verify_report(
             for command in output_by_command
         },
     }
+    if metadata:
+        data["metadata"] = redact(metadata)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     attach_json(f"NeoX CLI verification {feature}/{case_name}", data)
     return path

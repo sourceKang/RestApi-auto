@@ -129,6 +129,6 @@ def test_node3_report_cards_are_yaml_targeted():
     env = load_environment(node="NODE3")
     lines = _card_version_lines(env)
     assert [line.split(":", 1)[0] for line in lines] == ["NXC400", "NXP316", "NXA340"]
-    assert env.dut.device_name == "北京_NeoX-03_169.58"
+    assert env.dut.device_name == "Taiwan_NeoX-03_169.58"
     assert env.dut.device_ip == "192.168.169.58"
     assert env.dut.chassis == "NeoX-03"

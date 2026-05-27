@@ -76,11 +76,14 @@ def record_result(nodeid: str, outcome: str, duration: float) -> None:
 
 def ensure_report_dirs(config: Any) -> None:
     root = Path(str(config.rootpath))
-    current_allure_dir = root / "reports" / ".allure-results-current"
-    if current_allure_dir.exists():
-        shutil.rmtree(current_allure_dir)
-    current_allure_dir.mkdir(parents=True, exist_ok=True)
-    if not getattr(config.option, "allure_report_dir", None):
+    configured_allure_dir = getattr(config.option, "allure_report_dir", None)
+    if configured_allure_dir:
+        Path(str(configured_allure_dir)).mkdir(parents=True, exist_ok=True)
+    else:
+        current_allure_dir = root / "reports" / ".allure-results-current"
+        if current_allure_dir.exists():
+            shutil.rmtree(current_allure_dir)
+        current_allure_dir.mkdir(parents=True, exist_ok=True)
         config.option.allure_report_dir = str(current_allure_dir)
     if getattr(config.option, "clean_alluredir", None) is None:
         config.option.clean_alluredir = True

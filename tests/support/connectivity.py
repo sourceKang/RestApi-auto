@@ -40,6 +40,7 @@ def assert_ping_reachable(
         attachment["context"] = context
     attach_json(f"Node connectivity ping {checkpoint}", attachment)
     if not result.ok:
+        attach_json("Ping failure diagnostics", attachment)
         pytest.fail(
             f"Node connectivity ping failed at {checkpoint}: target={target}, "
             f"returncode={result.returncode}, command={' '.join(result.command)}"

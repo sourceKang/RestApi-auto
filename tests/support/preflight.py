@@ -41,7 +41,7 @@ def skip_unready_dut_items(config: pytest.Config, items: list[pytest.Item]) -> N
     if not dut_items:
         return
 
-    result = run_dut_preflight(
+    result = run_device_preflight(
         node=config.getoption("--ems-node"),
         auth_profile=config.getoption("--auth-profile"),
     )
@@ -51,36 +51,68 @@ def skip_unready_dut_items(config: pytest.Config, items: list[pytest.Item]) -> N
             item.add_marker(skip_dut)
         return
 
+    ont_items = [item for item in dut_items if requires_ont_inventory(item)]
+    if not ont_items:
+        return
+
+    result = run_ont_preflight(
+        node=config.getoption("--ems-node"),
+        auth_profile=config.getoption("--auth-profile"),
+    )
+    if not result.ok:
+        skip_ont = pytest.mark.skip(reason=f"DUT preflight failed: {result.reason}")
+        for item in ont_items:
+            item.add_marker(skip_ont)
+        return
+
 
 def is_dut_dependent(item: pytest.Item) -> bool:
     return any(marker in item.keywords for marker in DUT_DEPENDENT_MARKERS)
 
 
+def requires_ont_inventory(item: pytest.Item) -> bool:
+    if "ont" in item.keywords:
+        return True
+    function_name = _function_name(item)
+    return function_name.startswith("test_ont_config_")
+
+
 def run_dut_preflight(node: str | None, auth_profile: str | None) -> DutPreflightResult:
+    device = run_device_preflight(node, auth_profile)
+    if not device.ok:
+        return device
+    return run_ont_preflight(node, auth_profile)
+
+
+def run_device_preflight(node: str | None, auth_profile: str | None) -> DutPreflightResult:
     try:
         env_config = load_environment(node=node, auth_profile=auth_profile)
         api_client = EmsApiClient(env_config)
         session_manager = SessionManager(api_client, env_config)
         with session_manager.credentials_session(env_config.readwrite) as session_id:
-            checks = [
-                _check_success(
-                    api_client,
-                    session_id,
-                    f"/device/{env_config.dut.device_name}",
-                    "device inventory",
-                ),
-                _check_success(
-                    api_client,
-                    session_id,
-                    f"/ont/sn/{env_config.dut.ont_sn}",
-                    "ONT inventory",
-                ),
-            ]
-            for check in checks:
-                if not check.ok:
-                    return check
+            return _check_success(
+                api_client,
+                session_id,
+                f"/device/{env_config.dut.device_name}",
+                "device inventory",
+            )
+    except Exception as error:
+        return DutPreflightResult(False, str(error))
 
-        return DutPreflightResult(True)
+
+def run_ont_preflight(node: str | None, auth_profile: str | None) -> DutPreflightResult:
+    try:
+        env_config = load_environment(node=node, auth_profile=auth_profile)
+        api_client = EmsApiClient(env_config)
+        session_manager = SessionManager(api_client, env_config)
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            return _check_success(
+                api_client,
+                session_id,
+                f"/ont/sn/{env_config.dut.ont_sn}",
+                "ONT inventory",
+            )
+
     except Exception as error:
         return DutPreflightResult(False, str(error))
 
@@ -131,3 +163,10 @@ def _format_preflight_response(response) -> str:
         if retresult:
             detail += f" retresult={retresult}"
     return detail
+
+
+def _function_name(item: pytest.Item) -> str:
+    original = getattr(item, "originalname", None)
+    if original:
+        return str(original)
+    return str(getattr(item, "name", "")).split("[", 1)[0]

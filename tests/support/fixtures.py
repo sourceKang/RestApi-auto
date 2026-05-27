@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import time
+
 import pytest
 
 from tests.support.collection import RAD_AUTH_MATRIX_CASES
@@ -10,6 +12,7 @@ from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
 from utils.cleanup import CleanupRegistry
+from utils.allure_helpers import attach_json
 from utils.case_metadata import format_case_title
 from utils.reporting import REPORT_STATE
 
@@ -49,6 +52,31 @@ def allure_node_context(env_config, request):
             allure.dynamic.title(format_case_title([registration.case_id for registration in registrations], name))
     except Exception:
         pass
+
+
+@pytest.fixture(autouse=True)
+def neox_config_case_delay(env_config, request):
+    yield
+    if "neox_config" not in request.node.keywords:
+        return
+    delay_seconds = request.config.getoption("--neox-config-delay-seconds")
+    if delay_seconds < 0:
+        pytest.fail("--neox-config-delay-seconds must be greater than or equal to 0")
+    if delay_seconds <= 0:
+        return
+
+    started = time.monotonic()
+    time.sleep(float(delay_seconds))
+    attach_json(
+        "NeoX config inter-case delay",
+        {
+            "node": env_config.dut.node_key,
+            "device_ip": env_config.dut.device_ip,
+            "case": request.node.nodeid,
+            "requested_seconds": float(delay_seconds),
+            "actual_seconds": round(time.monotonic() - started, 3),
+        },
+    )
 
 
 @pytest.fixture(scope="session")

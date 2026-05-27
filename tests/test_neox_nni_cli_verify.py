@@ -33,6 +33,7 @@ def test_nni_config_min_create_readwrite(
     env_config,
     neox_config_service,
     session_manager,
+    request,
 ):
     verify_nni_config_create_readwrite(
         api_client,
@@ -41,6 +42,7 @@ def test_nni_config_min_create_readwrite(
         session_manager,
         MIN_ACCEPTED_PAYLOAD_FILE,
         "min",
+        request,
     )
 
 
@@ -49,6 +51,7 @@ def test_nni_config_max_create_readwrite(
     env_config,
     neox_config_service,
     session_manager,
+    request,
 ):
     verify_nni_config_create_readwrite(
         api_client,
@@ -57,6 +60,7 @@ def test_nni_config_max_create_readwrite(
         session_manager,
         FULL_ACCEPTED_PAYLOAD_FILE,
         "max",
+        request,
     )
 
 
@@ -67,9 +71,9 @@ def verify_nni_config_create_readwrite(
     session_manager,
     payload_file: Path,
     boundary: str,
+    request,
 ) -> None:
     neox_config_service.verify_required_target_data()
-    credentials = neox_cli_credentials(env_config, "NNI")
 
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
         config = json.loads(payload_file.read_text(encoding="utf-8"))
@@ -77,7 +81,10 @@ def verify_nni_config_create_readwrite(
         expected_lines = config["running_config_visible_lines"]
         response = api_client.request("POST", neox_config_service.nni_path(), session=readwrite_session, json=payload)
         assert_api_success(response)
+        if request.config.getoption("--skip-neox-cli-verify"):
+            return
 
+        credentials = neox_cli_credentials(env_config, "NNI")
         target = neox_config_service.target()
         command = f"show running-config interface nni {target.nni_port_id}"
         output_by_command = run_neox_cli_commands(env_config, credentials, [command])

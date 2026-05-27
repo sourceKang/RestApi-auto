@@ -161,10 +161,10 @@ nodes:
       report_slots: []
 
   NODE5:
-    device_name: "新竹_NeoX-06_168.85"
+    device_name: "NeoX_168.85"
     device_ip: "192.168.168.85"
     chassis: "NeoX-06"
-    submap_name: "!!!AutoMuskSubmap"
+    submap_name: "EMS"
     map_name: "EMS"
     geo_position: "新竹"
     slots:
@@ -209,6 +209,9 @@ nodes:
       ge_service:
         slot: "1"
         port: "16"
+      nni:
+        slot: "5"
+        port: "22"
 
   NODE6:
     device_name: "費城_IES5206_169.54"
@@ -261,3 +264,115 @@ nodes:
       ge_service:
         slot: "6"
         port: "39"
+
+  NODE7:
+    device_name: "Noex-03_169.204"
+    device_ip: "192.168.169.204"
+    chassis: "NeoX-03"
+    submap_name: "EMS"
+    map_name: "EMS"
+    geo_position: "新竹"
+    slots:
+      4:
+        card: "NXC400"
+        fw_version: "V1.02(ACKG.1)"
+        hw_version: "AAB"
+        role: "controller"
+        ports:
+          1:
+            type: "Network"
+            speed: "1G"
+          12:
+            type: "Network"
+            speed: "10G"
+      3:
+        card: "NXP316"
+        fw_version: "V1.02(ACKI.1)"
+        role: "line"
+        ports:
+          16:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "5A5958458CACE175"
+                password: "D41AD1009ED0"
+                description: "RestApi_test@1234des"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY2Z0"
+      1:
+        card: "NXA340"
+        fw_version: "V1.02(ACQE.1)"
+        hw_version: "AA"
+        role: "line"
+        ports:
+          39:
+            type: "GE"
+            speed: "10G"
+            ge_service:
+    test_targets:
+      report_slots: ["4", "3", "1"]
+      ont:
+        slot: "3"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"
+      nni:
+        slot: "4"
+        port: "12"
+
+  NODE8:
+    device_name: "Noex-06_169.202"
+    device_ip: "192.168.169.202"
+    chassis: "NeoX-06"
+    submap_name: "EMS"
+    map_name: "EMS"
+    geo_position: "新竹"
+    slots:
+      4:
+        card: "NXC400"
+        fw_version: "V1.02(ACKG.1)"
+        role: "controller"
+        ports:
+          12:
+            type: "Network"
+            speed: "10G"
+      8:
+        card: "NXP316"
+        fw_version: "V1.02(ACKI.1)"
+        role: "line"
+        ports:
+          16:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "5A5958458CACE174"
+                password: "D41AD1009EC8"
+                description: "RestApi_test@1234des"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY2Z0"
+      1:
+        card: "NXA340"
+        fw_version: "V1.02(ACQE.1)"
+        hw_version: "AA"
+        role: "line"
+        ports:
+          39:
+            type: "GE"
+            speed: "10G"
+            ge_service:
+    test_targets:
+      report_slots: ["4", "8", "1"]
+      ont:
+        slot: "8"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"
+      nni:
+        slot: "4"
+        port: "12"

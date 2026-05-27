@@ -34,7 +34,7 @@ def assert_ping_reachable(
     timeout_ms: int = 2000,
 ) -> PingResult:
     result = ping_host(target, checkpoint, count=count, timeout_ms=timeout_ms)
-    attachment = asdict(result)
+    attachment = ping_attachment(result)
     attachment["ok"] = result.ok
     if context:
         attachment["context"] = context
@@ -46,6 +46,16 @@ def assert_ping_reachable(
             f"returncode={result.returncode}, command={' '.join(result.command)}"
         )
     return result
+
+
+def ping_attachment(result: PingResult) -> dict[str, Any]:
+    attachment = asdict(result)
+    attachment["command_text"] = " ".join(result.command)
+    attachment["stdout_lines"] = result.stdout.splitlines()
+    attachment["stderr_lines"] = result.stderr.splitlines()
+    attachment.pop("stdout", None)
+    attachment.pop("stderr", None)
+    return attachment
 
 
 def ping_host(target: str, checkpoint: str, count: int = 2, timeout_ms: int = 2000) -> PingResult:

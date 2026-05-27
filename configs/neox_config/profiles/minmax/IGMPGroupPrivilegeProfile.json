@@ -5,10 +5,29 @@
   },
   "min": {
     "Content": {
-      "grpbandwidth1": "1",
-      "startip1": "225.1.1.1",
-      "endip1": "225.1.1.1",
-      "prvitype1": "permit"
+      "igmpactive1": "",
+      "grpbandwidth1": "20",
+      "startip1": "224.0.1.1",
+      "endip1": "224.0.1.10",
+      "prvitype1": "permit",
+      "previewlength1": " ",
+      "previewinterval1": "",
+      "previewcount1": "",
+      "previewreset1": "",
+      "igmpactive10": "",
+      "grpbandwidth10": "20",
+      "startip10": "226.0.1.1",
+      "endip10": "226.0.1.10",
+      "prvitype10": "forbid",
+      "igmpactive16": "",
+      "grpbandwidth16": "100",
+      "startip16": "239.0.0.1",
+      "endip16": "239.100.100.100",
+      "prvitype16": "preview",
+      "previewlength16": "300",
+      "previewinterval16": "300",
+      "previewcount16": "10",
+      "previewreset16": "86400"
     }
   },
   "max": {

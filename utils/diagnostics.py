@@ -56,7 +56,7 @@ def format_response_summary(response: Any, *, max_length: int = MAX_MESSAGE_LENG
 
 def json_for_attachment(value: Any) -> str:
     data = value if full_json_enabled() else summarize_value(value)
-    return _to_json(data)
+    return _to_json(data, pretty=True)
 
 
 def _summarize_value(
@@ -116,5 +116,7 @@ def _truncated_marker(value: Any) -> str:
     return f"<{type(value).__name__} truncated>"
 
 
-def _to_json(value: Any) -> str:
+def _to_json(value: Any, *, pretty: bool = False) -> str:
+    if pretty:
+        return json.dumps(value, ensure_ascii=False, default=str, indent=2)
     return json.dumps(value, ensure_ascii=False, default=str, separators=(",", ":"))

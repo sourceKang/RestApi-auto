@@ -102,12 +102,11 @@ def write_neox_cli_verify_report(
             },
         },
         "cli": {
-            command: {
-                "transport": "ssh",
-                "output": output_by_command.get(command, ""),
-                "expected_tokens": expected_by_command.get(command, []),
-                "missing_tokens": missing_by_command.get(command, []),
-            }
+            command: _cli_report_entry(
+                output_by_command.get(command, ""),
+                expected_by_command.get(command, []),
+                missing_by_command.get(command, []),
+            )
             for command in output_by_command
         },
     }
@@ -116,3 +115,24 @@ def write_neox_cli_verify_report(
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     attach_json(f"NeoX CLI verification {feature}/{case_name}", data)
     return path
+
+
+def _cli_report_entry(output: str, expected_tokens: list[str], missing_tokens: list[str]) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "transport": "ssh",
+        "output_lines": _split_lines(output),
+        "expected_tokens": [token for token in expected_tokens if not _is_multiline(token)],
+        "missing_tokens": missing_tokens,
+    }
+    expected_output_lines = [_split_lines(token) for token in expected_tokens if _is_multiline(token)]
+    if expected_output_lines:
+        entry["expected_output_lines"] = expected_output_lines
+    return entry
+
+
+def _split_lines(value: str) -> list[str]:
+    return value.replace("\r\n", "\n").replace("\r", "\n").splitlines()
+
+
+def _is_multiline(value: str) -> bool:
+    return "\n" in value or "\r" in value

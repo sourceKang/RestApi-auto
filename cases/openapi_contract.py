@@ -81,7 +81,10 @@ def load_openapi_document(path: Path) -> dict[str, Any]:
 
 
 def load_baseline_contract(path: Path = BASELINE_CONTRACT_FILE) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    baseline = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(baseline.get("contract"), dict):
+        return baseline["contract"]
+    return baseline
 
 
 def build_openapi_contract(document: dict[str, Any]) -> dict[str, Any]:

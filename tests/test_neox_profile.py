@@ -9,7 +9,7 @@ import pytest
 
 from models.api import SessionRole
 from services.neox_config.cli_expectations import normalize_cli_output
-from services.neox_config.profile_expectations import neox_profile_expected_tokens
+from services.neox_config.profile_expectations import neox_profile_cli_field_mismatches, neox_profile_expected_tokens
 from services.neox_config.service import (
     NEOX_PROFILE_READWRITE_TYPES,
     neox_profile_cli_verify_case,
@@ -257,6 +257,8 @@ def verify_neox_profile_cli(
     cli_output = run_neox_profile_cli_command(env_config, ssh_username, ssh_password, command)
     assert_neox_profile_node_reachable(env_config, profile_type, boundary, "after_cli_verify")
     missing = [token for token in expected_tokens if token not in cli_output]
+    field_mismatches = neox_profile_cli_field_mismatches(profile_type, payload, cli_output)
+    cli_failures = missing + field_mismatches
     report_path = write_neox_cli_verify_report(
         neox_config_service,
         "profile",
@@ -266,7 +268,7 @@ def verify_neox_profile_cli(
         api_response,
         {command: cli_output},
         {command: expected_tokens},
-        {command: missing},
+        {command: cli_failures},
         metadata={
             "profile": {
                 "type": profile_type,
@@ -276,4 +278,6 @@ def verify_neox_profile_cli(
         },
     )
 
-    assert not missing, f"Missing NeoX profile CLI tokens for {profile_type}/{boundary}: {missing}. Report: {report_path}"
+    assert not cli_failures, (
+        f"NeoX profile CLI verification failed for {profile_type}/{boundary}: {cli_failures}. Report: {report_path}"
+    )

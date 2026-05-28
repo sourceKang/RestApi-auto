@@ -5,30 +5,38 @@
   },
   "min": {
     "Content": {
+	  "enable": " ",
       "policy": "trust",
       "interface": "lan",
       "protocol": "0",
       "srcport": "1",
       "destport": "1",
-      "srcmask": "1",
-      "destmask": "1"
+      "srcip": "1.1.1.10",
+	  "srcmask": "1",
+	  "destip": "10.9.19.86",
+	  "destmask": "1",
+	  "srcmac": "10:10:10:10:10:01",
+      "destmac": "10:10:10:10:10:02",
+	  "logging": "disable",
+      "counter": "disable"
     }
   },
   "max": {
     "Content": {
-      "policy": "trust",
-      "interface": "both",
-      "protocol": "255",
-      "srcport": "65535",
-      "destport": "65535",
-      "srcmask": "32",
-      "destmask": "32",
-      "srcip": "10.10.10.1",
-      "destip": "10.10.10.2",
-      "srcmac": "10:10:10:10:10:01",
-      "destmac": "10:10:10:10:10:02",
-      "logging": "disable",
-      "counter": "disable"
+		"enable": "no",
+		"policy": "trust",
+		"interface": "both",
+		"counter": "enable",
+		"logging": "enable",
+		"protocol": "255",
+		"srcport": "65535",
+		"destport": "65535",
+		"srcip": "210.109.190.100",
+		"srcmask": "32",
+		"destip": "210.109.190.86",
+		"destmask": "32",
+		"srcmac": "FE:DC:BA:98:76:54",
+		"destmac": "01:23:45:67:89:AB"
     }
   }
 }

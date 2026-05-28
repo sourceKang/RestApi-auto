@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from services.neox_config.cli_expectations import clear_ignored_line_prefixes, normalize_cli_output
+from services.neox_config.profile_expectations import neox_profile_cli_field_mismatches
 
 
 def test_nni_clear_normalization_ignores_non_clearable_lines():
@@ -82,3 +83,84 @@ def test_clear_normalization_ignores_remote_xont_elapsed_without_day_hour():
 """
 
     assert normalize_cli_output(after_clear) == normalize_cli_output(baseline)
+
+
+def test_ont_acl_profile_cli_field_mismatches_catch_reused_yes_no_tokens():
+    payload = {
+        "Content": {
+            "enable": "no",
+            "policy": "trust",
+            "interface": "both",
+            "counter": "enable",
+            "logging": "enable",
+            "protocol": "255",
+            "srcport": "65535",
+            "destport": "65535",
+            "srcip": "210.109.190.100",
+            "srcmask": "32",
+            "destip": "210.109.190.86",
+            "destmask": "32",
+            "srcmac": "FE:DC:BA:98:76:54",
+            "destmac": "01:23:45:67:89:AB",
+        }
+    }
+    cli_output = """
+RestApi_NeoX_ONTAcl      | Enable                  | Yes
+                         | Policy                  | Trust
+                         | Interface               | LAN&WAN (Both)
+                         | Drop counter            | No
+                         | Drop logging            | Yes
+                         | IP protocol             | 255
+                         | Source L4 port          | 65535
+                         | Source IP address       | 210.109.190.100
+                         | Source IP mask          | 32
+                         | Source MAC address      | FE:DC:BA:98:76:54
+                         | Destination L4 port     | 65535
+                         | Destination IP address  | 210.109.190.86
+                         | Destination IP mask     | 32
+                         | Destination MAC address | 01:23:45:67:89:AB
+"""
+
+    mismatches = neox_profile_cli_field_mismatches("ONTAclProfile", payload, cli_output)
+
+    assert "Drop counter: expected 'Yes', actual 'No'" in mismatches
+    assert "Enable: expected 'No', actual 'Yes'" in mismatches
+
+
+def test_ont_acl_profile_cli_field_mismatches_accept_updated_min_payload():
+    payload = {
+        "Content": {
+            "enable": " ",
+            "policy": "trust",
+            "interface": "lan",
+            "protocol": "0",
+            "srcport": "1",
+            "destport": "1",
+            "srcip": "1.1.1.10",
+            "srcmask": "1",
+            "destip": "10.9.19.86",
+            "destmask": "1",
+            "srcmac": "10:10:10:10:10:01",
+            "destmac": "10:10:10:10:10:02",
+            "logging": "disable",
+            "counter": "disable",
+        }
+    }
+    cli_output = """
+RestApi_NeoX_ONTAcl      | Enable                  | No
+                         | Policy                  | Trust
+                         | Interface               | LAN
+                         | Drop counter            | No
+                         | Drop logging            | No
+                         | IP protocol             | 0
+                         | Source L4 port          | 1
+                         | Source IP address       | 1.1.1.10
+                         | Source IP mask          | 1
+                         | Source MAC address      | 10:10:10:10:10:01
+                         | Destination L4 port     | 1
+                         | Destination IP address  | 10.9.19.86
+                         | Destination IP mask     | 1
+                         | Destination MAC address | 10:10:10:10:10:02
+"""
+
+    assert neox_profile_cli_field_mismatches("ONTAclProfile", payload, cli_output) == []

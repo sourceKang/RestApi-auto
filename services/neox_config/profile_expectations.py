@@ -48,6 +48,68 @@ def neox_profile_expected_tokens(
     return unique_tokens(tokens)
 
 
+def neox_profile_cli_field_mismatches(profile_type: str, payload: dict[str, Any], cli_output: str) -> list[str]:
+    if profile_type != "ONTAclProfile":
+        return []
+
+    actual_fields = parse_profile_cli_table(cli_output)
+    expected_fields = ont_acl_profile_cli_fields(payload.get("Content", {}))
+    mismatches = []
+    for field, expected in expected_fields.items():
+        actual = actual_fields.get(field)
+        if actual != expected:
+            mismatches.append(f"{field}: expected {expected!r}, actual {actual!r}")
+    return mismatches
+
+
+def parse_profile_cli_table(cli_output: str) -> dict[str, str]:
+    fields = {}
+    for line in cli_output.splitlines():
+        if "|" not in line:
+            continue
+        parts = [part.strip() for part in line.split("|")]
+        if len(parts) < 3:
+            continue
+        field = parts[-2]
+        value = parts[-1]
+        if not field or field == "Parameter":
+            continue
+        fields[field] = value
+    return fields
+
+
+def ont_acl_profile_cli_fields(content: dict[str, Any]) -> dict[str, str]:
+    fields = {}
+    direct_fields = {
+        "protocol": "IP protocol",
+        "srcport": "Source L4 port",
+        "destport": "Destination L4 port",
+        "srcip": "Source IP address",
+        "destip": "Destination IP address",
+        "srcmac": "Source MAC address",
+        "destmac": "Destination MAC address",
+    }
+    for payload_key, cli_field in direct_fields.items():
+        if payload_key in content:
+            fields[cli_field] = str(content[payload_key])
+
+    if "srcmask" in content and "srcip" in content:
+        fields["Source IP mask"] = str(content["srcmask"])
+    if "destmask" in content and "destip" in content:
+        fields["Destination IP mask"] = str(content["destmask"])
+    if "policy" in content:
+        fields["Policy"] = str(content["policy"]).title()
+    if "interface" in content:
+        fields["Interface"] = acl_interface_token(str(content["interface"]))
+    if "enable" in content:
+        fields["Enable"] = yes_no_token(content["enable"])
+    if "counter" in content:
+        fields["Drop counter"] = yes_no_token(content["counter"])
+    if "logging" in content:
+        fields["Drop logging"] = yes_no_token(content["logging"])
+    return fields
+
+
 def content_values(content: dict[str, Any], keys: Any) -> list[str]:
     values = []
     for key in keys:

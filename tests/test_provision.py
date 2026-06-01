@@ -7,28 +7,52 @@ from utils.cleanup import CleanupRegistry
 
 
 PROVISION_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "provision"]
+PROVISION_ONT_READ_CASES = [case for case in PROVISION_READ_CASES if case.name.startswith("ont_service")]
+PROVISION_GE_READ_CASES = [case for case in PROVISION_READ_CASES if case.name.startswith("ge_service")]
 PROVISION_MUTATING_CASES = [case for case in MUTATING_ENDPOINTS if case.domain == "provision"]
 
 
 @pytest.fixture(scope="module")
-def provision_seed_data(services, session_manager):
+def ont_provision_seed_data(services, session_manager):
     registry = CleanupRegistry()
     with session_manager.credentials_session(services.provision.env_config.readwrite) as session_id:
-        services.provision.ensure_seed_data(session_id, registry)
+        services.provision.ensure_ont_seed_data(session_id, registry)
+        yield
+
+
+@pytest.fixture(scope="module")
+def ge_provision_seed_data(services, session_manager):
+    registry = CleanupRegistry()
+    with session_manager.credentials_session(services.provision.env_config.readwrite) as session_id:
+        services.provision.ensure_ge_seed_data(session_id, registry)
         yield
 
 
 @pytest.mark.provision
 @pytest.mark.readwrite
-@pytest.mark.parametrize("case", PROVISION_READ_CASES, ids=lambda case: case.name)
-def test_provision_read_endpoints_readwrite(services, readwrite_session, provision_seed_data, case):
+@pytest.mark.parametrize("case", PROVISION_ONT_READ_CASES, ids=lambda case: case.name)
+def test_ont_provision_read_endpoints_readwrite(services, readwrite_session, ont_provision_seed_data, case):
+    services.provision.verify_read_success(readwrite_session, case, "readwrite")
+
+
+@pytest.mark.provision
+@pytest.mark.readwrite
+@pytest.mark.parametrize("case", PROVISION_GE_READ_CASES, ids=lambda case: case.name)
+def test_ge_provision_read_endpoints_readwrite(services, readwrite_session, ge_provision_seed_data, case):
     services.provision.verify_read_success(readwrite_session, case, "readwrite")
 
 
 @pytest.mark.provision
 @pytest.mark.readonly
-@pytest.mark.parametrize("case", PROVISION_READ_CASES, ids=lambda case: case.name)
-def test_provision_read_endpoints_readonly(services, readonly_session, provision_seed_data, case):
+@pytest.mark.parametrize("case", PROVISION_ONT_READ_CASES, ids=lambda case: case.name)
+def test_ont_provision_read_endpoints_readonly(services, readonly_session, ont_provision_seed_data, case):
+    services.provision.verify_read_success(readonly_session, case, "readonly")
+
+
+@pytest.mark.provision
+@pytest.mark.readonly
+@pytest.mark.parametrize("case", PROVISION_GE_READ_CASES, ids=lambda case: case.name)
+def test_ge_provision_read_endpoints_readonly(services, readonly_session, ge_provision_seed_data, case):
     services.provision.verify_read_success(readonly_session, case, "readonly")
 
 

@@ -29,7 +29,7 @@ def ont_inventory_seed_data(services, session_manager, env_config):
         try:
             services.inventory.ensure_ont_inventory_ready(session_id)
         except AssertionError as error:
-            pytest.skip(f"ONT inventory setup failed: {error}")
+            pytest.fail(f"ONT inventory setup failed: {error}")
         _ONT_READINESS_CACHE.add(cache_key)
         yield
 

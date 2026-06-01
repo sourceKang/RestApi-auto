@@ -21,12 +21,18 @@ class ProvisionService:
         self.env_config = env_config
 
     def ensure_seed_data(self, session_id: str, cleanup_registry) -> None:
+        self.ensure_ont_seed_data(session_id, cleanup_registry)
+        self.ensure_ge_seed_data(session_id, cleanup_registry)
+
+    def ensure_ont_seed_data(self, session_id: str, cleanup_registry) -> None:
         with allure_step("Ensure prerequisite ONT template profile exists"):
             self.ensure_profile_by_name(session_id, cleanup_registry, self.env_config.dut.ont_template)
-        with allure_step("Ensure prerequisite GE template profile exists"):
-            self.ensure_profile_by_name(session_id, cleanup_registry, self.env_config.dut.ge_template)
         with allure_step("Create or normalize recorded ONT service data for GET verification"):
             self.ensure_recorded_ont_service(session_id)
+
+    def ensure_ge_seed_data(self, session_id: str, cleanup_registry) -> None:
+        with allure_step("Ensure prerequisite GE template profile exists"):
+            self.ensure_profile_by_name(session_id, cleanup_registry, self.env_config.dut.ge_template)
         with allure_step("Create or normalize recorded GE service data for GET verification"):
             self.ensure_recorded_ge_service(session_id)
 

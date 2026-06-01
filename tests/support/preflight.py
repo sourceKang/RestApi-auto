@@ -51,19 +51,8 @@ def skip_unready_dut_items(config: pytest.Config, items: list[pytest.Item]) -> N
             item.add_marker(skip_dut)
         return
 
-    ont_items = [item for item in dut_items if requires_ont_inventory(item)]
-    if not ont_items:
-        return
-
-    result = run_ont_preflight(
-        node=config.getoption("--ems-node"),
-        auth_profile=config.getoption("--auth-profile"),
-    )
-    if not result.ok:
-        skip_ont = pytest.mark.skip(reason=f"DUT preflight failed: {result.reason}")
-        for item in ont_items:
-            item.add_marker(skip_ont)
-        return
+    # ONT availability is prepared by the ONT inventory fixture. Checking it
+    # during collection would skip the prepare flow before it has a chance to run.
 
 
 def is_dut_dependent(item: pytest.Item) -> bool:

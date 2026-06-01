@@ -5,11 +5,13 @@
   },
   "min": {
     "Content": {
+	  "spoofingdisable": "",
       "fdb": "1"
     }
   },
   "max": {
     "Content": {
+	  "spoofingdisable": "no",
       "fdb": "1023"
     }
   }

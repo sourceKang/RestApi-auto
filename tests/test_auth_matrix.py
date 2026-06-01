@@ -9,7 +9,8 @@ from utils.cleanup import CleanupRegistry
 def auth_matrix_seed_data(services, session_manager):
     registry = CleanupRegistry()
     with session_manager.credentials_session(services.provision.env_config.readwrite) as session_id:
-        services.provision.ensure_seed_data(session_id, registry)
+        services.inventory.ensure_ont_inventory_ready(session_id)
+        services.provision.ensure_ge_seed_data(session_id, registry)
         yield
 
 

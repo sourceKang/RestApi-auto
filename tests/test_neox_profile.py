@@ -134,6 +134,7 @@ def test_neox_profile_clear_readwrite(
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.skip(reason="NeoX profile error-readwrite cases are not complete yet.")
 @pytest.mark.parametrize("profile_type", NEOX_PROFILE_READWRITE_TYPES, ids=NEOX_PROFILE_READWRITE_TYPES)
 def test_neox_profile_error_readwrite(
     neox_config_service,

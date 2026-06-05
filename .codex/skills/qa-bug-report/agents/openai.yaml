@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Bug Report"
+  short_description: "Draft concise RestApi Auto bugs."
+  default_prompt: "Use $qa-bug-report to turn this RestApi Auto failure into my testcase id, subject, description bug format."

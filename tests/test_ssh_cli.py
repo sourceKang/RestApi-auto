@@ -103,6 +103,34 @@ def test_ssh_cli_confirms_logout_prompt(monkeypatch: pytest.MonkeyPatch):
     assert fake_client.closed
 
 
+def test_ssh_cli_confirms_command_prompt(monkeypatch: pytest.MonkeyPatch):
+    channel = FakeChannel()
+    fake_client = FakeSshClient(channel)
+    install_fake_paramiko(monkeypatch, fake_client)
+    outputs = iter(
+        [
+            "banner",
+            "Warning: This is per-card setting, rules will be applied to all ports, please confirm [y/N]",
+            "command accepted",
+            "logout",
+        ]
+    )
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(lambda *args, **kwargs: next(outputs)))
+
+    results = SshCliClient("host", "user", "password").run_commands(["vlan trunk uni-untag subnet 192.0.2.1/24 svlan 1314 spbit 0"])
+
+    assert results == [
+        CliCommandResult(
+            command="vlan trunk uni-untag subnet 192.0.2.1/24 svlan 1314 spbit 0",
+            output="Warning: This is per-card setting, rules will be applied to all ports, please confirm [y/N]\ncommand accepted",
+        )
+    ]
+    assert channel.sent == ["vlan trunk uni-untag subnet 192.0.2.1/24 svlan 1314 spbit 0\n", "y\n", "exit\n"]
+    assert channel.closed
+    assert fake_client.transport.closed
+    assert fake_client.closed
+
+
 def test_ssh_cli_closes_session_when_command_send_fails(monkeypatch: pytest.MonkeyPatch):
     channel = FakeChannel(fail_on_send="show")
     fake_client = FakeSshClient(channel)

@@ -1,0 +1,778 @@
+{
+  "source": {
+    "derived_from": [
+      "configs/neox_config/ont/neox_ont_field_catalog.json",
+      "NeoX UG ONT CLI ranges and live REST observations"
+    ],
+    "purpose": "ONT config invalid parameter matrix for EMS1-7133. Runtime target SN/password are injected by tests.",
+    "strategy": "Start from the ONT min payload and add one invalid field or invalid nested list at a time so the response can be attributed to that parameter."
+  },
+  "cases": [
+    {
+      "name": "ontenable_invalid_enum",
+      "field": "ontenable",
+      "patch": {
+        "Content": {
+          "ontenable": "invalid"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "sn_invalid_type",
+      "field": "sn",
+      "patch": {
+        "Content": {
+          "sn": {
+            "value": "invalid"
+          }
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "registid_invalid_type",
+      "field": "registid",
+      "patch": {
+        "Content": {
+          "registid": {
+            "value": "invalid"
+          }
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "registmethod_invalid_enum",
+      "field": "registmethod",
+      "patch": {
+        "Content": {
+          "registmethod": "Z"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "ontdescription_too_long",
+      "field": "ontdescription",
+      "patch": {
+        "Content": {
+          "ontdescription": "REST_API_NEOX_ONT_DESCRIPTION_TOO_LONG_1234567890"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "onttype_invalid_enum",
+      "field": "onttype",
+      "patch": {
+        "Content": {
+          "onttype": "invalid"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "adminstate_invalid_enum",
+      "field": "adminstate",
+      "patch": {
+        "Content": {
+          "adminstate": "invalid"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "dynamic_vid_above_max",
+      "field": "dynamic_vid",
+      "patch": {
+        "Content": {
+          "dynamic_vid": "4095",
+          "dynamic_pbit": 0
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "dynamic_pbit_above_max",
+      "field": "dynamic_pbit",
+      "patch": {
+        "Content": {
+          "dynamic_vid": "1314",
+          "dynamic_pbit": 8
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "static_vid_above_max",
+      "field": "static_vid",
+      "patch": {
+        "Content": {
+          "static_vid": "4095",
+          "static_pbit": 0,
+          "static_hostip": "192.0.2.10",
+          "static_mask": "255.255.255.0"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "static_pbit_above_max",
+      "field": "static_pbit",
+      "patch": {
+        "Content": {
+          "static_vid": "1314",
+          "static_pbit": 8,
+          "static_hostip": "192.0.2.10",
+          "static_mask": "255.255.255.0"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "static_hostip_invalid_ip",
+      "field": "static_hostip",
+      "patch": {
+        "Content": {
+          "static_vid": "1314",
+          "static_pbit": 0,
+          "static_hostip": "999.0.0.1",
+          "static_mask": "255.255.255.0"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "static_mask_invalid_mask",
+      "field": "static_mask",
+      "patch": {
+        "Content": {
+          "static_vid": "1314",
+          "static_pbit": 0,
+          "static_hostip": "192.0.2.10",
+          "static_mask": "255.255.255.600"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "iphost_gateway_invalid_ip",
+      "field": "iphost_gateway",
+      "patch": {
+        "Content": {
+          "iphost_gateway": "@155.255.255.1"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "iphost_pridns_invalid_ip",
+      "field": "iphost_pridns",
+      "patch": {
+        "Content": {
+          "iphost_pridns": "2.2.2.2@"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "iphost_secdns_invalid_ip",
+      "field": "iphost_secdns",
+      "patch": {
+        "Content": {
+          "iphost_secdns": "1.2.23.5@"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "templatename_missing_profile",
+      "field": "templatename",
+      "patch": {
+        "Content": {
+          "templatename": "#invalid_profile"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "servicelist_serviceindex_above_max",
+      "field": "servicelist.serviceindex",
+      "patch": {
+        "Content": {
+          "servicelist": [
+            {
+              "serviceindex": 9,
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "servicelist_usbwprofname_missing_profile",
+      "field": "servicelist.usbwprofname",
+      "patch": {
+        "Content": {
+          "servicelist": [
+            {
+              "serviceindex": 1,
+              "usbwprofname": "#invalid_profile",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "servicelist_dsbwprofname_missing_profile",
+      "field": "servicelist.dsbwprofname",
+      "patch": {
+        "Content": {
+          "servicelist": [
+            {
+              "serviceindex": 1,
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "#invalid_profile"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "tcontlist_tcontindex_above_max",
+      "field": "tcontlist.tcontindex",
+      "patch": {
+        "Content": {
+          "tcontlist": [
+            {
+              "tcontindex": "9",
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "tcontlist_usbwprofname_missing_profile",
+      "field": "tcontlist.usbwprofname",
+      "patch": {
+        "Content": {
+          "tcontlist": [
+            {
+              "tcontindex": "1",
+              "usbwprofname": "#invalid_profile",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "tcontlist_dsbwprofname_missing_profile",
+      "field": "tcontlist.dsbwprofname",
+      "patch": {
+        "Content": {
+          "tcontlist": [
+            {
+              "tcontindex": "1",
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "#invalid_profile"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "dspir_below_min",
+      "field": "dspir",
+      "patch": {
+        "Content": {
+          "dspir": "127"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "fwupgrademode_invalid_enum",
+      "field": "fwupgrademode",
+      "patch": {
+        "Content": {
+          "fwupgrademode": "invalid"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "fwupgradeid_too_long",
+      "field": "fwupgradeid",
+      "patch": {
+        "Content": {
+          "fwupgradeid": "FWID_TOO_LONG_123"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "fwupgradeomci_invalid_enum",
+      "field": "fwupgradeomci",
+      "patch": {
+        "Content": {
+          "fwupgradeomci": "invalid"
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "fdbmaclist_unicastmac_invalid",
+      "field": "fdbmaclist.unicastmac",
+      "patch": {
+        "Content": {
+          "fdbmaclist": [
+            {
+              "unicastmac": "00:11:22:33:44:ZZ",
+              "vid": "1314",
+              "cvid": "1314"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "fdbmaclist_vid_above_max",
+      "field": "fdbmaclist.vid",
+      "patch": {
+        "Content": {
+          "fdbmaclist": [
+            {
+              "unicastmac": "00:11:22:33:44:55",
+              "vid": "4095",
+              "cvid": "1314"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "fdbmaclist_cvid_above_max",
+      "field": "fdbmaclist.cvid",
+      "patch": {
+        "Content": {
+          "fdbmaclist": [
+            {
+              "unicastmac": "00:11:22:33:44:55",
+              "vid": "1314",
+              "cvid": "4095"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wifi24glist_wifi24gid_above_max",
+      "field": "wifi24glist.wifi24gid",
+      "patch": {
+        "Content": {
+          "wifi24glist": [
+            {
+              "wifi24gid": 5,
+              "wifi24gssid": "REST24G",
+              "wifi24gpw": "RestWifi123"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wifi24glist_wifi24gssid_invalid_type",
+      "field": "wifi24glist.wifi24gssid",
+      "patch": {
+        "Content": {
+          "wifi24glist": [
+            {
+              "wifi24gid": 1,
+              "wifi24gssid": {
+                "value": "invalid"
+              },
+              "wifi24gpw": "RestWifi123"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "wifi24glist_wifi24gpw_too_short",
+      "field": "wifi24glist.wifi24gpw",
+      "patch": {
+        "Content": {
+          "wifi24glist": [
+            {
+              "wifi24gid": 1,
+              "wifi24gssid": "REST24G",
+              "wifi24gpw": "short"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wifi5glist_wifi5gid_above_max",
+      "field": "wifi5glist.wifi5gid",
+      "patch": {
+        "Content": {
+          "wifi5glist": [
+            {
+              "wifi5gid": 5,
+              "wifi5gssid": "REST5G",
+              "wifi5gpw": "RestWifi123"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wifi5glist_wifi5gssid_invalid_type",
+      "field": "wifi5glist.wifi5gssid",
+      "patch": {
+        "Content": {
+          "wifi5glist": [
+            {
+              "wifi5gid": 1,
+              "wifi5gssid": {
+                "value": "invalid"
+              },
+              "wifi5gpw": "RestWifi123"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 400,
+      "expected_message_contains": "Invalid JSON input"
+    },
+    {
+      "name": "wifi5glist_wifi5gpw_too_short",
+      "field": "wifi5glist.wifi5gpw",
+      "patch": {
+        "Content": {
+          "wifi5glist": [
+            {
+              "wifi5gid": 1,
+              "wifi5gssid": "REST5G",
+              "wifi5gpw": "short"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_wanid_above_max",
+      "field": "wanlist.wanid",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 9,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_staticip_invalid",
+      "field": "wanlist.staticip",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.168.101.1111",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_staticmask_invalid",
+      "field": "wanlist.staticmask",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.600",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_gateway_invalid",
+      "field": "wanlist.gateway",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "9192.168.101.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_pridns_invalid",
+      "field": "wanlist.pridns",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "1.299.3.41",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_secdns_invalid",
+      "field": "wanlist.secdns",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "$#5.6.7.81",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_username_too_long",
+      "field": "wanlist.username",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "Usr1@hinet.net#012345678901234567890123456789012",
+              "password": "RestWanPwd"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "wanlist_password_too_long",
+      "field": "wanlist.password",
+      "patch": {
+        "Content": {
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "Password@hinet.net#01234567890123456789012345678"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "voiplist_voipid_above_max",
+      "field": "voiplist.voipid",
+      "patch": {
+        "Content": {
+          "voiplist": [
+            {
+              "voipid": 5,
+              "username": "RestVoipUser",
+              "password": "RestVoipPwd",
+              "aorurl": "1001"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "voiplist_username_too_long",
+      "field": "voiplist.username",
+      "patch": {
+        "Content": {
+          "voiplist": [
+            {
+              "voipid": 1,
+              "username": "Usr1@hinet.net#01234567890123456789012345678901234",
+              "password": "RestVoipPwd",
+              "aorurl": "1001"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "voiplist_password_too_long",
+      "field": "voiplist.password",
+      "patch": {
+        "Content": {
+          "voiplist": [
+            {
+              "voipid": 1,
+              "username": "RestVoipUser",
+              "password": "Password@hinet.net#01234567890123456789012345678",
+              "aorurl": "1001"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    },
+    {
+      "name": "voiplist_aorurl_too_long",
+      "field": "voiplist.aorurl",
+      "patch": {
+        "Content": {
+          "voiplist": [
+            {
+              "voipid": 1,
+              "username": "RestVoipUser",
+              "password": "RestVoipPwd",
+              "aorurl": "Pasor@t#012345678901234567890123456789012345678901234567890123456789"
+            }
+          ]
+        }
+      },
+      "expected_retstatus": "Fail",
+      "expected_status_code": 200
+    }
+  ]
+}

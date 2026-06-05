@@ -65,6 +65,9 @@ NEOX_PROFILE_NAMES = {
 
 
 NEOX_PROFILE_DEPENDENCIES = {
+    "ONTMulticastProfile": [
+        "IGMPGroupPrivilegeProfile",
+    ],
     "ONTTemplateProfile": [
         "ONTAlarmProfile",
         "ONTBandwidthProfile",

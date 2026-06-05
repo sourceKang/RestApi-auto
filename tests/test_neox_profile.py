@@ -44,9 +44,9 @@ def test_neox_profile_min_create_readwrite(
     with neox_profile_connectivity_guard(env_config, profile_type, "min_create", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_cli_credentials(env_config, "PROFILE")
-        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
         path = neox_config_service.neox_profile_path(profile_type)
         payload = neox_config_service.neox_profile_boundary_payload(profile_type, "min")
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type, payload)
         cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
         delete_profile_if_exists(api_client, path, readwrite_session)
         response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
@@ -79,9 +79,9 @@ def test_neox_profile_max_create_readwrite(
     with neox_profile_connectivity_guard(env_config, profile_type, "max_create", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_cli_credentials(env_config, "PROFILE")
-        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
         path = neox_config_service.neox_profile_path(profile_type)
         payload = neox_config_service.neox_profile_boundary_payload(profile_type, "max")
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type, payload)
         cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
         delete_profile_if_exists(api_client, path, readwrite_session)
         response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload)
@@ -114,9 +114,9 @@ def test_neox_profile_clear_readwrite(
     with neox_profile_connectivity_guard(env_config, profile_type, "clear", neox_profile_delay_seconds(request)):
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_cli_credentials(env_config, "PROFILE")
-        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type)
         path = neox_config_service.neox_profile_path(profile_type)
         payload = neox_config_service.neox_profile_payload(profile_type)
+        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type, payload)
         cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
         delete_profile_if_exists(api_client, path, readwrite_session)
         command = neox_profile_show_command(neox_config_service, profile_type)

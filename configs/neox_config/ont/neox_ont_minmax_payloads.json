@@ -2,9 +2,15 @@
   "source": {
     "derived_from": [
       "Swagger ONTInfo schema",
-      "configs/neox_config/reference/neox_ug_parameter_reference.yaml"
+      "configs/neox_config/reference/neox_ug_parameter_reference.yaml",
+      "configs/neox_config/ont/neox_ont_field_catalog.json"
     ],
-    "purpose": "ONT min/max create payload templates. Runtime target SN/password are injected by tests."
+    "purpose": "ONT min/max create payload templates. Runtime target SN/password are injected by tests.",
+    "observed": {
+      "node": "NODE3",
+      "date": "2026-06-03",
+      "note": "IP host static fields, servicelist, tcontlist, dspir, fdbmaclist, wifi24glist, wifi5glist, wanlist, voiplist, and firmware config fields passed CLI-first, REST Success, and CLI verification on NODE3 3-16-1. static_mask uses dotted netmask because live CLI rejected prefix length 24. templatename passed official ONT max live verification after creating the NeoX ONTTemplateProfile dependency. Firmware fields are config-only checks and use mode never."
+    }
   },
   "cases": {
     "min": {
@@ -25,7 +31,74 @@
           "onttype": "auto",
           "ontenable": "enable",
           "adminstate": "enable",
-          "ontdescription": "REST_API_NEOX_ONT_MAX"
+          "ontdescription": "REST_API_NEOX_ONT_MAX",
+          "static_vid": "1314",
+          "static_pbit": 0,
+          "static_hostip": "192.0.2.10",
+          "static_mask": "255.255.255.0",
+          "iphost_gateway": "192.0.2.1",
+          "iphost_pridns": "192.0.2.53",
+          "iphost_secdns": "192.0.2.54",
+          "templatename": "RestApi_NeoX_ONTTemplate",
+          "servicelist": [
+            {
+              "serviceindex": 1,
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ],
+          "tcontlist": [
+            {
+              "tcontindex": "1",
+              "usbwprofname": "RestApi_NeoX_ONTBandwidth",
+              "dsbwprofname": "RestApi_NeoX_ONTBandwidth"
+            }
+          ],
+          "dspir": "10240",
+          "fwupgrademode": "never",
+          "fwupgradeid": "V542ABYY2Z0",
+          "fwupgradeomci": "dc",
+          "fdbmaclist": [
+            {
+              "unicastmac": "00:11:22:33:44:55",
+              "vid": "1314",
+              "cvid": "1314"
+            }
+          ],
+          "wifi24glist": [
+            {
+              "wifi24gid": 1,
+              "wifi24gssid": "REST24G",
+              "wifi24gpw": "RestWifi123"
+            }
+          ],
+          "wifi5glist": [
+            {
+              "wifi5gid": 1,
+              "wifi5gssid": "REST5G",
+              "wifi5gpw": "RestWifi123"
+            }
+          ],
+          "wanlist": [
+            {
+              "wanid": 1,
+              "staticip": "192.0.2.20",
+              "staticmask": "255.255.255.0",
+              "gateway": "192.0.2.1",
+              "pridns": "192.0.2.53",
+              "secdns": "192.0.2.54",
+              "username": "RestWanUser",
+              "password": "RestWanPwd"
+            }
+          ],
+          "voiplist": [
+            {
+              "voipid": 1,
+              "username": "RestVoipUser",
+              "password": "RestVoipPwd",
+              "aorurl": "1001"
+            }
+          ]
         }
       }
     }

@@ -6,6 +6,7 @@
     "target_scope": "NODE3 GE safe port",
     "note": "This payload contains GE fields that were added one at a time and retained only after REST API returned Success. Some successful fields are not visible in show running-config because the device omits defaults or non-running display fields."
   },
+  "rest_timeout_seconds": 180,
   "payload": {
     "Content": {
       "anti_spoofing": "enable",
@@ -15,6 +16,7 @@
       "flow": "disable",
       "portspeed": "auto",
       "frametype": "all",
+      "mtu": 2112,
       "portname": "REST_GE_39",
       "algorithm": "sp",
       "bpdu": "peer",
@@ -38,6 +40,11 @@
           "aclmac": "00:11:22:33:44:55"
         }
       ],
+      "acl_ouilist": [
+        {
+          "acloui": "00:11:22"
+        }
+      ],
       "bias_alarm_high": "79",
       "bias_alarm_low": "0",
       "bias_warn_high": "79",
@@ -58,7 +65,54 @@
           "mac": "00:11:22:33:44:55",
           "vid": 1314
         }
-      ]
+      ],
+      "igmp_bandwidth": 100,
+      "lldp_systemcap": "enable",
+      "lldp_systemdsc": "enable",
+      "lldp_systemname": "enable",
+      "lldralinklocal": "skip-src",
+      "loopguard": "enable",
+      "loopguard_policy": "dynamic",
+      "loopguard_recovertime": 180,
+      "macfilter": "enable",
+      "macfiltermode": "accept",
+      "maxcount": 100,
+      "maxgroup": 10,
+      "maxmsg": 20,
+      "multicast_rate": "64",
+      "nnimaxcount": 1,
+      "nnivlan": 1314,
+      "opt82policy": "keep",
+      "ouifilter": "enable",
+      "outertpid": "enable",
+      "packfiltertype": "pppoe-only",
+      "pbit": 0,
+      "pppoepolicy": "keep",
+      "pvid": 1314,
+      "pwsaving": "enable",
+      "pwsaving_awake": 10,
+      "pwsaving_sleep": 120,
+      "snooping_dhcp": "untrust",
+      "snooping_dhcpv6": "untrust",
+      "snooping_ipmacbinding": "enable",
+      "snooping_maxlease": 5,
+      "snooping_vlanlist": "1314",
+      "smcastip_list": [
+        {
+          "ip": "239.1.1.1",
+          "nnivid": 1314,
+          "role": "fix"
+        }
+      ],
+      "staticipfilter_ipmacbinding": "enable",
+      "staticipfilter_list": [
+        {
+          "staticindex": 1,
+          "ip": "192.0.2.10",
+          "mask": 32
+        }
+      ],
+      "tel": "0000"
     }
   },
   "running_config_visible_lines": [
@@ -67,65 +121,71 @@
     "flow-control disable",
     "speed auto",
     "name \"REST_GE_39\"",
+    "loopguard",
+    "loopguard policy dynamic",
+    "loopguard recover-time 180",
+    "acl packet-filter pppoe-only",
+    "acl mac-filter enable",
+    "acl mac-filter mode accept",
     "acl mac-filter mac 00:11:22:33:44:55",
+    "acl oui-filter enable",
+    "acl oui-filter mac 00:11:22",
     "arp-inspection enable",
+    "power-saving enable",
+    "power-saving sleep-interval 120",
+    "power-saving awake-interval 10",
     "vlan copy_cpbit disable",
+    "vlan outer-tpid enable",
+    "pvid 1314 pbit 0",
     "frame-type all",
+    "igmp-mld max-group 10",
+    "igmp-mld cac bandwidth 100",
+    "igmp-mld max-message 20",
+    "fdb max-count 100",
+    "fdb nni-vlan-max-count 1 nni-vlan 1314",
+    "dhcp l2agent snooping dhcp untrust",
+    "dhcp l2agent snooping dhcpv6 untrust",
+    "dhcp l2agent snooping ip-mac-binding",
+    "dhcp l2agent snooping max-lease 5",
+    "dhcp l2agent snooping priority-vlan 1314",
+    "dhcp l2agent static-ip-filtering ip-mac-binding",
+    "dhcp l2agent static-ip-filtering static-ip 1 192.0.2.10",
+    "dhcp l2agent opt82-policy policy keep",
+    "dhcp l2agent opt-ldra-policy linklocal skip-src",
+    "pppoe intermediate-agent opt-policy policy keep",
+    "smcast ip 239.1.1.1 nni-vlan 1314 fix",
+    "lldp basic-tlv system-capabilities",
+    "lldp basic-tlv system-description",
+    "lldp basic-tlv system-name",
     "fdb mac 00:11:22:33:44:55 vlan 1314",
     "dot1x circuit-id option-info REST_GE_39"
   ],
+  "additional_cli_visible_checks": {
+    "show interface ge {slot_id}-{port_id} mtu": [
+      "{slot_id}-{port_id} MTU: 2112 bytes"
+    ],
+    "show interface ge {slot_id}-{port_id} config": [
+      "0000"
+    ],
+    "show interface ge {slot_id}-{port_id} storm-control": [
+      "64"
+    ]
+  },
   "failed_fields": [
-    "acl_ouilist",
     "customtype",
-    "igmp_bandwidth",
     "igmp_grouppriprofile_list",
     "igmp_mvid_list",
-    "lldp_systemcap",
-    "lldp_systemdsc",
-    "lldp_systemname",
-    "lldralinklocal",
-    "loopguard",
-    "loopguard_policy",
-    "loopguard_recovertime",
-    "macfilter",
-    "macfiltermode",
-    "maxcount",
-    "maxgroup",
-    "maxmsg",
-    "mtu",
-    "multicast_rate",
-    "nnimaxcount",
-    "nnivlan",
-    "opt82policy",
-    "ouifilter",
     "ouifiltermode",
-    "outertpid",
-    "packfiltertype",
-    "pbit",
     "port_aclprofile_list",
-    "pppoepolicy",
     "profile_aclprofilename",
-    "pvid",
-    "pwsaving",
-    "pwsaving_awake",
-    "pwsaving_sleep",
     "ratelimitname",
     "rxpower_alarm_high",
     "rxpower_alarm_low",
     "rxpower_warn_high",
     "rxpower_warn_low",
     "shapingname",
-    "smcastip_list",
     "smcastmac_list",
-    "snooping_dhcp",
-    "snooping_dhcpv6",
-    "snooping_ipmacbinding",
-    "snooping_maxlease",
-    "snooping_vlanlist",
     "spoofing_action",
-    "staticipfilter_ipmacbinding",
-    "staticipfilter_list",
-    "tel",
     "temperature_alarm_high",
     "temperature_alarm_low",
     "temperature_warn_high",

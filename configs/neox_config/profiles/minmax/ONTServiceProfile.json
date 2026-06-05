@@ -14,9 +14,9 @@
   },
   "max": {
     "Content": {
-      "mode": "veip",
-      "uniport": "lan",
-      "lan": "1",
+      "mode": "bridge",
+      "uniport": "xlan",
+      "xlan": "8",
       "vlan": "4094",
       "pbit": "7"
     }

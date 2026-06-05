@@ -20,7 +20,9 @@ def neox_profile_expected_tokens(
     elif profile_type == "ONTBandwidthProfile":
         tokens.extend(content_values(content, ("sir", "air", "pir")))
     elif profile_type == "ONTMulticastProfile":
-        tokens.extend(content_values(content, ("univid", "igmp", "mode", "txtagvid", "txtagpbit", "maxgroup", "maxmsg")))
+        tokens.extend(
+            content_values(content, ("univid", "groupprofile", "igmp", "mode", "txtagvid", "txtagpbit", "maxgroup", "maxmsg"))
+        )
     elif profile_type == "ONTONTProfile":
         tokens.extend(content_values(content, ("fwlevel", "telnetport")))
     elif profile_type == "ONTSecurityProfile":

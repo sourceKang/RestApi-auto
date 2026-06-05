@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 LOGOUT_CONFIRM_PROMPT = re.compile(r"logout\s+system\s+now\s*\(y/n\)\?", re.IGNORECASE)
+YES_NO_CONFIRM_PROMPT = re.compile(r"(?:please\s+)?confirm\s*\[y/n\]|confirm\s*\(y/n\)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,11 @@ class SshCliClient:
             results = []
             for command in commands:
                 channel.send(command + "\n")
-                results.append(CliCommandResult(command=command, output=self._read_available(channel)))
+                output = self._read_available(channel)
+                if YES_NO_CONFIRM_PROMPT.search(output):
+                    channel.send("y\n")
+                    output = "\n".join([output, self._read_available(channel, first_wait=0.2, idle_wait=0.4, max_wait=8)])
+                results.append(CliCommandResult(command=command, output=output))
             self._logout(channel)
             return results
         finally:

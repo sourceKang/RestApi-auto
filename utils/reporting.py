@@ -263,7 +263,7 @@ def _target_summary_lines(env_config: Any) -> list[str]:
 
 
 def _generate_allure_html(results_dir: Path, report_dir: Path) -> Path | None:
-    allure = shutil.which("allure")
+    allure = _allure_executable()
     if not allure:
         return None
     html_report = report_dir / f"allure-report_{REPORT_STATE.timestamp}"
@@ -276,6 +276,14 @@ def _generate_allure_html(results_dir: Path, report_dir: Path) -> Path | None:
         text=True,
     )
     return html_report if completed.returncode == 0 else None
+
+
+def _allure_executable() -> str | None:
+    configured = shutil.which("allure")
+    if configured:
+        return configured
+    local_wrapper = Path(__file__).resolve().parents[1] / ".codex-tools" / "bin" / "allure.cmd"
+    return str(local_wrapper) if local_wrapper.exists() else None
 
 
 def _format_timedelta(seconds: float) -> str:

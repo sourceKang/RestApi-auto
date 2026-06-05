@@ -138,7 +138,148 @@ def ont_running_config_tokens(remote_xont: str, content: dict[str, Any]) -> list
         tokens.append("adminstate enable")
     if content.get("ontenable") == "enable":
         tokens.append("no inactive")
+    if "static_vid" in content and "static_hostip" in content and "static_mask" in content:
+        token = f"ip-host vlan {content['static_vid']}"
+        if "static_pbit" in content:
+            token += f"/{content['static_pbit']}"
+        token += f" static ip {content['static_hostip']} mask {content['static_mask']}"
+        tokens.append(token)
+    if "dynamic_vid" in content:
+        token = f"ip-host vlan {content['dynamic_vid']}"
+        if "dynamic_pbit" in content:
+            token += f"/{content['dynamic_pbit']}"
+        token += " dynamic"
+        tokens.append(token)
+    if content.get("iphost_gateway"):
+        tokens.append(f"ip-host static-option gateway {content['iphost_gateway']}")
+    if content.get("iphost_pridns"):
+        tokens.append(f"ip-host static-option primary-dns {content['iphost_pridns']}")
+    if content.get("iphost_secdns"):
+        tokens.append(f"ip-host static-option secondary-dns {content['iphost_secdns']}")
+    if content.get("templatename"):
+        tokens.append(f"template {content['templatename']}")
+    tokens.extend(ont_service_tokens(content.get("servicelist", [])))
+    tokens.extend(ont_tcont_tokens(content.get("tcontlist", [])))
+    if content.get("dspir"):
+        tokens.append(f"ds-pir {content['dspir']}")
+    if content.get("fwupgrademode"):
+        tokens.append(f"ont-fw-upgrade mode {content['fwupgrademode']}")
+    if content.get("fwupgradeid"):
+        tokens.append(f"ont-fw-upgrade fw-id {content['fwupgradeid']}")
+    if content.get("fwupgradeomci"):
+        tokens.append(f"ont-fw-upgrade omci-method {content['fwupgradeomci']}")
+    tokens.extend(ont_fdbmac_tokens(content.get("fdbmaclist", [])))
+    tokens.extend(ont_wifi24g_tokens(content.get("wifi24glist", [])))
+    tokens.extend(ont_wifi5g_tokens(content.get("wifi5glist", [])))
+    tokens.extend(ont_wan_tokens(content.get("wanlist", [])))
+    tokens.extend(ont_voip_tokens(content.get("voiplist", [])))
     return tokens
+
+
+def ont_service_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        service_index = entry.get("serviceindex")
+        if service_index not in (None, ""):
+            tokens.append(f"service {service_index}")
+        for key in ("usbwprofname", "dsbwprofname"):
+            if entry.get(key):
+                tokens.append(str(entry[key]))
+    return unique_cli_tokens(tokens)
+
+
+def ont_tcont_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        tcont_index = entry.get("tcontindex")
+        if tcont_index not in (None, ""):
+            tokens.append(f"tcont {tcont_index}")
+        for key in ("usbwprofname", "dsbwprofname"):
+            if entry.get(key):
+                tokens.append(str(entry[key]))
+    return unique_cli_tokens(tokens)
+
+
+def ont_fdbmac_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        mac = entry.get("unicastmac") if isinstance(entry, dict) else None
+        if mac:
+            tokens.append(str(mac))
+    return tokens
+
+
+def ont_wifi24g_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        wifi_id = entry.get("wifi24gid")
+        if wifi_id not in (None, ""):
+            tokens.append(f"wifi 2.4g {wifi_id}")
+        if entry.get("wifi24gssid"):
+            tokens.append(f"ssid {entry['wifi24gssid']}")
+        if entry.get("wifi24gpw"):
+            tokens.append("password")
+    return tokens
+
+
+def ont_wifi5g_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        wifi_id = entry.get("wifi5gid")
+        if wifi_id not in (None, ""):
+            tokens.append(f"wifi 5g {wifi_id}")
+        if entry.get("wifi5gssid"):
+            tokens.append(f"ssid {entry['wifi5gssid']}")
+        if entry.get("wifi5gpw"):
+            tokens.append("password")
+    return tokens
+
+
+def ont_wan_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        wan_id = entry.get("wanid")
+        if wan_id not in (None, ""):
+            tokens.append(f"wan {wan_id}")
+        for key in ("staticip", "username"):
+            if entry.get(key):
+                tokens.append(str(entry[key]))
+    return tokens
+
+
+def ont_voip_tokens(entries: Any) -> list[str]:
+    tokens = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        voip_id = entry.get("voipid")
+        if voip_id not in (None, ""):
+            tokens.append(f"voip {voip_id}")
+        for key in ("username", "aorurl"):
+            if entry.get(key):
+                tokens.append(str(entry[key]))
+    return tokens
+
+
+def unique_cli_tokens(tokens: list[str]) -> list[str]:
+    seen = set()
+    unique = []
+    for token in tokens:
+        if token in seen:
+            continue
+        seen.add(token)
+        unique.append(token)
+    return unique
 
 
 def neox_cli_sn(sn: str) -> str:

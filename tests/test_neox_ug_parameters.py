@@ -10,9 +10,11 @@ from services.neox_config.service import (
     NEOX_CONTENT_OVERRIDES,
     NEOX_UG_PARAMETER_REFERENCE_FILE,
     ge_port_payload,
+    neox_profile_dependency_types,
     neox_profile_minmax_payload,
     nni_port_payload,
 )
+from services.neox_config.profiles import NEOX_PROFILE_NAMES
 
 
 REFERENCE_FILE = NEOX_UG_PARAMETER_REFERENCE_FILE
@@ -83,7 +85,6 @@ def test_ont_uni_profile_payloads_are_minimal_and_nonempty():
     payloads = {
         "default": {"Content": NEOX_CONTENT_OVERRIDES["ONTUNIProfile"]},
         "min": neox_profile_minmax_payload("ONTUNIProfile", "min"),
-        "max": neox_profile_minmax_payload("ONTUNIProfile", "max"),
     }
 
     for label, payload in payloads.items():
@@ -91,6 +92,28 @@ def test_ont_uni_profile_payloads_are_minimal_and_nonempty():
         assert set(content) == expected_keys, label
         assert len(content) == 10, label
         assert all(value not in (None, "") for value in content.values()), label
+
+
+def test_ont_uni_profile_max_payload_covers_full_neox_schema():
+    payload = neox_profile_minmax_payload("ONTUNIProfile", "max")
+    content = payload["Content"]
+
+    assert len(content) == 590
+    assert all(value is not None for value in content.values())
+    assert {"lanvlan1", "xlanvlan32", "veipvlan32", "potsportactive2", "videoactive1"}.issubset(content)
+
+
+def test_ont_multicast_profile_groupprofile_requires_igmp_dependency():
+    expected_name = NEOX_PROFILE_NAMES["IGMPGroupPrivilegeProfile"]
+
+    for boundary in ("min", "max"):
+        payload = neox_profile_minmax_payload("ONTMulticastProfile", boundary)
+        content = payload["Content"]
+
+        assert content["groupprofile"] == expected_name
+        assert neox_profile_dependency_types("ONTMulticastProfile", payload) == ["IGMPGroupPrivilegeProfile"]
+
+    assert neox_profile_dependency_types("ONTMulticastProfile", {"Content": {"groupprofile": ""}}) == []
 
 
 def assert_allowed(content: dict[str, Any], fields: dict[str, Any], profile_type: str | None = None) -> None:

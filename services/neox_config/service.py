@@ -42,10 +42,12 @@ GE_PAIRED_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_paired_retry_probe.j
 GE_PDF_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_pdf_retry_probe.json"
 GE_SHOW_COMMANDS_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_show_commands.json"
 GE_SWAGGER_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_swagger_payload.json"
+GE_FIELD_CATALOG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_field_catalog.json"
 NNI_MIN_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_min_accepted_payload.json"
 NNI_MAX_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_full_accepted_payload.json"
 VLAN_MINMAX_PAYLOAD_FILE = NEOX_VLAN_CONFIG_DIR / "neox_vlan_minmax_payloads.json"
 ONT_MINMAX_PAYLOAD_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_minmax_payloads.json"
+ONT_NEGATIVE_CASES_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_negative_cases.json"
 PROFILE_BASIC_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_basic_cases.json"
 PROFILE_QOS_MINMAX_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_qos_minmax_cases.json"
 PROFILE_MINMAX_PAYLOAD_DIR = NEOX_PROFILE_CONFIG_DIR / "minmax"
@@ -67,10 +69,12 @@ NEOX_CONFIG_DATA_FILES = (
     GE_PDF_RETRY_CONFIG_FILE,
     GE_SHOW_COMMANDS_FILE,
     GE_SWAGGER_PAYLOAD_FILE,
+    GE_FIELD_CATALOG_FILE,
     NNI_MIN_PAYLOAD_FILE,
     NNI_MAX_PAYLOAD_FILE,
     VLAN_MINMAX_PAYLOAD_FILE,
     ONT_MINMAX_PAYLOAD_FILE,
+    ONT_NEGATIVE_CASES_FILE,
     PROFILE_BASIC_CASES_FILE,
     PROFILE_QOS_MINMAX_CASES_FILE,
     PROFILE_OBSERVED_FAILURES_FILE,
@@ -253,8 +257,30 @@ class NeoXConfigService:
         session_id: str,
         cleanup_registry: CleanupRegistry,
         profile_type: str,
+        payload: dict[str, Any] | None = None,
     ) -> None:
-        for dependency_type in NEOX_PROFILE_DEPENDENCIES.get(profile_type, []):
+        self._ensure_neox_profile_dependencies(session_id, cleanup_registry, profile_type, payload, set())
+
+    def _ensure_neox_profile_dependencies(
+        self,
+        session_id: str,
+        cleanup_registry: CleanupRegistry,
+        profile_type: str,
+        payload: dict[str, Any] | None,
+        seen: set[str],
+    ) -> None:
+        for dependency_type in neox_profile_dependency_types(profile_type, payload):
+            if dependency_type in seen:
+                continue
+            seen.add(dependency_type)
+            dependency_payload = self.neox_profile_payload(dependency_type)
+            self._ensure_neox_profile_dependencies(
+                session_id,
+                cleanup_registry,
+                dependency_type,
+                dependency_payload,
+                seen,
+            )
             path = self.neox_profile_path(dependency_type)
             cleanup_registry.add(lambda p=path: self.api_client.request("DELETE", p, session=session_id))
             self.delete_neox_profile_if_exists(path, session_id)
@@ -262,7 +288,7 @@ class NeoXConfigService:
                 "POST",
                 path,
                 session=session_id,
-                json=self.neox_profile_payload(dependency_type),
+                json=dependency_payload,
             )
             assert_api_success(response)
 
@@ -328,6 +354,10 @@ class NeoXConfigService:
 
     def neox_profile_boundary_payload(self, profile_type: str, boundary: str) -> dict[str, Any]:
         payload = neox_profile_minmax_payload(profile_type, boundary)
+        if profile_type == "ONTMulticastProfile":
+            content = payload.setdefault("Content", {})
+            if content.get("groupprofile") not in (None, ""):
+                content["groupprofile"] = self.neox_profile_name("IGMPGroupPrivilegeProfile")
         if profile_type == "ONTTemplateProfile":
             payload.setdefault("Content", {}).update(self.neox_template_refs())
         return payload
@@ -448,6 +478,19 @@ def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
     return materialize_ont_payload("max", target)
 
 
+def ont_negative_cases() -> list[dict[str, Any]]:
+    data = json.loads(ONT_NEGATIVE_CASES_FILE.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["cases"])
+
+
+def ont_negative_payload(case: dict[str, Any], target: NeoXTarget) -> dict[str, Any]:
+    base_case = str(case.get("base_case") or "min")
+    payload = materialize_ont_payload(base_case, target)
+    patch = materialize_target_value(case.get("patch", {}), target)
+    deep_merge(payload, patch)
+    return payload
+
+
 def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
     split_path = PROFILE_MINMAX_PAYLOAD_DIR / f"{profile_type}.json"
     data = json.loads(split_path.read_text(encoding="utf-8"))
@@ -463,16 +506,47 @@ def neox_profile_cli_verify_case(profile_type: str, boundary: str) -> dict[str, 
 def materialize_ont_payload(case_name: str, target: NeoXTarget) -> dict[str, Any]:
     data = json.loads(ONT_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
     payload = copy.deepcopy(data["cases"][case_name]["payload"])
-    content = payload["Content"]
-    for key, value in list(content.items()):
-        if isinstance(value, str):
-            content[key] = value.format(ont_sn=target.ont_sn, ont_password=target.ont_password)
-    return payload
+    return materialize_target_value(payload, target)
+
+
+def materialize_target_value(value: Any, target: NeoXTarget) -> Any:
+    if isinstance(value, str):
+        return value.format(ont_sn=target.ont_sn, ont_password=target.ont_password)
+    if isinstance(value, list):
+        return [materialize_target_value(item, target) for item in value]
+    if isinstance(value, dict):
+        return {key: materialize_target_value(item, target) for key, item in value.items()}
+    return copy.deepcopy(value)
+
+
+def deep_merge(target: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            deep_merge(target[key], value)
+        else:
+            target[key] = value
+    return target
 
 
 def load_json_payload(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
     return copy.deepcopy(data["payload"])
+
+
+def neox_profile_dependency_types(profile_type: str, payload: dict[str, Any] | None = None) -> list[str]:
+    dependencies = list(NEOX_PROFILE_DEPENDENCIES.get(profile_type, []))
+    if profile_type == "ONTMulticastProfile" and not neox_multicast_group_profile_name(payload):
+        dependencies = [dependency for dependency in dependencies if dependency != "IGMPGroupPrivilegeProfile"]
+    return dependencies
+
+
+def neox_multicast_group_profile_name(payload: dict[str, Any] | None) -> str:
+    if not payload:
+        return ""
+    content = payload.get("Content", {})
+    if not isinstance(content, dict):
+        return ""
+    return str(content.get("groupprofile") or "").strip()
 
 
 def normalize_neox_profile_content(profile_type: str, content: dict[str, Any]) -> dict[str, Any]:

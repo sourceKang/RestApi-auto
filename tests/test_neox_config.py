@@ -23,6 +23,7 @@ from services.neox_config.service import (
 from services.neox_config.cli_expectations import (
     clear_ignored_line_prefixes,
     ge_cli_checks,
+    neox_cli_sn,
     normalize_cli_output,
     ont_running_config_tokens,
     vlan_cli_expectation,
@@ -309,14 +310,17 @@ def test_ont_config_error_readwrite(
     session_manager,
     readwrite_session,
     cleanup_registry,
+    request,
 ):
     with neox_config_connectivity_guard(env_config, "ont", "error"):
         verify_ont_config_error_cases(
             api_client,
+            env_config,
             neox_config_service,
             session_manager,
             readwrite_session,
             cleanup_registry,
+            request,
         )
 
 
@@ -487,10 +491,12 @@ def verify_ont_config_create_cli_verified(
 
 def verify_ont_config_error_cases(
     api_client,
+    env_config,
     neox_config_service,
     session_manager,
     readwrite_session: str,
     cleanup_registry,
+    request,
 ) -> None:
     neox_config_service.verify_required_target_data()
     target = neox_config_service.target()
@@ -508,7 +514,15 @@ def verify_ont_config_error_cases(
                 payload = ont_negative_payload(negative_case, target)
                 api_client.request("DELETE", path, session=case_session)
                 response = api_client.request("POST", path, session=case_session, json=payload)
-                api_client.request("DELETE", path, session=case_session)
+                assert_invalid_ont_post_did_not_succeed(negative_case, response)
+                cli_observation = {}
+                cli_failures = []
+                if not skip_neox_cli_verify(request):
+                    cli_observation, cli_failures = verify_ont_invalid_post_not_applied_cli(
+                        env_config,
+                        neox_config_service,
+                        negative_case,
+                    )
                 observation = {
                     "case": negative_case.get("name"),
                     "field": negative_case.get("field"),
@@ -524,10 +538,14 @@ def verify_ont_config_error_cases(
                         "retresult": response.retresult,
                         "body": redact(response.json),
                     },
+                    "cli": cli_observation,
                 }
                 observations.append(observation)
                 try:
                     assert_neox_config_error_response(negative_case, response)
+                    assert not cli_failures, (
+                        f"{negative_case['name']} invalid POST unexpectedly appeared in CLI output: {cli_failures}"
+                    )
                 except AssertionError as error:
                     failures.append({"case": negative_case.get("name"), "error": str(error), "observation": observation})
 
@@ -560,11 +578,89 @@ def assert_neox_config_error_response(negative_case: dict[str, Any], response) -
 
     expected_message = negative_case.get("expected_message_contains")
     if not expected_message:
+        failure_message = response_failure_message(response)
+        assert failure_message, (
+            f"{negative_case['name']} expected a non-empty failure message, got response: {response.text}"
+        )
         return
     expected_messages = [expected_message] if isinstance(expected_message, str) else list(expected_message)
     response_text = json.dumps(response.json, ensure_ascii=False, default=str)
     missing = [message for message in expected_messages if str(message).lower() not in response_text.lower()]
     assert not missing, f"{negative_case['name']} missing expected error text {missing}: {response_text}"
+
+
+def response_failure_message(response) -> str:
+    values = [response.retresult]
+    if isinstance(response.json, dict):
+        values.extend(response.json.get(key) for key in ("retresult", "message", "error"))
+    for value in values:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def assert_invalid_ont_post_did_not_succeed(negative_case: dict[str, Any], response) -> None:
+    if response.retstatus == "Success" and response.status_code < 400:
+        pytest.fail(
+            f"{negative_case['name']} invalid ONT POST unexpectedly succeeded: "
+            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={response.text}"
+        )
+
+
+def verify_ont_invalid_post_not_applied_cli(
+    env_config,
+    neox_config_service,
+    negative_case: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    target = neox_config_service.target()
+    credentials = neox_cli_credentials(env_config, "ONT error")
+    commands, forbidden_by_command = ont_invalid_post_cli_absence_checks(target)
+    output_by_command = run_neox_cli_commands(env_config, credentials, commands)
+    present_by_command = present_tokens_by_command(output_by_command, forbidden_by_command)
+    failures = [
+        {"command": command, "present_tokens": tokens}
+        for command, tokens in present_by_command.items()
+        if tokens
+    ]
+    observation = {
+        "case": negative_case.get("name"),
+        "commands": commands,
+        "forbidden_tokens_by_command": forbidden_by_command,
+        "present_tokens_by_command": present_by_command,
+    }
+    attach_json(f"NeoX ONT invalid POST CLI absence {negative_case.get('name')}", observation)
+    return observation, failures
+
+
+def ont_invalid_post_cli_absence_checks(target) -> tuple[list[str], dict[str, list[str]]]:
+    xpon = f"{target.ont_slot_id}-{target.ont_port_id}"
+    remote_xont = f"{xpon}-{target.ont_id}"
+    running_config_command = f"show running-config interface xpon {xpon}"
+    xont_by_sn_command = f"show interface remote xont sn {target.ont_sn}"
+    commands = [running_config_command, xont_by_sn_command]
+    return commands, {
+        running_config_command: [
+            f"interface remote xont {remote_xont}",
+            f"sn {neox_cli_sn(target.ont_sn)}",
+            f"registration-id {target.ont_password}",
+        ],
+        xont_by_sn_command: [remote_xont],
+    }
+
+
+def present_tokens_by_command(
+    output_by_command: dict[str, str],
+    forbidden_by_command: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    return {
+        command: present_tokens(output_by_command.get(command, ""), forbidden_tokens)
+        for command, forbidden_tokens in forbidden_by_command.items()
+    }
+
+
+def present_tokens(output: str, forbidden_tokens: list[str]) -> list[str]:
+    normalized_output = output.casefold()
+    return [token for token in forbidden_tokens if token.casefold() in normalized_output]
 
 
 def write_neox_ont_error_report(neox_config_service, observations: list[dict], failures: list[dict]) -> Path:
@@ -582,7 +678,12 @@ def write_neox_ont_error_report(neox_config_service, observations: list[dict], f
             "ont_port_id": target.ont_port_id,
             "ont_id": target.ont_id,
         },
-        "workflow": "Each ONT invalid payload starts from the min payload plus one invalid field/list. The test asserts HTTP status, retstatus, and stable schema-validation messages.",
+        "workflow": (
+            "Each ONT invalid payload starts from the min payload plus one invalid field/list. "
+            "The test clears the target before POST, asserts HTTP status, retstatus, and stable "
+            "schema-validation messages, then uses CLI show commands to verify the invalid POST "
+            "did not create the target ONT config."
+        ),
         "summary": {
             "total": len(observations),
             "failures": len(failures),

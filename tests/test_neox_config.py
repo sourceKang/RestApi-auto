@@ -12,6 +12,7 @@ import pytest
 from models.api import SessionRole
 from services.neox_config.service import (
     GE_FULL_ACCEPTED_PAYLOAD_FILE,
+    GE_NEGATIVE_CASES_FILE,
     ge_port_payload,
     materialize_ont_payload,
     nni_min_payload,
@@ -172,10 +173,23 @@ def test_ge_config_max_create_readwrite(
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
-@pytest.mark.skip(reason="NeoX error-readwrite cases are not complete yet.")
-def test_ge_config_error_readwrite(env_config, neox_config_service, readwrite_session):
+def test_ge_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "ge", "error"):
-        neox_config_service.verify_ge_config_invalid_payload(readwrite_session)
+        neox_config_service.verify_required_target_data()
+        target = neox_config_service.target()
+        verify_interface_config_error_cases(
+            api_client,
+            env_config,
+            neox_config_service,
+            readwrite_session,
+            cleanup_registry,
+            request,
+            feature="ge",
+            path=neox_config_service.ge_path(),
+            cases=ge_config_negative_cases(),
+            cli_commands=[f"show running-config interface ge {target.ge_slot_id}-{target.ge_port_id}"],
+            target_extra={"ge_slot_id": target.ge_slot_id, "ge_port_id": target.ge_port_id},
+        )
 
 
 @pytest.mark.mutating
@@ -203,10 +217,23 @@ def test_nni_config_clear_readwrite(api_client, env_config, neox_config_service,
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
-@pytest.mark.skip(reason="NeoX error-readwrite cases are not complete yet.")
-def test_nni_config_error_readwrite(env_config, neox_config_service, readwrite_session):
+def test_nni_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "nni", "error"):
-        neox_config_service.verify_nni_config_invalid_payload(readwrite_session)
+        neox_config_service.verify_required_target_data()
+        target = neox_config_service.target()
+        verify_interface_config_error_cases(
+            api_client,
+            env_config,
+            neox_config_service,
+            readwrite_session,
+            cleanup_registry,
+            request,
+            feature="nni",
+            path=neox_config_service.nni_path(),
+            cases=nni_config_negative_cases(),
+            cli_commands=[f"show running-config interface nni {target.nni_port_id}"],
+            target_extra={"nni_slot_id": target.nni_slot_id, "nni_port_id": target.nni_port_id},
+        )
 
 
 @pytest.mark.mutating
@@ -250,10 +277,20 @@ def test_vlan_config_clear_readwrite(api_client, env_config, neox_config_service
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
-@pytest.mark.skip(reason="NeoX error-readwrite cases are not complete yet.")
-def test_vlan_config_error_readwrite(env_config, neox_config_service, readwrite_session):
+def test_vlan_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "vlan", "error"):
-        neox_config_service.verify_vlan_config_invalid_payload(readwrite_session)
+        verify_interface_config_error_cases(
+            api_client,
+            env_config,
+            neox_config_service,
+            readwrite_session,
+            cleanup_registry,
+            request,
+            feature="vlan",
+            path=neox_config_service.vlan_path_for_vid("4094"),
+            cases=vlan_config_negative_cases(),
+            cli_commands=["show vlan 4094"],
+        )
 
 
 @pytest.mark.mutating
@@ -385,6 +422,207 @@ def post_neox_config_payload(
         return api_client.request("POST", path, session=session_id, json=payload)
     finally:
         api_client.timeout = original_timeout
+
+
+def ge_config_negative_cases() -> list[dict[str, Any]]:
+    data = json.loads(GE_NEGATIVE_CASES_FILE.read_text(encoding="utf-8"))
+    cases = []
+    for raw_case in data["cases"]:
+        payload = ge_port_payload()
+        payload["Content"][raw_case["field"]] = raw_case["value"]
+        cases.append(
+            {
+                "name": raw_case["name"],
+                "field": raw_case.get("field"),
+                "payload": payload,
+                "expected_status_code": raw_case.get("expected_status_code"),
+                "expected_retstatus": raw_case.get("expected_retstatus"),
+                "expected_message_contains": raw_case.get("expected_message_contains"),
+            }
+        )
+    return cases
+
+
+def nni_config_negative_cases() -> list[dict[str, Any]]:
+    payload = nni_min_payload()
+    payload["Content"]["portenable"] = "invalid"
+    return [
+        {
+            "name": "invalid_portenable",
+            "field": "portenable",
+            "payload": payload,
+            "expected_retstatus": "Fail",
+            "expected_message_contains": "Invalid JSON input",
+        }
+    ]
+
+
+def vlan_config_negative_cases() -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "invalid_tpid",
+            "field": "tpid",
+            "payload": {"vlanname": "REST_API_BAD_VLAN", "tpid": "invalid-tpid"},
+            "expected_retstatus": "Fail",
+            "expected_message_contains": "Invalid JSON input",
+        }
+    ]
+
+
+def verify_interface_config_error_cases(
+    api_client,
+    env_config,
+    neox_config_service,
+    readwrite_session: str,
+    cleanup_registry,
+    request,
+    feature: str,
+    path: str,
+    cases: list[dict[str, Any]],
+    cli_commands: list[str],
+    target_extra: dict[str, Any] | None = None,
+) -> None:
+    cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+    observations = []
+    failures = []
+    for negative_case in cases:
+        payload = negative_case["payload"]
+        api_client.request("DELETE", path, session=readwrite_session)
+        baseline_by_command = {}
+        if not skip_neox_cli_verify(request):
+            baseline_by_command = read_neox_cli_outputs(env_config, feature, cli_commands)
+        response = api_client.request("POST", path, session=readwrite_session, json=payload)
+        assert_invalid_config_post_did_not_succeed(feature, negative_case, response)
+        cli_observation = {}
+        cli_failures = []
+        if not skip_neox_cli_verify(request):
+            cli_observation, cli_failures = verify_invalid_post_kept_cli_unchanged(
+                env_config,
+                feature,
+                negative_case,
+                cli_commands,
+                baseline_by_command,
+            )
+        observation = {
+            "case": negative_case.get("name"),
+            "field": negative_case.get("field"),
+            "request": redact(payload),
+            "expected": {
+                "status_code": negative_case.get("expected_status_code"),
+                "retstatus": negative_case.get("expected_retstatus"),
+                "message_contains": negative_case.get("expected_message_contains"),
+            },
+            "response": {
+                "status_code": response.status_code,
+                "retstatus": response.retstatus,
+                "retresult": response.retresult,
+                "body": redact(response.json),
+            },
+            "cli": cli_observation,
+        }
+        observations.append(observation)
+        try:
+            assert_neox_config_error_response(negative_case, response)
+            assert not cli_failures, (
+                f"{feature} {negative_case['name']} invalid POST changed CLI output: {cli_failures}"
+            )
+        except AssertionError as error:
+            failures.append({"case": negative_case.get("name"), "error": str(error), "observation": observation})
+
+    report_path = write_neox_interface_error_report(neox_config_service, feature, path, observations, failures, target_extra)
+    attach_json(
+        f"NeoX {feature.upper()} error matrix",
+        {"report": str(report_path), "failures": failures, "observations": observations},
+    )
+    assert not failures, f"{feature.upper()} config error matrix had {len(failures)} mismatches. Report: {report_path}"
+
+
+def read_neox_cli_outputs(env_config, feature: str, commands: list[str]) -> dict[str, str]:
+    credentials = neox_cli_credentials(env_config, f"{feature.upper()} error")
+    return run_neox_cli_commands(env_config, credentials, commands)
+
+
+def verify_invalid_post_kept_cli_unchanged(
+    env_config,
+    feature: str,
+    negative_case: dict[str, Any],
+    commands: list[str],
+    baseline_by_command: dict[str, str],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    output_by_command = read_neox_cli_outputs(env_config, feature, commands)
+    ignored_prefixes = clear_ignored_line_prefixes(feature)
+    diffs = []
+    cli_by_command = {}
+    for command in commands:
+        baseline = normalize_cli_output(baseline_by_command.get(command, ""), ignored_prefixes)
+        after = normalize_cli_output(output_by_command.get(command, ""), ignored_prefixes)
+        cli_by_command[command] = {
+            "baseline_lines": baseline.splitlines(),
+            "after_invalid_post_lines": after.splitlines(),
+            "unchanged": baseline == after,
+        }
+        if baseline != after:
+            diffs.append(
+                {
+                    "command": command,
+                    "baseline_lines": baseline.splitlines(),
+                    "after_invalid_post_lines": after.splitlines(),
+                }
+            )
+    observation = {
+        "case": negative_case.get("name"),
+        "commands": commands,
+        "cli_by_command": cli_by_command,
+    }
+    attach_json(f"NeoX {feature.upper()} invalid POST CLI unchanged {negative_case.get('name')}", observation)
+    return observation, diffs
+
+
+def assert_invalid_config_post_did_not_succeed(feature: str, negative_case: dict[str, Any], response) -> None:
+    if response.retstatus == "Success" and response.status_code < 400:
+        pytest.fail(
+            f"{feature} {negative_case['name']} invalid POST unexpectedly succeeded: "
+            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={response.text}"
+        )
+
+
+def write_neox_interface_error_report(
+    neox_config_service,
+    feature: str,
+    path: str,
+    observations: list[dict],
+    failures: list[dict],
+    target_extra: dict[str, Any] | None = None,
+) -> Path:
+    reports_dir = Path(__file__).resolve().parents[1] / "reports" / "device-verification"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = reports_dir / f"neox_config_{feature}_error_matrix_{timestamp}.json"
+    target = neox_config_service.target()
+    target_data = {
+        "node": neox_config_service.env_config.dut.node_key,
+        "device_ip": neox_config_service.env_config.dut.device_ip,
+        "device_name": target.device_name,
+    }
+    if target_extra:
+        target_data.update(target_extra)
+    data = {
+        "target": target_data,
+        "rest_api": {"path": path},
+        "workflow": (
+            "Each invalid payload clears the target config before POST, asserts HTTP status, retstatus, "
+            "and failure message, then compares CLI show output before and after the invalid POST to "
+            "verify no config was applied."
+        ),
+        "summary": {
+            "total": len(observations),
+            "failures": len(failures),
+        },
+        "failures": failures,
+        "observations": observations,
+    }
+    report_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return report_path
 
 
 def verify_vlan_config_create_cli_verified(

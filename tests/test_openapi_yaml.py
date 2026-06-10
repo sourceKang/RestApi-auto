@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
+import ssl
+import urllib.request
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -19,6 +23,7 @@ from cases.openapi_contract import (
 )
 from config_loader.settings import DEFAULT_EMS_FILE
 from config_loader.simple_yaml import load_simple_yaml
+from services.neox_config.service import NEOX_SWAGGER_DATA_FILE
 from utils.allure_helpers import attach_json, attach_text, allure_step
 from utils.case_metadata import attach_case_id
 
@@ -255,3 +260,57 @@ def _count_document_nodes(value: object, summary: dict[str, int]) -> None:
 
 def test_openapi_version_dir_name_uses_ems_release_folder():
     assert openapi_version_dir_name("03.00.11 (AAVV.221) b2") == "03.00.11 (AAVV.221)"
+
+
+@pytest.mark.openapi
+def test_neox_swagger_nni_summary_matches_openapi_baseline():
+    reference = load_openapi_document(NEOX_SWAGGER_DATA_FILE)
+    baseline_schema = openapi_content_schema(load_baseline_yaml_document(), "NniPortInfo")
+    summary = reference["schemas"]["NniPortInfoContent"]
+
+    assert summary["field_count"] == len(baseline_schema)
+    assert set(summary["fields"]).issubset(baseline_schema)
+
+
+@pytest.mark.openapi
+@pytest.mark.live_swagger
+def test_live_neox_swagger_nni_schema_matches_baseline(request):
+    if not request.config.getoption("--run-live-swagger-check"):
+        pytest.skip("Live Swagger checks require --run-live-swagger-check.")
+
+    url = request.config.getoption("--neox-swagger-api-docs-url")
+    live_schema = openapi_content_schema(fetch_openapi_document(url), "NniPortInfo")
+    baseline_schema = openapi_content_schema(load_baseline_yaml_document(), "NniPortInfo")
+
+    assert live_schema == baseline_schema
+
+
+def fetch_openapi_document(url: str) -> dict[str, Any]:
+    context = ssl._create_unverified_context()
+    with urllib.request.urlopen(url, timeout=30, context=context) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def openapi_content_schema(document: dict[str, Any], schema_name: str) -> dict[str, list[str]]:
+    schemas = document["components"]["schemas"]
+    schema = schemas[schema_name]
+    content = schema["properties"]["Content"]
+    properties = resolved_properties(schemas, content)
+    return {
+        name: resolved_array_item_fields(schemas, field_schema)
+        for name, field_schema in sorted(properties.items())
+    }
+
+
+def resolved_properties(schemas: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
+    ref = schema.get("$ref")
+    if ref:
+        return schemas[ref.rsplit("/", 1)[-1]].get("properties", {})
+    return schema.get("properties", {})
+
+
+def resolved_array_item_fields(schemas: dict[str, Any], schema: dict[str, Any]) -> list[str]:
+    if schema.get("type") != "array":
+        return []
+    item_schema = schema.get("items", {})
+    return sorted(resolved_properties(schemas, item_schema))

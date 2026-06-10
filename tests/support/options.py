@@ -45,6 +45,21 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run the slow NeoX ONT error matrix EMS1-7133. Requires --run-neox-config.",
     )
     parser.addoption(
+        "--run-live-swagger-check",
+        action="store_true",
+        default=False,
+        help="Run read-only live Swagger /v3/api-docs comparison checks.",
+    )
+    parser.addoption(
+        "--neox-swagger-api-docs-url",
+        action="store",
+        default=os.environ.get(
+            "NEOX_SWAGGER_API_DOCS_URL",
+            "https://192.168.128.100:9116/netatlasemsapi/v3/api-docs",
+        ),
+        help="Live NeoX Swagger /v3/api-docs URL used with --run-live-swagger-check.",
+    )
+    parser.addoption(
         "--neox-config-delay-seconds",
         action="store",
         type=float,

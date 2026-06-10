@@ -65,7 +65,7 @@ schemas:
     note: "Swagger exposes many optional GE fields; list above keeps the fields most relevant to current smoke payloads plus common config knobs."
 
   NniPortInfoContent:
-    field_count: 73
+    field_count: 68
     fields:
       - "acl_profile_list"
       - "algorithm"

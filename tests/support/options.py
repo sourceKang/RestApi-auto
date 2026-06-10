@@ -39,6 +39,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run exploratory NeoX probe tests outside the official 80-case plan.",
     )
     parser.addoption(
+        "--run-neox-ont-error",
+        action="store_true",
+        default=False,
+        help="Run the slow NeoX ONT error matrix EMS1-7133. Requires --run-neox-config.",
+    )
+    parser.addoption(
         "--neox-config-delay-seconds",
         action="store",
         type=float,

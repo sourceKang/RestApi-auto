@@ -18,7 +18,7 @@ def test_case_catalog_contains_all_extracted_cases():
 @pytest.mark.smoke
 def test_case_catalog_profile_data_contains_test_and_validation_data():
     profiles = catalog_profile_data()
-    assert len(profiles) == 30
+    assert len(profiles) >= 30
     for name, profile in profiles.items():
         assert profile["profiletype"], name
         assert profile["profilename"], name

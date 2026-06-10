@@ -94,7 +94,7 @@ class ProvisionService:
         with allure_step("POST ONT service by SN using recorded validation data"):
             create = self.post_ont_service_with_retry(session_id, create_payload)
             assert_api_success(create)
-            self.wait_for_ont_service_state(session_id, {"Success"}, timeout=180, interval=15, initial_delay=30)
+            self.wait_for_ont_service_state(session_id, {"Success"}, timeout=300, interval=10, initial_delay=30)
 
         with allure_step("GET ONT service list and verify created service data"):
             get_list = self.api_client.request(

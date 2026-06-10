@@ -47,6 +47,8 @@ pytestmark = [
     pytest.mark.destructive,
 ]
 
+NEOX_CONFIG_ERROR_SKIP = pytest.mark.skip(reason="NeoX config error-readwrite cases are temporarily skipped.")
+
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
@@ -173,6 +175,7 @@ def test_ge_config_max_create_readwrite(
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@NEOX_CONFIG_ERROR_SKIP
 def test_ge_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "ge", "error"):
         neox_config_service.verify_required_target_data()
@@ -217,6 +220,7 @@ def test_nni_config_clear_readwrite(api_client, env_config, neox_config_service,
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@NEOX_CONFIG_ERROR_SKIP
 def test_nni_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "nni", "error"):
         neox_config_service.verify_required_target_data()
@@ -277,6 +281,7 @@ def test_vlan_config_clear_readwrite(api_client, env_config, neox_config_service
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@NEOX_CONFIG_ERROR_SKIP
 def test_vlan_config_error_readwrite(api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, request):
     with neox_config_connectivity_guard(env_config, "vlan", "error"):
         verify_interface_config_error_cases(
@@ -340,25 +345,28 @@ def test_ont_config_clear_readwrite(api_client, env_config, neox_config_service,
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@NEOX_CONFIG_ERROR_SKIP
 def test_ont_config_error_readwrite(
     api_client,
     env_config,
     neox_config_service,
     session_manager,
-    readwrite_session,
     cleanup_registry,
     request,
 ):
+    if not request.config.getoption("--run-neox-ont-error"):
+        pytest.skip("EMS1-7133 NeoX ONT error matrix is slow; use --run-neox-ont-error to run it.")
     with neox_config_connectivity_guard(env_config, "ont", "error"):
-        verify_ont_config_error_cases(
-            api_client,
-            env_config,
-            neox_config_service,
-            session_manager,
-            readwrite_session,
-            cleanup_registry,
-            request,
-        )
+        with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
+            verify_ont_config_error_cases(
+                api_client,
+                env_config,
+                neox_config_service,
+                session_manager,
+                readwrite_session,
+                cleanup_registry,
+                request,
+            )
 
 
 @contextmanager

@@ -12,6 +12,7 @@ DEFAULT_OPENAPI_VERSION_DIR = "03.00.11 (AAVV.221)"
 LEGACY_OPENAPI_VERSION_DIR = "V3011"
 OPENAPI_YAML_ENV = "EMS_OPENAPI_YAML_FILE"
 BASELINE_CONTRACT_FILE = Path(__file__).with_name("openapi_contract_baseline.json")
+BASELINE_YAML_FILE = Path(__file__).with_name("openapi_yaml_baseline.json")
 OPENAPI_FILE_PATTERN = "NetAtlasEMS_OpenAPI_*.yaml"
 HTTP_METHODS = ("delete", "get", "head", "options", "patch", "post", "put", "trace")
 SCHEMA_KEYS = (
@@ -87,6 +88,18 @@ def load_baseline_contract(path: Path = BASELINE_CONTRACT_FILE) -> dict[str, Any
     return baseline
 
 
+def load_baseline_yaml_document(path: Path = BASELINE_YAML_FILE) -> dict[str, Any]:
+    baseline = json.loads(path.read_text(encoding="utf-8"))
+    document = baseline.get("document")
+    if not isinstance(document, dict):
+        raise OpenApiContractError(f"{path} must contain document: mapping.")
+    return document
+
+
+def build_openapi_yaml_document(document: dict[str, Any]) -> dict[str, Any]:
+    return _canonical_value(document)
+
+
 def build_openapi_contract(document: dict[str, Any]) -> dict[str, Any]:
     components = document.get("components", {})
     schemas = components.get("schemas", {}) if isinstance(components, dict) else {}
@@ -126,6 +139,11 @@ def format_contract_differences(differences: list[str], *, limit: int = 80) -> s
     if remaining > 0:
         message += f"\n- ... {remaining} more differences"
     return message
+
+
+def openapi_file_date(path: Path) -> int:
+    match = re.search(r"(\d{8})(?=\.ya?ml$)", path.name, re.IGNORECASE)
+    return int(match.group(1)) if match else 0
 
 
 def _paths_contract(paths: Any) -> dict[str, Any]:
@@ -236,6 +254,14 @@ def _schema_contract(schema: Any) -> Any:
     return contract
 
 
+def _canonical_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _canonical_value(value[key]) for key in sorted(value, key=str)}
+    if isinstance(value, list):
+        return [_canonical_value(item) for item in value]
+    return value
+
+
 def _diff_values(expected: Any, actual: Any, path: str, differences: list[str]) -> None:
     if isinstance(expected, dict) and isinstance(actual, dict):
         expected_keys = set(expected)
@@ -286,13 +312,11 @@ def _openapi_version_directory(ems_version: Any | None) -> Path:
 
 
 def _openapi_file_sort_key(path: Path) -> tuple[int, float, str]:
-    match = re.search(r"(\d{8})(?=\.ya?ml$)", path.name, re.IGNORECASE)
-    file_date = int(match.group(1)) if match else 0
     try:
         modified = path.stat().st_mtime
     except OSError:
         modified = 0.0
-    return (file_date, modified, path.name)
+    return (openapi_file_date(path), modified, path.name)
 
 
 def _matching_version_directories(ems_version: Any | None) -> list[Path]:

@@ -20,6 +20,19 @@ def attach_json(name: str, value: Any) -> None:
         return
 
 
+def attach_text(name: str, value: str) -> None:
+    try:
+        import allure
+
+        allure.attach(
+            value,
+            name=name,
+            attachment_type=allure.attachment_type.TEXT,
+        )
+    except Exception:
+        return
+
+
 @contextmanager
 def allure_step(title: str):
     try:

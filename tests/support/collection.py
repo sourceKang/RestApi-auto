@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+import importlib.util
+
 import pytest
 
 from cases.neox_case_ids import neox_case_for_item
@@ -36,6 +38,8 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         for item in items:
             if "neox_config" in item.keywords:
                 item.add_marker(skip_neox_config)
+    else:
+        _skip_neox_config_without_cli_dependency(config, items)
     if not config.getoption("--run-neox-probe"):
         deselected = [item for item in items if "neox_probe" in item.keywords]
         if deselected:
@@ -61,6 +65,23 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         _register_parametrized_case(item)
         _register_neox_case(item)
         register_permission_role(item.nodeid, role)
+
+
+def _skip_neox_config_without_cli_dependency(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if config.getoption("--skip-neox-cli-verify"):
+        return
+    if importlib.util.find_spec("paramiko") is not None:
+        return
+
+    skip_missing_paramiko = pytest.mark.skip(
+        reason=(
+            "NeoX config CLI verification requires paramiko; run with the project .venv, "
+            "install requirements.txt, or use --skip-neox-cli-verify for REST-only execution."
+        )
+    )
+    for item in items:
+        if "neox_config" in item.keywords:
+            item.add_marker(skip_missing_paramiko)
 
 
 def _register_parametrized_case(item: pytest.Item) -> None:

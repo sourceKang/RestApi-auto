@@ -32,10 +32,24 @@ def assert_ping_reachable(
     context: dict[str, Any] | None = None,
     count: int = 2,
     timeout_ms: int = 2000,
+    attempts: int = 3,
+    retry_interval_seconds: float = 1.0,
 ) -> PingResult:
-    result = ping_host(target, checkpoint, count=count, timeout_ms=timeout_ms)
+    results: list[PingResult] = []
+    total_attempts = max(1, attempts)
+    for attempt in range(total_attempts):
+        result = ping_host(target, checkpoint, count=count, timeout_ms=timeout_ms)
+        results.append(result)
+        if result.ok:
+            break
+        if attempt < total_attempts - 1 and retry_interval_seconds > 0:
+            time.sleep(retry_interval_seconds)
+
     attachment = ping_attachment(result)
     attachment["ok"] = result.ok
+    attachment["attempt_count"] = len(results)
+    if len(results) > 1:
+        attachment["attempts"] = [ping_attachment(item) for item in results]
     if context:
         attachment["context"] = context
     attach_json(f"Node connectivity ping {checkpoint}", attachment)

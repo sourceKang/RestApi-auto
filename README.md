@@ -117,5 +117,17 @@ Generated artifacts:
 - `allure-results_<timestamp>` only when `--archive-allure` or `EMS_ARCHIVE_ALLURE=1` is used
 - `allure-report_<timestamp>` only when `--generate-allure-html` or `EMS_GENERATE_ALLURE_HTML=1` is used
 
+`allure-pytest` from `requirements.txt` produces the raw Allure results.
+Generating the HTML report also requires Allure Commandline and Java on the
+machine running pytest. Verify them before using `--generate-allure-html`:
+
+```powershell
+where allure
+java -version
+```
+
+On Windows, install Allure Commandline with Chocolatey, Scoop, or npm. If
+PowerShell blocks `npm.ps1`, use `npm.cmd install -g allure-commandline`.
+
 The txt report follows the legacy report format with summary, EMS/DUT metadata,
 card firmware versions and one result line per case ID.

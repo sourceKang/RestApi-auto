@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from tests.support.collection import _register_neox_case, _register_parametrized_case
+from tests.support.collection import (
+    _register_neox_case,
+    _register_parametrized_case,
+    _skip_neox_config_without_cli_dependency,
+)
 from utils import reporting
 
 
@@ -76,3 +80,28 @@ def test_collection_registers_parametrized_neox_profile_case_for_txt_report(monk
             name="test_neox_profile_min_create_readwrite[RateLimitProfile]",
         )
     ]
+
+
+def test_collection_skips_neox_config_when_cli_dependency_is_missing(monkeypatch):
+    monkeypatch.setattr("tests.support.collection.importlib.util.find_spec", lambda name: None)
+    config = SimpleNamespace(getoption=lambda name: False)
+    item = SimpleNamespace(keywords={"neox_config"}, markers=[], add_marker=lambda marker: item.markers.append(marker))
+
+    _skip_neox_config_without_cli_dependency(config, [item])
+
+    assert len(item.markers) == 1
+    assert "paramiko" in item.markers[0].mark.kwargs["reason"]
+
+
+def test_collection_allows_rest_only_neox_config_without_cli_dependency(monkeypatch):
+    monkeypatch.setattr("tests.support.collection.importlib.util.find_spec", lambda name: None)
+
+    def getoption(name):
+        return name == "--skip-neox-cli-verify"
+
+    config = SimpleNamespace(getoption=getoption)
+    item = SimpleNamespace(keywords={"neox_config"}, markers=[], add_marker=lambda marker: item.markers.append(marker))
+
+    _skip_neox_config_without_cli_dependency(config, [item])
+
+    assert item.markers == []

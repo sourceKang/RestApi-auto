@@ -45,8 +45,8 @@ ge_port:
       fields: ["pvid", "vlan_list", "ratelimitname", "shapingname", "weightname", "profile_aclprofilename", "port_aclprofile_list", "egress_profile_list", "igmp_grouppriprofile_list", "acl_maclist", "acl_ouilist", "fdb_list"]
       note: "Requires existing VLAN/profile/MAC/IP data or a setup/cleanup flow before readwrite testing."
     schema_or_negative_only:
-      fields: ["bias_alarm_high", "bias_alarm_low", "bias_warn_high", "bias_warn_low", "rxpower_alarm_high", "rxpower_alarm_low", "rxpower_warn_high", "rxpower_warn_low", "temperature_alarm_high", "temperature_alarm_low", "temperature_warn_high", "temperature_warn_low", "txpower_alarm_high", "txpower_alarm_low", "txpower_warn_high", "txpower_warn_low", "voltage_alarm_high", "voltage_alarm_low", "voltage_warn_high", "voltage_warn_low", "customtype", "tel"]
-      note: "Swagger exposes placeholder strings; UG Port > GE does not provide enough confirmed API-safe values for smoke tests."
+      fields: ["bias_alarm_high", "bias_alarm_low", "rxpower_alarm_high", "rxpower_alarm_low", "temperature_alarm_high", "temperature_alarm_low", "txpower_alarm_high", "txpower_alarm_low", "voltage_alarm_high", "voltage_alarm_low", "customtype", "tel"]
+      note: "Swagger exposes placeholder strings; UG Port > GE does not provide enough confirmed API-safe values for smoke tests. Warning-threshold fields were removed from current Swagger/YAML and must not be sent by probes."
     advanced_risk:
       fields: ["dot1xcontrol", "dot1xreauthpeiod", "dotlxactive", "dotlxauthone", "dotlxcircuitinfo", "dotlxserverindex", "dscp", "lldp_admin", "lldp_management", "lldp_notification", "lldp_org_dot1", "lldp_org_dot3_link", "lldp_org_dot3_macphy", "lldp_org_dot3_maxframe", "lldp_portdesc", "lldp_systemcap", "lldp_systemdsc", "lldp_systemname", "loopguard", "loopguard_policy", "loopguard_recovertime", "macfilter", "macfiltermode", "ouifilter", "ouifiltermode", "outertpid", "packfiltertype", "pwsaving", "pwsaving_awake", "pwsaving_sleep", "snooping_dhcp", "snooping_dhcpv6", "snooping_ipmacbinding", "snooping_maxlease", "snooping_vlanlist", "spoofing_action", "staticipfilter_ipmacbinding", "staticipfilter_list", "vlantrans_list", "vlantls_list", "vlantrunk_ether_list", "vlantrunk_subnet_list", "vlantrunk_untag_list", "vlantrunk_vlan_list"]
       note: "Can affect authentication, VLAN behavior, DHCP, loop protection, power saving, filtering, or subscriber traffic. Keep behind explicit opt-in tests."
@@ -129,9 +129,9 @@ profiles:
         range: ["2.80", "3.59"]
   ONTSecurityProfile:
     source_lines: "7883-7897"
-    live_note: "NODE3 NeoX profile endpoint accepted fdb=1023, but spoofingdisable returned Fail for enable/disable/1/0 on 2026-05-19. Keep spoofingdisable out of success max payload until the live mapping is confirmed."
+    live_note: "OpenAPI 20260614 uses spoofingable with enable/disable values for Anti Mac Spoofing."
     fields:
-      spoofingdisable:
+      spoofingable:
         manual_name: "Anti Mac Spoofing"
         allowed: ["enable", "disable"]
       fdb:
@@ -191,7 +191,8 @@ profiles:
       xlanuniport1:
         range: ["1", "8"]
       xlanactive1:
-        allowed: ["no", ""]
+        allowed: ["disable", "enable"]
+        note: "NODE3 b8 verified REST values for EMS1-7172 official max and ONTUNIProfile smoke payloads."
       xlanfdb1:
         range: ["1", "255"]
       xlandspir1:
@@ -213,8 +214,8 @@ profiles:
       xlan_veip_storm_control:
         range: ["32", "10000000"]
       active:
-        allowed: ["no", ""]
-        note: "NeoX REST value is prepended to the CLI inactive command for LAN/XLAN/VEIP/POTS/VIDEO active fields. 'no' maps to active state; empty string maps to inactive state."
+        allowed: ["disable", "enable"]
+        note: "NODE3 b8 REST accepts disable/enable for LAN/XLAN/VEIP/POTS/VIDEO active fields; EMS1-7172 official max uses enable."
   ONTTemplateProfile:
     source_lines: "6854-7006"
     fields:
@@ -337,3 +338,4 @@ profiles:
         range: ["1", "32"]
       destmask:
         range: ["1", "32"]
+

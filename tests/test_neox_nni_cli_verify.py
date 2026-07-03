@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from models.api import SessionRole
-from services.neox_config.service import NNI_MAX_PAYLOAD_FILE, NNI_MIN_PAYLOAD_FILE
+from services.neox_config.service import nni_payload_config
 from tests.support.neox_cli_verification import (
     missing_tokens,
     neox_cli_credentials,
@@ -24,10 +21,6 @@ pytestmark = [
 ]
 
 
-MIN_ACCEPTED_PAYLOAD_FILE = NNI_MIN_PAYLOAD_FILE
-FULL_ACCEPTED_PAYLOAD_FILE = NNI_MAX_PAYLOAD_FILE
-
-
 def test_nni_config_min_create_readwrite(
     api_client,
     env_config,
@@ -40,7 +33,6 @@ def test_nni_config_min_create_readwrite(
         env_config,
         neox_config_service,
         session_manager,
-        MIN_ACCEPTED_PAYLOAD_FILE,
         "min",
         request,
     )
@@ -58,7 +50,6 @@ def test_nni_config_max_create_readwrite(
         env_config,
         neox_config_service,
         session_manager,
-        FULL_ACCEPTED_PAYLOAD_FILE,
         "max",
         request,
     )
@@ -69,14 +60,13 @@ def verify_nni_config_create_readwrite(
     env_config,
     neox_config_service,
     session_manager,
-    payload_file: Path,
     boundary: str,
     request,
 ) -> None:
     neox_config_service.verify_required_target_data()
 
     with session_manager.role_session(SessionRole.READWRITE) as readwrite_session:
-        config = json.loads(payload_file.read_text(encoding="utf-8"))
+        config = nni_payload_config(boundary)
         payload = config["payload"]
         expected_lines = config["running_config_visible_lines"]
         response = api_client.request("POST", neox_config_service.nni_path(), session=readwrite_session, json=payload)

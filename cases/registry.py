@@ -53,6 +53,7 @@ DIRECT_CASES: tuple[TestCaseRecord, ...] = (
     TestCaseRecord("EMS1-7033", "test_port_api_with_invalid_parameters_should_return_error", "inventory", markers=("inventory",)),
     TestCaseRecord("EMS1-7034", "test_ont_api_with_invalid_parameters_should_return_error", "ont", markers=("ont",)),
     TestCaseRecord("EMS1-7116", "YAML File", "openapi", markers=("openapi", "smoke")),
+    TestCaseRecord("EMS1-7210", "Live Swagger OpenAPI document availability", "openapi", markers=("openapi", "live_swagger")),
 )
 
 SUMMARY_CASES: tuple[TestCaseRecord, ...] = (

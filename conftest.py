@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from tests.support.collection import RAD_AUTH_MATRIX_CASES, pytest_collection_modifyitems
 from tests.support.fixtures import (
@@ -29,7 +29,7 @@ from tests.support.fixtures import (
     user_session_service,
 )
 from tests.support.options import pytest_addoption
-from tests.support.reporting_hooks import pytest_configure, pytest_runtest_logreport, pytest_sessionfinish
+from tests.support.reporting_hooks import pytest_configure, pytest_runtest_logreport, pytest_sessionfinish, pytest_sessionstart
 
 
 __all__ = [
@@ -52,6 +52,7 @@ __all__ = [
     "pytest_configure",
     "pytest_runtest_logreport",
     "pytest_sessionfinish",
+    "pytest_sessionstart",
     "rad_env_config",
     "rad_noaccess_session",
     "rad_readonly_session",

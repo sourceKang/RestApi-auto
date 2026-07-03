@@ -11,6 +11,9 @@ class CleanupRegistry:
     def add(self, callback: Callable[[], None]) -> None:
         self._callbacks.append(callback)
 
+    def add_final(self, callback: Callable[[], None]) -> None:
+        self._callbacks.insert(0, callback)
+
     def run(self) -> None:
         while self._callbacks:
             callback = self._callbacks.pop()

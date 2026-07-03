@@ -88,6 +88,14 @@ When `--auth-matrix` is enabled, the txt report also includes:
 
 ## Useful Runs
 
+Run the per-version OpenAPI YAML versus live Swagger key guard before device-affecting tests:
+
+```powershell
+.\.venv\Scripts\python.exe tools\run_openapi_version_guard.py
+```
+
+Details: `docs/openapi_version_guard.md`
+
 ```powershell
 pytest -m session
 pytest -m inventory
@@ -95,6 +103,7 @@ pytest -m "provision and mutating"
 pytest -m "not destructive"
 pytest -m remoteconsole --run-remote
 pytest -m alarm_delete --run-alarm-delete
+pytest --ems-node NODE3 --run-full-testcases
 ```
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
@@ -113,6 +122,7 @@ reports\<EMS version>\
 Generated artifacts:
 
 - `Web_Ems_Rest_Api_<EMS version>_<chassis>_<controller>_report_<timestamp>.txt`
+- `Web_Ems_Rest_Api_<EMS version>_<chassis>_<controller>_report_<timestamp>.html`
 - `.allure-results-current`
 - `allure-results_<timestamp>` only when `--archive-allure` or `EMS_ARCHIVE_ALLURE=1` is used
 - `allure-report_<timestamp>` only when `--generate-allure-html` or `EMS_GENERATE_ALLURE_HTML=1` is used
@@ -131,3 +141,6 @@ PowerShell blocks `npm.ps1`, use `npm.cmd install -g allure-commandline`.
 
 The txt report follows the legacy report format with summary, EMS/DUT metadata,
 card firmware versions and one result line per case ID.
+The HTML summary is generated on every pytest run and gives a browser-friendly
+overview of totals, failed cases, environment metadata and links to related
+report artifacts.

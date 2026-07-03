@@ -1,38 +1,70 @@
 {
-  "source": {
-    "generated_from": "NODE3 NNI REST API and SSH CLI verification",
-    "observed": "2026-05-13",
-    "target_scope": "NODE3 NNI port 12",
-    "note": "Enable-oriented NNI payload. REST DELETE is intentionally not used before POST because NODE3 may return 'Connection fail on command: exit' after clear flows."
-  },
-  "payload": {
-    "Content": {
-      "portenable": "enable",
-      "auto_nego": "disable",
-      "flow": "enable",
-      "portspeed": "auto",
-      "mode": "uplink",
-      "fec": "disable",
-      "vlan_trunk": "enable",
-      "vlan_qinq_tpid": "enable",
-      "vlan_default_tpid": "enable",
-      "mtu": 1500,
-      "pvid": 1314
-    }
-  },
-  "running_config_visible_lines": [
-    "enable",
-    "auto-negotiation disable",
-    "flow-control enable",
-    "speed auto",
-    "mode uplink",
-    "vlan-trunk enable",
-    "fec disable",
-    "vlan-qinq-tpid enable",
-    "vlan-default-tpid enable",
-    "mtu 1500"
-  ],
-  "not_visible_in_running_config": [
-    "pvid"
-  ]
+    "source":  {
+                   "purpose":  "NNI official min/max create payloads for NODE3 readwrite verification.",
+                   "min":  {
+                               "derived_from":  [
+                                                    "configs/neox_config/reference/neox_swagger_data.yaml",
+                                                    "configs/neox_config/reference/neox_ug_parameter_reference.yaml"
+                                                ],
+                               "purpose":  "NNI minimum create payload for NODE3 readwrite verification."
+                           },
+                   "max":  {
+                               "generated_from":  "NODE3 NNI REST API and SSH CLI verification",
+                               "observed":  "2026-05-13",
+                               "target_scope":  "NODE3 NNI port 12",
+                               "note":  "Enable-oriented NNI payload. REST DELETE is intentionally not used before POST because NODE3 may return \u0027Connection fail on command: exit\u0027 after clear flows."
+                           }
+               },
+    "cases":  {
+                  "min":  {
+                              "payload":  {
+                                              "Content":  {
+                                                              "portenable":  "enable",
+                                                              "auto_nego":  "disable",
+                                                              "flow":  "disable",
+                                                              "portspeed":  "auto",
+                                                              "mode":  "uplink"
+                                                          }
+                                          },
+                              "running_config_visible_lines":  [
+                                                                   "enable",
+                                                                   "auto-negotiation disable",
+                                                                   "flow-control disable",
+                                                                   "speed auto",
+                                                                   "mode uplink"
+                                                               ]
+                          },
+                  "max":  {
+                              "payload":  {
+                                              "Content":  {
+                                                              "portenable":  "enable",
+                                                              "auto_nego":  "disable",
+                                                              "flow":  "enable",
+                                                              "portspeed":  "auto",
+                                                              "mode":  "uplink",
+                                                              "fec":  "disable",
+                                                              "vlan_trunk":  "enable",
+                                                              "vlan_qinq_tpid":  "enable",
+                                                              "vlan_default_tpid":  "enable",
+                                                              "mtu":  1500,
+                                                              "pvid":  1314
+                                                          }
+                                          },
+                              "running_config_visible_lines":  [
+                                                                   "enable",
+                                                                   "auto-negotiation disable",
+                                                                   "flow-control enable",
+                                                                   "speed auto",
+                                                                   "mode uplink",
+                                                                   "vlan-trunk enable",
+                                                                   "fec disable",
+                                                                   "vlan-qinq-tpid enable",
+                                                                   "vlan-default-tpid enable",
+                                                                   "mtu 1500"
+                                                               ],
+                              "not_visible_in_running_config":  [
+                                                                    "pvid"
+                                                                ]
+                          }
+              }
 }

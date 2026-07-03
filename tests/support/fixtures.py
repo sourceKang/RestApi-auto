@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import time
 
@@ -8,6 +8,7 @@ from tests.support.collection import RAD_AUTH_MATRIX_CASES
 from clients.runtime import build_run_context
 from clients.session import SessionManager
 from tests.support.service_bundle import ServiceBundle, build_service_bundle
+from tests.support.options import neox_parallel_worker_auth_profile
 from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
@@ -31,6 +32,9 @@ def allure_node_context(env_config, request):
         allure.dynamic.label("dut_ip", env_config.dut.device_ip)
         allure.dynamic.label("dut_chassis", chassis)
         allure.dynamic.label("auth_profile", env_config.auth_profile)
+        for key, value in request.node.user_properties:
+            if key == "neox_parallel_group" and value:
+                allure.dynamic.label("neox_parallel_group", str(value))
         allure.dynamic.label("rw_account", env_config.readwrite_account.account_name)
         allure.dynamic.label("ro_account", env_config.readonly_account.account_name)
         allure.dynamic.label("na_account", env_config.noaccess_account.account_name)
@@ -81,7 +85,7 @@ def neox_config_case_delay(env_config, request):
 
 @pytest.fixture(scope="session")
 def run_context(request):
-    return build_run_context(request.config)
+    return build_run_context(request.config, auth_profile_override=neox_parallel_worker_auth_profile(request.config))
 
 
 @pytest.fixture(scope="session")

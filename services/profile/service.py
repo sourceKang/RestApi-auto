@@ -5,7 +5,6 @@ import copy
 import pytest
 
 from cases.case_catalog import (
-    first_profile_definition_for,
     catalog_profile_data,
     profile_definition_by_name,
     profile_cases_for_operation,
@@ -17,6 +16,10 @@ from utils.case_metadata import attach_case_metadata
 from utils.diagnostics import format_response_summary
 from utils.json_match import content_as_dict
 
+
+ISOLATED_PROFILE_NAMES = {
+    ("GETemplateProfile", "#RestApi_getemp_ge1"): "#RestApi_getemp_ge1_case",
+}
 
 PROFILE_TYPE_CREATE_RANK = {
     "IGMPGroupPrivilegeProfile": 10,
@@ -72,7 +75,7 @@ class ProfileService:
 
     def verify_post_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definitions = definitions_create_order(profile_definitions_for(case))
+        definitions = definitions_create_order(isolated_profile_definitions(profile_definitions_for(case)))
         assert definitions, f"No profile data converted for {case['name']}"
 
         for definition in definitions_delete_order(definitions):
@@ -86,7 +89,7 @@ class ProfileService:
 
     def verify_get_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definition = first_profile_definition_for(case)
+        definition = first_isolated_profile_definition_for(case)
         self.ensure_profile_exists_or_skip(session_id, workspace, definition)
 
         response = self.get_profile(session_id, definition)
@@ -105,7 +108,7 @@ class ProfileService:
 
     def verify_get_list_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definition = first_profile_definition_for(case)
+        definition = first_isolated_profile_definition_for(case)
         self.ensure_profile_exists_or_skip(session_id, workspace, definition)
 
         response = self.api_client.request("GET", f"/profile/{definition['profiletype']}", session=session_id)
@@ -114,7 +117,7 @@ class ProfileService:
 
     def verify_patch_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definition = first_profile_definition_for(case)
+        definition = first_isolated_profile_definition_for(case)
         if "patch_profile_info" not in definition:
             pytest.skip(f"{definition['_config_ref']} has no patch_profile_info")
         self.ensure_profile_exists_or_skip(session_id, workspace, definition)
@@ -128,7 +131,7 @@ class ProfileService:
 
     def verify_delete_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definitions = definitions_delete_order(profile_definitions_for(case))
+        definitions = definitions_delete_order(isolated_profile_definitions(profile_definitions_for(case)))
         assert definitions, f"No profile data converted for {case['name']}"
 
         for definition in definitions:
@@ -140,7 +143,7 @@ class ProfileService:
 
     def verify_post_invalid_param_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definition = first_profile_definition_for(case)
+        definition = first_isolated_profile_definition_for(case)
         invalid_params = definition.get("invalid_params_to_test") or []
         if not invalid_params:
             pytest.skip(f"{definition['_config_ref']} has no invalid_params_to_test")
@@ -156,7 +159,7 @@ class ProfileService:
 
     def verify_patch_invalid_param_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
-        definition = first_profile_definition_for(case)
+        definition = first_isolated_profile_definition_for(case)
         invalid_params = definition.get("invalid_params_to_test") or []
         if not invalid_params:
             pytest.skip(f"{definition['_config_ref']} has no invalid_params_to_test")
@@ -260,6 +263,40 @@ def profile_refs(value):
     elif isinstance(value, str) and value.startswith("#RestApi"):
         refs.add(value)
     return refs
+
+
+def isolated_profile_definitions(definitions):
+    return [isolated_profile_definition(definition) for definition in definitions]
+
+
+def first_isolated_profile_definition_for(case):
+    definitions = isolated_profile_definitions(profile_definitions_for(case))
+    if not definitions:
+        raise KeyError(f"No profile data found for {case['name']}")
+    return definitions[0]
+
+
+def isolated_profile_definition(definition):
+    isolated = copy.deepcopy(definition)
+    replacement_name = ISOLATED_PROFILE_NAMES.get(profile_key(isolated))
+    if not replacement_name:
+        return isolated
+
+    original_name = isolated["profilename"]
+    isolated = replace_exact_string(isolated, original_name, replacement_name)
+    isolated["profilename"] = replacement_name
+    isolated["_isolated_from_profilename"] = original_name
+    return isolated
+
+
+def replace_exact_string(value, old: str, new: str):
+    if isinstance(value, dict):
+        return {key: replace_exact_string(item, old, new) for key, item in value.items()}
+    if isinstance(value, list):
+        return [replace_exact_string(item, old, new) for item in value]
+    if value == old:
+        return new
+    return value
 
 
 def sort_profile_cases_for_create(cases):

@@ -1,24 +1,63 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTVoipDialPlanProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "critical": "8000",
-      "format": "h248",
-      "identifier": "+88603(X.)",
-      "max": "256",
-      "partial": "32000"
-    }
-  },
-  "max": {
-    "Content": {
-      "critical": "8000",
-      "format": "h248",
-      "identifier": "+88603(X.)",
-      "max": "256",
-      "partial": "32000"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTVoipDialPlanProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "critical":  "8000",
+                                "format":  "h248",
+                                "identifier":  "+88603(X.)",
+                                "max":  "256",
+                                "partial":  "32000"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "critical":  "8000",
+                                "format":  "h248",
+                                "identifier":  "+88603(X.)",
+                                "max":  "256",
+                                "partial":  "32000"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon voip-dial-plan {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "256",
+                                                           "8000",
+                                                           "32000",
+                                                           "h248"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon voip-dial-plan {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "256",
+                                                           "8000",
+                                                           "32000",
+                                                           "h248"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

@@ -1,18 +1,65 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTSecurityProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-	  "spoofingdisable": "",
-      "fdb": "1"
-    }
-  },
-  "max": {
-    "Content": {
-	  "spoofingdisable": "no",
-      "fdb": "1023"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTSecurityProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "spoofingable":  "disable",
+                                "fdb":  "1"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "spoofingable":  "enable",
+                                "fdb":  "1023"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon security-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "1"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon security-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "1023"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           },
+                           {
+                               "name":  "spoofingdisable_device_cli_rejected_observed",
+                               "enabled":  true,
+                               "field":  "spoofingdisable",
+                               "error_layer":  "device_cli",
+                               "payload":  {
+                                               "Content":  {
+                                                               "fdb":  "1023",
+                                                               "spoofingdisable":  "enable"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "observed_reason":  "Observed unsupported spoofingdisable values on NODE3. Promoted into the NeoX profile error matrix for focused live validation."
+                           }
+                       ]
 }

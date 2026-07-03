@@ -1,24 +1,75 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTTemplateProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "dsop": "ont",
-      "enc_algorithm": "none",
-      "encscope_service": "disable",
-      "encscope_omci": "disable",
-      "encscope_iphost": "disable"
-    }
-  },
-  "max": {
-    "Content": {
-      "dsop": "ont",
-      "enc_algorithm": "none",
-      "encscope_service": "disable",
-      "encscope_omci": "disable",
-      "encscope_iphost": "disable"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTTemplateProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "dsop":  "ont",
+                                "enc_algorithm":  "none",
+                                "encscope_service":  "disable",
+                                "encscope_omci":  "disable",
+                                "encscope_iphost":  "disable"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "dsop":  "ont",
+                                "enc_algorithm":  "none",
+                                "encscope_service":  "disable",
+                                "encscope_omci":  "disable",
+                                "encscope_iphost":  "disable",
+                                "dspir":  "10240"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon template {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "QoS Downstream Option",
+                                                           "encryption algorithm"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon template {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "QoS Downstream Option",
+                                                           "encryption algorithm",
+                                                           "DS PIR",
+                                                           "10240"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           },
+                           {
+                               "name":  "dspir_128_device_cli_rejected_observed",
+                               "enabled":  true,
+                               "field":  "dspir",
+                               "error_layer":  "device_cli",
+                               "payload":  {
+                                               "Content":  {
+                                                               "dspir":  "128"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "observed_reason":  "Observed template endpoint rejected dspir=128 through the device CLI flow. Promoted into the NeoX profile error matrix for focused live validation."
+                           }
+                       ]
 }

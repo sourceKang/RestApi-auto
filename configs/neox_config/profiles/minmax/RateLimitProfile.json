@@ -1,30 +1,74 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX RateLimitProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "ingressactive": "",
-      "cirrate": "64",
-      "cbsrate": "64",
-      "eirrate": "64",
-      "ebsrate": "64",
-      "egressactive": "",
-      "egressrate": "64",
-      "burstrate": "64"
-    }
-  },
-  "max": {
-    "Content": {
-      "ingressactive": "active",
-      "cirrate": "10000000",
-      "cbsrate": "16000000",
-      "eirrate": "10000000",
-      "ebsrate": "16000000",
-      "egressactive": "active",
-      "egressrate": "10000000",
-      "burstrate": "128000"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX RateLimitProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "ingressactive":  "enable",
+                                "cirrate":  "64",
+                                "cbsrate":  "64",
+                                "eirrate":  "64",
+                                "ebsrate":  "64",
+                                "egressactive":  "enable",
+                                "egressrate":  "64",
+                                "burstrate":  "64"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "ingressactive":  "enable",
+                                "cirrate":  "10000000",
+                                "cbsrate":  "16000000",
+                                "eirrate":  "10000000",
+                                "ebsrate":  "16000000",
+                                "egressactive":  "enable",
+                                "egressrate":  "10000000",
+                                "burstrate":  "128000",
+                                "vlanegressarray":  [
+                                                        {
+                                                            "vlanegressvid":  "1314",
+                                                            "vlanegressenable":  "enable",
+                                                            "vlanegressrate":  "10000000"
+                                                        }
+                                                    ]
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show qos ratelimit-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Y",
+                                                           "64"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show qos ratelimit-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Y",
+                                                           "10000000",
+                                                           "16000000",
+                                                           "128000"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

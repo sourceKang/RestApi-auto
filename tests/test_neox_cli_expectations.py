@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from services.neox_config.cli_expectations import clear_ignored_line_prefixes, normalize_cli_output
+from services.neox_config.cli_expectations import clear_ignored_line_prefixes, normalize_cli_output, vlan_cli_expectation
 from services.neox_config.profile_expectations import neox_profile_cli_field_mismatches
 
 
@@ -84,6 +84,28 @@ def test_clear_normalization_ignores_remote_xont_elapsed_without_day_hour():
 
     assert normalize_cli_output(after_clear) == normalize_cli_output(baseline)
 
+
+def test_vlan_cli_expectation_accepts_vlan_id_range():
+    payload = {
+        "vlanname": "REST_API_VLAN_MAX",
+        "fixedport": "2~11",
+        "untaggedport": "1~4",
+        "forbiddenport": "5~8",
+        "tpid": "qinq-tpid",
+    }
+    output = """
+VLAN Name: REST_API_VLAN_MAX
+TPID: QinQ
+4090 . U U U X X X X T T T .
+4091 . U U U X X X X T T T .
+4092 . U U U X X X X T T T .
+4093 . U U U X X X X T T T .
+4094 . U U U X X X X T T T .
+"""
+
+    expectation = vlan_cli_expectation("4090~4094", payload, output)
+
+    assert expectation.missing == []
 
 def test_ont_acl_profile_cli_field_mismatches_catch_reused_yes_no_tokens():
     payload = {

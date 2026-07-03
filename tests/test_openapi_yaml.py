@@ -14,24 +14,35 @@ from cases.openapi_contract import (
     build_openapi_yaml_document,
     configured_openapi_yaml_file,
     diff_contracts,
+    diff_openapi_key_documents,
+    diff_semantic_openapi_documents,
     format_contract_differences,
     load_baseline_contract,
     load_baseline_yaml_document,
     load_openapi_document,
+    latest_openapi_yaml_file,
     normalize_ems_version,
+    openapi_file_date,
     openapi_version_dir_name,
+    swagger_api_docs_url,
 )
 from config_loader.settings import DEFAULT_EMS_FILE
 from config_loader.simple_yaml import load_simple_yaml
 from services.neox_config.service import NEOX_SWAGGER_DATA_FILE
+from tests.support.options import option_or_full_testcases
 from utils.allure_helpers import attach_json, attach_text, allure_step
 from utils.case_metadata import attach_case_id
 
 
 @pytest.mark.openapi
 @pytest.mark.smoke
-def test_openapi_yaml_contract_matches_baseline():
+@pytest.mark.live_swagger
+def test_latest_openapi_yaml_keys_match_live_swagger(request):
     attach_case_id("EMS1-7116", "YAML File")
+    guard_failures: list[str] = []
+
+    if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
+        pytest.skip("Latest YAML versus live Swagger key check requires --run-live-swagger-check.")
 
     with allure_step("1. Read configured EMS version from YAML"):
         ems_file = Path(os.environ.get("EMS_YAML_FILE", DEFAULT_EMS_FILE))
@@ -54,7 +65,7 @@ def test_openapi_yaml_contract_matches_baseline():
             },
         )
 
-    with allure_step("2. Locate OpenAPI YAML file"):
+    with allure_step("2. Locate latest OpenAPI YAML file for configured EMS version"):
         try:
             openapi_file = configured_openapi_yaml_file(configured_version)
         except Exception as error:
@@ -72,6 +83,7 @@ def test_openapi_yaml_contract_matches_baseline():
                 "status": "passed" if exists else "failed",
                 "openapi_file": str(openapi_file),
                 "exists": exists,
+                "file_date": openapi_file_date(openapi_file),
             },
         )
         assert exists, (
@@ -79,9 +91,9 @@ def test_openapi_yaml_contract_matches_baseline():
             "Set EMS_OPENAPI_YAML_FILE to override the default path."
         )
 
-    with allure_step("3. Parse OpenAPI YAML document"):
+    with allure_step("3. Parse latest OpenAPI YAML document"):
         try:
-            document = load_openapi_document(openapi_file)
+            yaml_document = load_openapi_document(openapi_file)
         except Exception as error:
             _attach_failed_check(
                 "OpenAPI YAML parse result",
@@ -95,17 +107,43 @@ def test_openapi_yaml_contract_matches_baseline():
             {
                 "status": "passed",
                 "openapi_file": str(openapi_file),
-                "root_type": type(document).__name__,
-                "path_count": len(document.get("paths", {})) if isinstance(document.get("paths"), dict) else None,
-                "schema_count": len(document.get("components", {}).get("schemas", {}))
-                if isinstance(document.get("components"), dict)
-                and isinstance(document.get("components", {}).get("schemas"), dict)
+                "root_type": type(yaml_document).__name__,
+                "path_count": len(yaml_document.get("paths", {})) if isinstance(yaml_document.get("paths"), dict) else None,
+                "schema_count": len(yaml_document.get("components", {}).get("schemas", {}))
+                if isinstance(yaml_document.get("components"), dict)
+                and isinstance(yaml_document.get("components", {}).get("schemas"), dict)
                 else None,
             },
         )
 
-    with allure_step("4. Verify OpenAPI version matches EMS config"):
-        info = document.get("info", {})
+    with allure_step("4. Fetch latest live Swagger OpenAPI document"):
+        url = request.config.getoption("--neox-swagger-api-docs-url")
+        live_url = swagger_api_docs_url(url)
+        try:
+            live_document = fetch_openapi_document(url)
+        except Exception as error:
+            _attach_failed_check(
+                "Live Swagger fetch result",
+                error,
+                openapi_json=live_url,
+                openapi_file=str(openapi_file),
+            )
+            pytest.fail(f"Cannot fetch live Swagger OpenAPI JSON from {live_url}: {error}", pytrace=False)
+        _attach_check_result(
+            "Live Swagger fetch result",
+            {
+                "status": "passed",
+                "openapi_json": live_url,
+                "path_count": len(live_document.get("paths", {})) if isinstance(live_document.get("paths"), dict) else None,
+                "schema_count": len(live_document.get("components", {}).get("schemas", {}))
+                if isinstance(live_document.get("components"), dict)
+                and isinstance(live_document.get("components", {}).get("schemas"), dict)
+                else None,
+            },
+        )
+
+    with allure_step("5. Verify OpenAPI version matches EMS config"):
+        info = yaml_document.get("info", {})
         actual_info_version = info.get("version", "") if isinstance(info, dict) else ""
         expected_version = normalize_ems_version(configured_version)
         actual_version = normalize_ems_version(actual_info_version)
@@ -119,64 +157,41 @@ def test_openapi_yaml_contract_matches_baseline():
                 "expected_version": expected_version,
             },
         )
-        assert actual_version == expected_version, (
-            f"{openapi_file} info.version {actual_version!r} does not match "
-            f"configured EMS version {expected_version!r}"
-        )
-
-    with allure_step("5. Compare OpenAPI contract with baseline"):
-        try:
-            expected_contract = load_baseline_contract()
-            actual_contract = build_openapi_contract(document)
-        except Exception as error:
-            _attach_failed_check(
-                "OpenAPI contract comparison result",
-                error,
-                openapi_file=str(openapi_file),
+        if actual_version != expected_version:
+            guard_failures.append(
+                f"{openapi_file} info.version {actual_version!r} does not match "
+                f"configured EMS version {expected_version!r}"
             )
-            raise
-        differences = diff_contracts(expected_contract, actual_contract)
+
+    with allure_step("6. Compare latest YAML keys with latest live Swagger keys"):
+        differences = diff_openapi_key_documents(live_document, yaml_document)
         _attach_check_result(
-            "OpenAPI contract comparison result",
+            "Latest YAML versus live Swagger key contract result",
             {
                 "status": "passed" if not differences else "failed",
                 "openapi_file": str(openapi_file),
+                "openapi_json": live_url,
                 "difference_count": len(differences),
                 "differences": differences,
             },
         )
-        assert not differences, (
-            f"{openapi_file} OpenAPI contract differs from baseline:\n"
-            f"{format_contract_differences(differences)}"
-        )
+        guard_failures.extend(f"swagger_key: {difference}" for difference in differences)
 
-    with allure_step("6. Compare full OpenAPI YAML document with baseline"):
-        try:
-            expected_document = load_baseline_yaml_document()
-            actual_document = build_openapi_yaml_document(document)
-        except Exception as error:
-            _attach_failed_check(
-                "Full OpenAPI YAML comparison result",
-                error,
-                openapi_file=str(openapi_file),
-            )
-            raise
-        yaml_differences = diff_contracts(expected_document, actual_document)
+    with allure_step("7. Summarize latest YAML versus live Swagger result"):
         _attach_check_result(
-            "Full OpenAPI YAML comparison result",
+            "OpenAPI YAML versus live Swagger summary",
             {
-                "status": "passed" if not yaml_differences else "failed",
+                "status": "passed" if not guard_failures else "failed",
                 "openapi_file": str(openapi_file),
-                "document_summary": _document_summary(actual_document),
-                "difference_count": len(yaml_differences),
-                "differences": yaml_differences,
+                "openapi_json": live_url,
+                "failure_count": len(guard_failures),
+                "failures": guard_failures,
             },
         )
-        assert not yaml_differences, (
-            f"{openapi_file} full OpenAPI YAML document differs from baseline:\n"
-            f"{format_contract_differences(yaml_differences)}"
+        assert not guard_failures, (
+            f"{openapi_file} differs from live Swagger {live_url} with {len(guard_failures)} issue(s):\n"
+            f"{format_contract_differences(guard_failures, limit=120)}"
         )
-
 
 def _configured_ems_version() -> str:
     ems_file = Path(os.environ.get("EMS_YAML_FILE", DEFAULT_EMS_FILE))
@@ -213,7 +228,7 @@ def _format_check_result(result: dict[str, object]) -> str:
     lines.append("")
 
     for key, value in result.items():
-        if key in {"status", "differences"}:
+        if key in {"status", "differences", "failures"}:
             continue
         if isinstance(value, dict):
             lines.append(f"{key}:")
@@ -231,6 +246,18 @@ def _format_check_result(result: dict[str, object]) -> str:
                 lines.append(f"  - {difference}")
             if len(differences) > 20:
                 lines.append(f"  - ... {len(differences) - 20} more differences in JSON attachment")
+        else:
+            lines.append("  - none")
+
+    failures = result.get("failures")
+    if isinstance(failures, list):
+        lines.append("")
+        lines.append(f"Failures shown: {min(len(failures), 20)} of {len(failures)}")
+        if failures:
+            for failure in failures[:20]:
+                lines.append(f"  - {failure}")
+            if len(failures) > 20:
+                lines.append(f"  - ... {len(failures) - 20} more failures in JSON attachment")
         else:
             lines.append("  - none")
 
@@ -262,6 +289,166 @@ def test_openapi_version_dir_name_uses_ems_release_folder():
     assert openapi_version_dir_name("03.00.11 (AAVV.221) b2") == "03.00.11 (AAVV.221)"
 
 
+def test_openapi_file_date_accepts_suffix_after_date():
+    assert openapi_file_date(Path("NetAtlasEMS_OpenAPI_20260605 - test.yaml")) == 20260605
+
+
+def test_latest_openapi_yaml_file_prefers_official_name_for_same_date(tmp_path):
+    official = tmp_path / "NetAtlasEMS_OpenAPI_20260605.yaml"
+    test_copy = tmp_path / "NetAtlasEMS_OpenAPI_20260605 - test.yaml"
+    official.write_text("openapi: 3.0.1\n", encoding="utf-8")
+    test_copy.write_text("openapi: 3.0.1\n", encoding="utf-8")
+
+    assert latest_openapi_yaml_file(tmp_path) == official
+
+
+def test_semantic_openapi_diff_treats_ref_and_inline_schema_as_equivalent():
+    expected = _semantic_doc_with_schema(
+        {
+            "Example": {"properties": {"Content": {"$ref": "#/components/schemas/ExampleContent"}}},
+            "ExampleContent": {"properties": {"name": {"type": "string"}}},
+        }
+    )
+    actual = _semantic_doc_with_schema(
+        {
+            "Example": {"properties": {"Content": {"properties": {"name": {"type": "string"}}, "type": "object"}}},
+        }
+    )
+
+    assert diff_semantic_openapi_documents(expected, actual) == []
+
+
+def test_semantic_openapi_diff_detects_field_schema_changes():
+    expected = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode": {"enum": ["enable", "disable"], "type": "string"}},
+                        "required": ["mode"],
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+    actual = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode": {"enum": ["enable"], "type": "string"}},
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+
+    differences = diff_semantic_openapi_documents(expected, actual)
+
+    assert any("Content.mode" in difference for difference in differences)
+    assert any("required" in difference for difference in differences)
+    assert any("enum" in difference for difference in differences)
+
+
+def test_semantic_openapi_diff_detects_path_changes():
+    expected = _semantic_doc_with_schema({"Example": {"properties": {"Content": {"type": "object"}}}})
+    actual = _semantic_doc_with_schema(
+        {"Example": {"properties": {"Content": {"type": "object"}}}},
+        path="/example/{ide}",
+    )
+
+    differences = diff_semantic_openapi_documents(expected, actual)
+
+    assert "$.paths./example/{id}" in "\n".join(differences)
+    assert "$.paths./example/{ide}" in "\n".join(differences)
+
+
+def test_openapi_key_diff_ignores_schema_value_changes():
+    expected = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode": {"enum": ["enable", "disable"], "type": "string"}},
+                        "required": ["mode"],
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+    actual = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode": {"enum": ["enable"], "type": "integer"}},
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+
+    assert diff_openapi_key_documents(expected, actual) == []
+
+
+def test_openapi_key_diff_detects_field_key_changes():
+    expected = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode": {"type": "string"}},
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+    actual = _semantic_doc_with_schema(
+        {
+            "Example": {
+                "properties": {
+                    "Content": {
+                        "properties": {"mode_name": {"type": "string"}},
+                        "type": "object",
+                    }
+                }
+            }
+        }
+    )
+
+    differences = diff_openapi_key_documents(expected, actual)
+
+    assert "$.schemas.Example.leaf_keys.Content.mode was removed" in differences
+    assert "$.schemas.Example.leaf_keys.Content.mode_name was added" in differences
+
+
+def _semantic_doc_with_schema(schemas: dict[str, Any], path: str = "/example/{id}") -> dict[str, Any]:
+    return {
+        "components": {"schemas": schemas},
+        "paths": {
+            path: {
+                "post": {
+                    "parameters": [
+                        {"in": "path", "name": "id", "required": True, "schema": {"type": "string"}},
+                    ],
+                    "requestBody": {
+                        "content": {
+                            "application/json": {"schema": {"$ref": "#/components/schemas/Example"}},
+                        },
+                        "required": True,
+                    },
+                    "responses": {},
+                },
+            },
+        },
+    }
+
+
 @pytest.mark.openapi
 def test_neox_swagger_nni_summary_matches_openapi_baseline():
     reference = load_openapi_document(NEOX_SWAGGER_DATA_FILE)
@@ -275,7 +462,7 @@ def test_neox_swagger_nni_summary_matches_openapi_baseline():
 @pytest.mark.openapi
 @pytest.mark.live_swagger
 def test_live_neox_swagger_nni_schema_matches_baseline(request):
-    if not request.config.getoption("--run-live-swagger-check"):
+    if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
         pytest.skip("Live Swagger checks require --run-live-swagger-check.")
 
     url = request.config.getoption("--neox-swagger-api-docs-url")
@@ -285,7 +472,55 @@ def test_live_neox_swagger_nni_schema_matches_baseline(request):
     assert live_schema == baseline_schema
 
 
+@pytest.mark.openapi
+@pytest.mark.live_swagger
+def test_live_swagger_openapi_document_is_available(request):
+    attach_case_id("EMS1-7210", "Live Swagger OpenAPI document availability")
+    if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
+        pytest.skip("Live Swagger checks require --run-live-swagger-check.")
+
+    url = request.config.getoption("--neox-swagger-api-docs-url")
+    live_url = swagger_api_docs_url(url)
+    try:
+        live_document = fetch_openapi_document(url)
+    except Exception as error:
+        _attach_failed_check(
+            "Live Swagger fetch result",
+            error,
+            openapi_json=live_url,
+        )
+        pytest.fail(f"Cannot fetch live Swagger OpenAPI JSON from {live_url}: {error}", pytrace=False)
+
+    paths = live_document.get("paths")
+    components = live_document.get("components")
+    schemas = components.get("schemas") if isinstance(components, dict) else None
+    failures: list[str] = []
+    if not isinstance(live_document.get("openapi"), str) and not isinstance(live_document.get("swagger"), str):
+        failures.append("Live Swagger document does not declare an openapi/swagger version.")
+    if not isinstance(paths, dict) or not paths:
+        failures.append("Live Swagger document does not contain non-empty paths.")
+    if not isinstance(schemas, dict) or not schemas:
+        failures.append("Live Swagger document does not contain non-empty components.schemas.")
+
+    path_count = len(paths) if isinstance(paths, dict) else 0
+    schema_count = len(schemas) if isinstance(schemas, dict) else 0
+    _attach_check_result(
+        "Live Swagger OpenAPI availability result",
+        {
+            "status": "passed" if not failures else "failed",
+            "openapi_json": live_url,
+            "openapi_version": live_document.get("openapi") or live_document.get("swagger"),
+            "path_count": path_count,
+            "schema_count": schema_count,
+            "failures": failures,
+        },
+    )
+
+    assert not failures, f"Live Swagger OpenAPI document is not usable from {live_url}:\n" + "\n".join(failures)
+
+
 def fetch_openapi_document(url: str) -> dict[str, Any]:
+    url = swagger_api_docs_url(url)
     context = ssl._create_unverified_context()
     with urllib.request.urlopen(url, timeout=30, context=context) as response:
         return json.loads(response.read().decode("utf-8"))

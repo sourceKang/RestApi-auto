@@ -31,59 +31,25 @@ NEOX_VLAN_CONFIG_DIR = NEOX_CONFIG_DIR / "vlan"
 NEOX_ONT_CONFIG_DIR = NEOX_CONFIG_DIR / "ont"
 NEOX_PROFILE_CONFIG_DIR = NEOX_CONFIG_DIR / "profiles"
 NEOX_REFERENCE_CONFIG_DIR = NEOX_CONFIG_DIR / "reference"
-GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_accepted_incremental_payload.json"
-GE_ACL_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_acl_retry_probe.json"
-GE_ENABLE_ACCEPTED_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_enable_accepted_payload.json"
-GE_ENABLE_PROBE_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_enable_probe.json"
 GE_FULL_ACCEPTED_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_full_accepted_payload.json"
-GE_INCREMENTAL_PROBE_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_incremental_probe.json"
-GE_NEGATIVE_CASES_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_negative_cases.json"
-GE_PAIRED_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_paired_retry_probe.json"
-GE_PDF_RETRY_CONFIG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_pdf_retry_probe.json"
-GE_SHOW_COMMANDS_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_show_commands.json"
-GE_SWAGGER_PAYLOAD_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_swagger_payload.json"
-GE_FIELD_CATALOG_FILE = NEOX_GE_CONFIG_DIR / "neox_ge_field_catalog.json"
-NNI_MIN_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_min_accepted_payload.json"
-NNI_MAX_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_full_accepted_payload.json"
+NNI_PAYLOAD_FILE = NEOX_NNI_CONFIG_DIR / "neox_nni_full_accepted_payload.json"
 VLAN_MINMAX_PAYLOAD_FILE = NEOX_VLAN_CONFIG_DIR / "neox_vlan_minmax_payloads.json"
-ONT_MINMAX_PAYLOAD_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_minmax_payloads.json"
-ONT_NEGATIVE_CASES_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_negative_cases.json"
-PROFILE_BASIC_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_basic_cases.json"
-PROFILE_QOS_MINMAX_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_qos_minmax_cases.json"
+ONT_PAYLOAD_FILE = NEOX_ONT_CONFIG_DIR / "neox_ont_minmax_payloads.json"
 PROFILE_MINMAX_PAYLOAD_DIR = NEOX_PROFILE_CONFIG_DIR / "minmax"
-PROFILE_OBSERVED_FAILURES_FILE = NEOX_PROFILE_CONFIG_DIR / "observed" / "neox_profile_observed_failures.json"
-IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE = NEOX_PROFILE_CONFIG_DIR / "observed" / "neox_igmp_group_privilege_probe_cases.json"
-PROFILE_CLI_VERIFY_FILE = NEOX_PROFILE_CONFIG_DIR / "neox_profile_cli_verify.json"
 NEOX_FEATURE_TEST_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_feature_test_data.yaml"
 NEOX_SWAGGER_DATA_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_swagger_data.yaml"
 NEOX_UG_PARAMETER_REFERENCE_FILE = NEOX_REFERENCE_CONFIG_DIR / "neox_ug_parameter_reference.yaml"
 NEOX_CONFIG_DATA_FILES = (
-    GE_ACCEPTED_INCREMENTAL_PAYLOAD_FILE,
-    GE_ACL_RETRY_CONFIG_FILE,
-    GE_ENABLE_ACCEPTED_PAYLOAD_FILE,
-    GE_ENABLE_PROBE_FILE,
     GE_FULL_ACCEPTED_PAYLOAD_FILE,
-    GE_INCREMENTAL_PROBE_FILE,
-    GE_NEGATIVE_CASES_FILE,
-    GE_PAIRED_RETRY_CONFIG_FILE,
-    GE_PDF_RETRY_CONFIG_FILE,
-    GE_SHOW_COMMANDS_FILE,
-    GE_SWAGGER_PAYLOAD_FILE,
-    GE_FIELD_CATALOG_FILE,
-    NNI_MIN_PAYLOAD_FILE,
-    NNI_MAX_PAYLOAD_FILE,
+    NNI_PAYLOAD_FILE,
     VLAN_MINMAX_PAYLOAD_FILE,
-    ONT_MINMAX_PAYLOAD_FILE,
-    ONT_NEGATIVE_CASES_FILE,
-    PROFILE_BASIC_CASES_FILE,
-    PROFILE_QOS_MINMAX_CASES_FILE,
-    PROFILE_OBSERVED_FAILURES_FILE,
-    IGMP_GROUP_PRIVILEGE_PROBE_CASES_FILE,
-    PROFILE_CLI_VERIFY_FILE,
+    ONT_PAYLOAD_FILE,
     NEOX_FEATURE_TEST_DATA_FILE,
     NEOX_SWAGGER_DATA_FILE,
     NEOX_UG_PARAMETER_REFERENCE_FILE,
 )
+GE_PAYLOAD_FORBIDDEN_FIELDS = frozenset()
+GE_PAYLOAD_FORBIDDEN_KEY_FRAGMENTS = ("_warn_",)
 
 
 class NeoXConfigError(RuntimeError):
@@ -434,26 +400,81 @@ def ge_port_payload() -> dict[str, Any]:
     }
 
 
+def ge_full_accepted_config() -> dict[str, Any]:
+    data = json.loads(GE_FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    config = copy.deepcopy(data)
+    config["payload"] = sanitize_ge_payload(config["payload"])
+    return config
+
+
+def ge_max_variants_config() -> dict[str, Any]:
+    data = json.loads(GE_FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["max_variants"])
+
+
+def ge_negative_cases_config() -> dict[str, Any]:
+    data = json.loads(GE_FULL_ACCEPTED_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["negative_cases"])
+
+
+def sanitize_ge_payload(
+    payload: dict[str, Any],
+    allow_forbidden_fields: list[str] | tuple[str, ...] | set[str] | None = None,
+) -> dict[str, Any]:
+    allowed = {str(field) for field in (allow_forbidden_fields or [])}
+    return _strip_forbidden_ge_payload_fields(copy.deepcopy(payload), allowed)
+
+
+def _strip_forbidden_ge_payload_fields(value: Any, allow_forbidden_fields: set[str] | None = None) -> Any:
+    allowed = allow_forbidden_fields or set()
+    if isinstance(value, dict):
+        sanitized = {}
+        for key, item in value.items():
+            key_text = str(key)
+            key_folded = key_text.casefold()
+            if key_text in GE_PAYLOAD_FORBIDDEN_FIELDS and key_text not in allowed:
+                continue
+            if any(fragment in key_folded for fragment in GE_PAYLOAD_FORBIDDEN_KEY_FRAGMENTS):
+                continue
+            sanitized[key] = _strip_forbidden_ge_payload_fields(item, allowed)
+        return sanitized
+    if isinstance(value, list):
+        return [_strip_forbidden_ge_payload_fields(item, allowed) for item in value]
+    return value
+
+
 def nni_port_payload() -> dict[str, Any]:
     return {"Content": {"portenable": "enable", "auto_nego": "disable", "flow": "disable", "mode": "uplink"}}
 
 
+def nni_payload_config(boundary: str) -> dict[str, Any]:
+    data = json.loads(NNI_PAYLOAD_FILE.read_text(encoding="utf-8"))
+    return copy.deepcopy(data["cases"][boundary])
+
+
 def nni_min_payload() -> dict[str, Any]:
-    return load_json_payload(NNI_MIN_PAYLOAD_FILE)
+    return copy.deepcopy(nni_payload_config("min")["payload"])
 
 
 def nni_max_payload() -> dict[str, Any]:
-    return load_json_payload(NNI_MAX_PAYLOAD_FILE)
+    return copy.deepcopy(nni_payload_config("max")["payload"])
 
 
 def vlan_payload() -> dict[str, Any]:
     return {"vlanname": "REST_API_VLAN", "fixedport": "*", "untaggedport": "", "forbiddenport": "", "tpid": "default-tpid"}
 
 
+def vlan_config() -> dict[str, Any]:
+    return json.loads(VLAN_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
+
+
 def vlan_case(case_name: str) -> tuple[str, dict[str, Any]]:
-    data = json.loads(VLAN_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
-    case = data["cases"][case_name]
+    case = vlan_config()["cases"][case_name]
     return str(case["vid"]), copy.deepcopy(case["payload"])
+
+
+def vlan_negative_cases_config() -> list[dict[str, Any]]:
+    return copy.deepcopy(vlan_config()["negative_cases"])
 
 
 def ont_config_payload(target: NeoXTarget) -> dict[str, Any]:
@@ -478,9 +499,12 @@ def ont_max_payload(target: NeoXTarget) -> dict[str, Any]:
     return materialize_ont_payload("max", target)
 
 
+def ont_config() -> dict[str, Any]:
+    return json.loads(ONT_PAYLOAD_FILE.read_text(encoding="utf-8"))
+
+
 def ont_negative_cases() -> list[dict[str, Any]]:
-    data = json.loads(ONT_NEGATIVE_CASES_FILE.read_text(encoding="utf-8"))
-    return copy.deepcopy(data["cases"])
+    return copy.deepcopy(ont_config()["negative_cases"])
 
 
 def ont_negative_payload(case: dict[str, Any], target: NeoXTarget) -> dict[str, Any]:
@@ -491,21 +515,31 @@ def ont_negative_payload(case: dict[str, Any], target: NeoXTarget) -> dict[str, 
     return payload
 
 
-def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
+def neox_profile_config(profile_type: str) -> dict[str, Any]:
     split_path = PROFILE_MINMAX_PAYLOAD_DIR / f"{profile_type}.json"
-    data = json.loads(split_path.read_text(encoding="utf-8"))
-    return copy.deepcopy(data[boundary])
+    return json.loads(split_path.read_text(encoding="utf-8"))
+
+
+def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
+    return copy.deepcopy(neox_profile_config(profile_type)[boundary])
 
 
 def neox_profile_cli_verify_case(profile_type: str, boundary: str) -> dict[str, Any]:
-    data = json.loads(PROFILE_CLI_VERIFY_FILE.read_text(encoding="utf-8"))
-    case = data["profiles"][profile_type][boundary]
-    return copy.deepcopy(case)
+    return copy.deepcopy(neox_profile_config(profile_type)["cli_verify"][boundary])
+
+
+def neox_profile_negative_cases_config(profile_type: str) -> list[dict[str, Any]]:
+    cases = []
+    for raw_case in neox_profile_config(profile_type)["negative_cases"]:
+        negative_case = copy.deepcopy(raw_case)
+        negative_case.setdefault("error_layer", "device_cli")
+        negative_case.setdefault("expected_retstatus", "Fail")
+        cases.append(negative_case)
+    return cases
 
 
 def materialize_ont_payload(case_name: str, target: NeoXTarget) -> dict[str, Any]:
-    data = json.loads(ONT_MINMAX_PAYLOAD_FILE.read_text(encoding="utf-8"))
-    payload = copy.deepcopy(data["cases"][case_name]["payload"])
+    payload = copy.deepcopy(ont_config()["cases"][case_name]["payload"])
     return materialize_target_value(payload, target)
 
 
@@ -562,3 +596,10 @@ def normalize_neox_profile_content(profile_type: str, content: dict[str, Any]) -
         else:
             normalized[key] = value
     return normalized
+
+
+
+
+
+
+

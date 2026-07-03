@@ -4,9 +4,9 @@ import json
 from decimal import Decimal
 from typing import Any
 
+from cases.openapi_contract import load_baseline_contract
 from config_loader.simple_yaml import load_simple_yaml
 from services.neox_config.service import (
-    GE_SWAGGER_PAYLOAD_FILE,
     NEOX_CONTENT_OVERRIDES,
     NEOX_UG_PARAMETER_REFERENCE_FILE,
     ge_port_payload,
@@ -41,13 +41,13 @@ def test_ge_smoke_payload_uses_documented_values():
     assert len(content["portname"]) <= fields["portname"]["max_length"]
 
 
-def test_ge_smoke_payload_fields_exist_in_swagger_ui_example():
-    swagger_example = json.loads(GE_SWAGGER_PAYLOAD_FILE.read_text(encoding="utf-8"))
-    swagger_content = swagger_example["payload"]["Content"]
+def test_ge_smoke_payload_fields_exist_in_openapi_schema():
+    schema = load_baseline_contract()["schemas"]["GePortInfo"]
+    schema_content = schema["properties"]["Content"]["properties"]
     smoke_content = ge_port_payload()["Content"]
 
-    assert len(swagger_content) >= 100
-    assert set(smoke_content).issubset(swagger_content)
+    assert len(schema_content) >= len(smoke_content)
+    assert set(smoke_content).issubset(schema_content)
     assert not uses_swagger_placeholder(smoke_content)
 
 
@@ -142,3 +142,6 @@ def assert_in_ranges(content: dict[str, Any], fields: dict[str, Any], profile_ty
 
 def uses_swagger_placeholder(content: dict[str, Any]) -> bool:
     return any(value in ("string", 0) for value in content.values())
+
+
+

@@ -26,7 +26,7 @@ def neox_profile_expected_tokens(
     elif profile_type == "ONTONTProfile":
         tokens.extend(content_values(content, ("fwlevel", "telnetport")))
     elif profile_type == "ONTSecurityProfile":
-        tokens.extend(content_values(content, ("spoofingdisable", "fdb")))
+        tokens.extend(content_values(content, ("spoofingable", "fdb")))
     elif profile_type == "ONTServiceProfile":
         tokens.extend(ont_service_profile_tokens(content))
     elif profile_type == "ONTTemplateProfile":
@@ -183,7 +183,7 @@ def ont_service_profile_tokens(content: dict[str, Any]) -> list[str]:
 
 
 def ont_template_profile_tokens(content: dict[str, Any]) -> list[str]:
-    return content_values(
+    tokens = content_values(
         content,
         (
             "dsop",
@@ -194,6 +194,9 @@ def ont_template_profile_tokens(content: dict[str, Any]) -> list[str]:
             "mprof",
         ),
     )
+    if content.get("dspir"):
+        tokens.extend(["DS PIR", str(content["dspir"])])
+    return tokens
 
 
 def ont_uni_profile_tokens(content: dict[str, Any]) -> list[str]:
@@ -212,6 +215,16 @@ def rate_limit_profile_tokens(content: dict[str, Any]) -> list[str]:
         if active_key in content:
             tokens.append(active_token(content[active_key]))
     tokens.extend(content_values(content, ("cirrate", "cbsrate", "eirrate", "ebsrate", "egressrate", "burstrate")))
+    for vlan_egress in content.get("vlanegressarray", []):
+        if not isinstance(vlan_egress, dict):
+            continue
+        tokens.extend(
+            [
+                vlan_egress.get("vlanegressvid"),
+                active_token(vlan_egress.get("vlanegressenable")),
+                vlan_egress.get("vlanegressrate"),
+            ]
+        )
     return tokens
 
 
@@ -230,3 +243,4 @@ def unique_tokens(tokens: list[str]) -> list[str]:
             seen.add(text)
             unique.append(text)
     return unique
+

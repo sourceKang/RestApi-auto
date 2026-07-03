@@ -1,68 +1,105 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTVoipCommonProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "1codec": "G729",
-      "1packet": "10",
-      "1silence": "disable",
-      "2codec": "PCMU",
-      "2packet": "20",
-      "2silence": "disable",
-      "3codec": "PCMU",
-      "3packet": "20",
-      "3silence": "disable",
-      "4codec": "PCMU",
-      "4packet": "20",
-      "4silence": "disable",
-      "announce": "fas-bus",
-      "buf": "500",
-      "cas": "disable",
-      "dscp": "63",
-      "dtmf": "enable",
-      "echo": "enable",
-      "fax": "passthru",
-      "maxport": "65535",
-      "minport": "1",
-      "oobdtmf": "disable",
-      "piggyback": "disable",
-      "pstn": "0",
-      "signal": "loo-str",
-      "target": "60",
-      "tone": "disable"
-    }
-  },
-  "max": {
-    "Content": {
-      "1codec": "G729",
-      "1packet": "10",
-      "1silence": "enable",
-      "2codec": "PCMU",
-      "2packet": "20",
-      "2silence": "enable",
-      "3codec": "PCMU",
-      "3packet": "20",
-      "3silence": "enable",
-      "4codec": "PCMU",
-      "4packet": "20",
-      "4silence": "enable",
-      "announce": "fas-bus",
-      "buf": "500",
-      "cas": "enable",
-      "dscp": "63",
-      "dtmf": "enable",
-      "echo": "enable",
-      "fax": "passthru",
-      "maxport": "65535",
-      "minport": "1",
-      "oobdtmf": "enable",
-      "piggyback": "enable",
-      "pstn": "0",
-      "signal": "loo-str",
-      "target": "60",
-      "tone": "enable"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTVoipCommonProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "codec1":  "G729",
+                                "packet1":  "10",
+                                "silence1":  "disable",
+                                "codec2":  "PCMU",
+                                "packet2":  "20",
+                                "silence2":  "disable",
+                                "codec3":  "PCMU",
+                                "packet3":  "20",
+                                "silence3":  "disable",
+                                "codec4":  "PCMU",
+                                "packet4":  "20",
+                                "silence4":  "disable",
+                                "announce":  "fas-bus",
+                                "buf":  "500",
+                                "cas":  "disable",
+                                "dscp":  "63",
+                                "dtmf":  "enable",
+                                "echo":  "enable",
+                                "fax":  "passthru",
+                                "maxport":  "65535",
+                                "minport":  "1",
+                                "oobdtmf":  "disable",
+                                "piggyback":  "disable",
+                                "pstn":  "0",
+                                "signal":  "loo-str",
+                                "target":  "60",
+                                "tone":  "disable"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "codec1":  "G729",
+                                "packet1":  "10",
+                                "silence1":  "enable",
+                                "codec2":  "PCMU",
+                                "packet2":  "20",
+                                "silence2":  "enable",
+                                "codec3":  "PCMU",
+                                "packet3":  "20",
+                                "silence3":  "enable",
+                                "codec4":  "PCMU",
+                                "packet4":  "20",
+                                "silence4":  "enable",
+                                "announce":  "fas-bus",
+                                "buf":  "500",
+                                "cas":  "enable",
+                                "dscp":  "63",
+                                "dtmf":  "enable",
+                                "echo":  "enable",
+                                "fax":  "passthru",
+                                "maxport":  "65535",
+                                "minport":  "1",
+                                "oobdtmf":  "enable",
+                                "piggyback":  "enable",
+                                "pstn":  "0",
+                                "signal":  "loo-str",
+                                "target":  "60",
+                                "tone":  "enable"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon voip-common-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "G729",
+                                                           "63",
+                                                           "65535"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon voip-common-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "G729",
+                                                           "63",
+                                                           "65535"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

@@ -137,3 +137,152 @@ def test_permission_summary_breakdown_lists_failed_members(monkeypatch):
     assert breakdown["failed"] == 1
     assert len(breakdown["failed_items"]) == 1
     assert breakdown["failed_items"][0]["case_ids"] == ["EMS1-6678"]
+
+
+def test_html_report_summarizes_results_and_failed_cases(monkeypatch):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-01_12-00-00"))
+
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="device_list")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]", "passed", 0.11)
+
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[ont_by_id]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6678", name="ont_by_id")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[ont_by_id]", "failed", 0.12)
+
+    rendered = reporting._render_html_report(_fake_env())
+
+    assert "<title>Web_Ems_Rest_Api_demo_IES4204_MSC1240QB_report_2026-05-01_12-00-00</title>" in rendered
+    assert '<strong class="status status-failed">FAIL</strong>' in rendered
+    assert "<td>EMS1-6643</td>" in rendered
+    assert "<td>EMS1-6678</td>" in rendered
+    assert '<span class="pill pill-failed">Fail</span>' in rendered
+    assert "?祆活瘝?憭望??" not in rendered
+
+
+def test_html_report_escapes_metadata_and_case_names(monkeypatch):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-02_12-00-00"))
+
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[xss]"] = [
+        reporting.CaseRegistration(case_id="EMS1-9999", name="<script>alert(1)</script>")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[xss]", "failed", 0.1)
+
+    env = _fake_env()
+    env.dut.device_name = "<NODE3>"
+
+    rendered = reporting._render_html_report(env)
+
+    assert "&lt;NODE3&gt;" in rendered
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered
+    assert "<script>alert(1)</script>" not in rendered
+
+
+def test_write_reports_generates_integrated_evidence_report_by_default(monkeypatch, tmp_path):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-03_12-00-00"))
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="test_get_device_all")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]", "passed", 0.11)
+
+    allure_current = tmp_path / "reports" / ".allure-results-current"
+    allure_current.mkdir(parents=True)
+    (allure_current / "request-attachment.json").write_text('{"method":"GET","url":"https://example.invalid/device"}', encoding="utf-8")
+    (allure_current / "response-attachment.json").write_text('{"status_code":200,"body":{"retstatus":"Success"}}', encoding="utf-8")
+    (allure_current / "case-result.json").write_text(
+        """
+{
+  "name": "test_get_device_all",
+  "status": "passed",
+  "start": 1,
+  "stop": 12,
+  "fullName": "tests.test_inventory#test_inventory_read_endpoints_readwrite",
+  "links": [{"type": "tms", "url": "EMS1-6643", "name": "EMS1-6643"}],
+  "steps": [{
+    "name": "GET /device",
+    "status": "passed",
+    "start": 2,
+    "stop": 10,
+    "attachments": [
+      {"name": "request abc", "source": "request-attachment.json", "type": "application/json"},
+      {"name": "response abc", "source": "response-attachment.json", "type": "application/json"}
+    ]
+  }]
+}
+""".strip(),
+        encoding="utf-8",
+    )
+    config = SimpleNamespace(
+        rootpath=tmp_path,
+        option=SimpleNamespace(
+            allure_report_dir=str(allure_current),
+            archive_allure=False,
+            generate_allure_html=False,
+            skip_integrated_evidence_report=False,
+        ),
+    )
+
+    txt_path, html_summary, allure_results, allure_html, integrated_html = reporting.write_reports(config, _fake_env())
+
+    assert txt_path.exists()
+    assert html_summary.exists()
+    assert allure_html is None
+    assert allure_results.name == "allure-results_2026-05-03_12-00-00"
+    assert integrated_html is not None
+    assert integrated_html.exists()
+    summary_rendered = html_summary.read_text(encoding="utf-8")
+    assert "Integrated evidence report (open this for case details)" in summary_rendered
+    assert "_integrated.html" in summary_rendered
+    rendered = integrated_html.read_text(encoding="utf-8")
+    assert "Merged case evidence" in rendered
+    assert "Photo Issue Comparison" not in rendered
+    assert "EMS1-6643 / test_get_device_all" in rendered
+    assert "Request / payload" in rendered
+    assert "EMS response" in rendered
+
+
+def test_write_reports_can_skip_integrated_evidence_report(monkeypatch, tmp_path):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-04_12-00-00"))
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="test_get_device_all")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]", "passed", 0.11)
+
+    allure_current = tmp_path / "reports" / ".allure-results-current"
+    allure_current.mkdir(parents=True)
+    config = SimpleNamespace(
+        rootpath=tmp_path,
+        option=SimpleNamespace(
+            allure_report_dir=str(allure_current),
+            archive_allure=False,
+            generate_allure_html=False,
+            skip_integrated_evidence_report=True,
+        ),
+    )
+
+    txt_path, html_summary, *_, integrated_html = reporting.write_reports(config, _fake_env())
+
+    assert txt_path.exists()
+    assert html_summary.exists()
+    assert integrated_html is None
+    assert "Integrated evidence report (open this for case details)" not in html_summary.read_text(encoding="utf-8")
+    assert not list((tmp_path / "reports" / "demo").glob("*_integrated.html"))
+
+
+def test_worker_report_dir_preserves_existing_allure_results(tmp_path):
+    allure_current = tmp_path / "reports" / ".allure-results-current"
+    allure_current.mkdir(parents=True)
+    sentinel = allure_current / "worker-result.json"
+    sentinel.write_text('{"status":"passed"}', encoding="utf-8")
+    config = SimpleNamespace(
+        rootpath=tmp_path,
+        option=SimpleNamespace(allure_report_dir=None, clean_alluredir=None),
+    )
+
+    reporting.ensure_worker_report_dirs(config)
+
+    assert config.option.allure_report_dir == str(allure_current)
+    assert config.option.clean_alluredir is False
+    assert sentinel.exists()

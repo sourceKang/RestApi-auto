@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 
 NEOX_PROFILE_TYPES = [
@@ -103,7 +103,7 @@ ONT_UNI_SMOKE_CONTENT = {
     "xlanunivlan1": "1",
     "xlanuniport1": "1",
     "xlanvlan1": "1",
-    "xlanactive1": "no",
+    "xlanactive1": "disable",
     "xlanfdb1": "255",
     "xlandspir1": "128",
     "xlanbroadcast1": "32",
@@ -131,13 +131,13 @@ NEOX_CONTENT_OVERRIDES = {
     "ONTMulticastProfile": {},
     "ONTONTProfile": {},
     "ONTSecurityProfile": {"fdb": "1023"},
-    "ONTServiceProfile": {"mode": "veip", "uniport": "lan", "lan": "1", "vlan": "1314", "pbit": "0"},
+    "ONTServiceProfile": {"mode": "veip", "lan": "1", "vlan": "1314", "pbit": "0"},
     "ONTTemplateProfile": {},
     "ONTUNIProfile": ONT_UNI_SMOKE_CONTENT,
     "ONTVoipCommonProfile": {
-        "1codec": "G729",
-        "1packet": "10",
-        "1silence": "disable",
+        "codec1": "G729",
+        "packet1": "10",
+        "silence1": "disable",
         "buf": "500",
         "dscp": "63",
         "dtmf": "enable",
@@ -182,3 +182,4 @@ NEOX_CONTENT_OVERRIDES = {
         "weight7": "7",
     },
 }
+

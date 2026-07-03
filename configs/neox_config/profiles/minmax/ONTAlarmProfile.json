@@ -1,34 +1,71 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTAlarmProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "lowcurr": "0",
-      "upcurr": "1",
-      "lowrxpower": "-127",
-      "uprxpower": "-126",
-      "lowtemp": "-40",
-      "uptemp": "-39",
-      "lowtxpower": "-15.3",
-      "uptxpower": "-15.2",
-      "lowvolt": "2.8",
-      "upvol": "2.81"
-    }
-  },
-  "max": {
-    "Content": {
-      "lowcurr": "0",
-      "upcurr": "79",
-      "lowrxpower": "-127",
-      "uprxpower": "0",
-      "lowtemp": "-40",
-      "uptemp": "100",
-      "lowtxpower": "-15.3",
-      "uptxpower": "6.5",
-      "lowvolt": "2.8",
-      "upvol": "3.59"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTAlarmProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "lowcurr":  "0",
+                                "upcurr":  "1",
+                                "lowrxpower":  "-127",
+                                "uprxpower":  "-126",
+                                "lowtemp":  "-40",
+                                "uptemp":  "-39",
+                                "lowtxpower":  "-15.3",
+                                "uptxpower":  "-15.2",
+                                "lowvolt":  "2.8",
+                                "upvol":  "2.81"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "lowcurr":  "0",
+                                "upcurr":  "79",
+                                "lowrxpower":  "-127",
+                                "uprxpower":  "0",
+                                "lowtemp":  "-40",
+                                "uptemp":  "100",
+                                "lowtxpower":  "-15.3",
+                                "uptxpower":  "6.5",
+                                "lowvolt":  "2.8",
+                                "upvol":  "3.59"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon ont-alarm-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "2.80",
+                                                           "-127.0",
+                                                           "0"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon ont-alarm-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "3.59",
+                                                           "79",
+                                                           "-127.0"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

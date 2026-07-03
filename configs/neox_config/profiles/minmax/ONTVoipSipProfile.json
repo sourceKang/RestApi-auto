@@ -1,37 +1,77 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTVoipSipProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "hosturi": "10.0.0.1",
-      "proxyaddr": "10.0.0.1",
-      "registrar": "10.0.0.1",
-      "regexptime": "3600",
-      "pridns": "8.8.8.8",
-      "secdns": "8.8.4.4"
-    }
-  },
-  "max": {
-    "Content": {
-      "hosturi": "10.0.0.1",
-      "proxyaddr": "10.0.0.1",
-      "registrar": "10.0.0.1",
-      "regexptime": "3600",
-      "pridns": "8.8.8.8",
-      "secdns": "8.8.4.4",
-      "rereg": "720",
-      "direct": "",
-      "callpresent": "",
-      "callwait": "",
-      "directuri": "200.0.11.7",
-      "callprog": "",
-      "factory": "200.0.11.9",
-      "softswitch": "ALU",
-      "bridgeduri": "200.0.11.8",
-      "outaddr": "200.0.11.2",
-      "cid": ""
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTVoipSipProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "hosturi":  "10.0.0.1",
+                                "proxyaddr":  "10.0.0.1",
+                                "registrar":  "10.0.0.1",
+                                "regexptime":  "3600",
+                                "pridns":  "8.8.8.8",
+                                "secdns":  "8.8.4.4"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "hosturi":  "10.0.0.1",
+                                "proxyaddr":  "10.0.0.1",
+                                "registrar":  "10.0.0.1",
+                                "regexptime":  "3600",
+                                "pridns":  "8.8.8.8",
+                                "secdns":  "8.8.4.4",
+                                "rereg":  "720",
+                                "direct":  "",
+                                "callpresent":  "",
+                                "callwait":  "",
+                                "directuri":  "200.0.11.7",
+                                "callprog":  "",
+                                "factory":  "200.0.11.9",
+                                "softswitch":  "ALU",
+                                "bridgeduri":  "200.0.11.8",
+                                "outaddr":  "200.0.11.2",
+                                "cid":  ""
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon voip-sip-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "10.0.0.1",
+                                                           "8.8.8.8",
+                                                           "3600"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon voip-sip-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "10.0.0.1",
+                                                           "8.8.8.8",
+                                                           "3600",
+                                                           "720",
+                                                           "200.0.11.2",
+                                                           "ALU"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

@@ -5,6 +5,17 @@ description: Draft concise RestApi Auto QA bug reports in the user's testcase id
 
 # QA Bug Report
 
+## Project Template
+
+For Redmine bugs, always follow the project-owned template in
+`docs/redmine_bug_template.md`.
+
+UseTestlink is only the transport for TestLink result upload and Redmine issue
+linking. Do not let UseTestlink define the Redmine description wording.
+
+Before creating or updating Redmine/TestLink, preview the final Redmine content
+and TestLink write plan to the user, then wait for explicit approval.
+
 ## Output Contract
 
 Always use this exact top-level format unless the user asks for another format:
@@ -21,14 +32,15 @@ Keep the description short enough for RD to scan, but include the concrete repro
 
 1. Identify the testcase id.
 2. Write one subject that names the API/feature, the false success or wrong behavior, and the affected field when known.
-3. Build the description with reproduction evidence:
+3. If the output is intended for Redmine, load `docs/redmine_bug_template.md` and use that template for fields and description sections.
+4. Build the description with reproduction evidence:
    - Action: REST method/path, test name, or short reproduction step.
    - Payload/params: include the relevant minimal JSON body, query params, path params, or headers when available.
    - Verify: include CLI command, GET/readback, report path, response body, or observed check.
    - Expected: one sentence or a small CLI token.
    - Actual: response, UI/report result, CLI mismatch, missing config, wrong status, or error.
    - Possible issue: add a concise analysis when evidence suggests mapping, validation, permission, confirmation, defaulting, async apply, cleanup, or state-sync problems.
-4. Prefer the user's wording and keep Traditional Chinese labels only if the user uses them. Otherwise keep the three labels exactly as shown.
+5. Prefer the user's wording and keep Traditional Chinese labels only if the user uses them. Otherwise keep the three labels exactly as shown.
 
 ## Testcase Id Rules
 

@@ -16,79 +16,54 @@ features:
   ge_config:
     endpoint: "/configNeoXSeries/interface/ge/{devicename}/{slotid}/{portid}"
     normal_data:
-      - "configs/neox_config/ge/neox_ge_enable_accepted_payload.json"
       - "configs/neox_config/ge/neox_ge_full_accepted_payload.json"
     abnormal_data:
-      - "configs/neox_config/ge/neox_ge_negative_cases.json"
-      - "configs/neox_config/ge/neox_ge_incremental_probe.json"
-      - "configs/neox_config/ge/neox_ge_pdf_retry_probe.json"
+      - "configs/neox_config/ge/neox_ge_full_accepted_payload.json#negative_cases"
     cli_reference:
-      - "configs/neox_config/ge/neox_ge_show_commands.json"
-    status: "GE accepted and failed probe data are recorded; GE full automation is intentionally stopped at current confirmed scope."
-
+      - "configs/neox_config/ge/neox_ge_full_accepted_payload.json#show_commands"
+    status: "GE official success data, max variants, negative cases, and show-command references are consolidated in one GE payload config file."
   nni_config:
     endpoint: "/configNeoXSeries/interface/nni/{devicename}/{slotid}/{portid}"
     normal_data:
-      - "configs/neox_config/nni/neox_nni_min_accepted_payload.json"
       - "configs/neox_config/nni/neox_nni_full_accepted_payload.json"
     abnormal_data: []
     cli_reference:
       - "show running-config interface nni {portid}"
-    status: "Confirmed on NODE3 NNI slot 4 with more than five parameters and CLI verification."
+    status: "NNI official min/max payloads are consolidated in one NNI payload config file and confirmed on NODE3 NNI slot 4 with CLI verification."
 
   vlan_config:
     endpoint: "/configNeoxSeries/vlan/{devicename}/{vid}"
     normal_data:
       - "configs/neox_config/vlan/neox_vlan_minmax_payloads.json"
-    abnormal_data: []
+    abnormal_data:
+      - "configs/neox_config/vlan/neox_vlan_minmax_payloads.json#negative_cases"
     cli_reference: []
-    status: "Min uses VLAN 1 and max uses VLAN 4094; all VlanPort fields are populated."
+    status: "VLAN official min/max payloads and negative cases are consolidated in one VLAN payload config file."
 
   ont_config:
     endpoint: "/configNeoXSeries/interface/remote/{devicename}/{slotid}/{portid}/{ontid}"
     normal_data:
       - "configs/neox_config/ont/neox_ont_minmax_payloads.json"
-    abnormal_data: []
+    abnormal_data:
+      - "configs/neox_config/ont/neox_ont_minmax_payloads.json#negative_cases"
     cli_reference:
       - "show running-config interface xpon {slotid}-{portid}"
-    status: "Min and max ONT create payload templates are recorded; target SN/password are injected at runtime."
+    status: "ONT official min/max payloads, dynamic max variant, and negative cases are consolidated in one ONT payload config file."
 
-  neox_qos_profiles:
-    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
-    normal_data:
-      - "configs/neox_config/profiles/neox_profile_qos_minmax_cases.json"
-    abnormal_data: []
-    cli_reference:
-      - "show qos ratelimit-profile {profile_name}"
-      - "show qos shaping-profile {profile_name}"
-      - "show qos weight-profile {profile_name}"
-    status: "RateLimit, Shaping, and Weight min/max cases are REST-success and CLI-verified."
-
-  neox_basic_profiles:
-    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
-    normal_data:
-      - "configs/neox_config/profiles/neox_profile_basic_cases.json"
-    abnormal_data: []
-    cli_reference:
-      - "show xpon ont-alarm-profile {profile_name}"
-      - "show xpon qos bwprof {profile_name}"
-      - "show xpon security-profile {profile_name}"
-      - "show xpon service-profile {profile_name}"
-    status: "ONT Alarm, Bandwidth, Security, Service, Multicast, IGMP Group Privilege, ACL, VoIP Common, VoIP Dial Plan, VoIP SIP, ONT, and Template profile basic cases are REST-success and CLI-verified or user-confirmed pending next automation run."
-
-  neox_profile_generic_minmax:
+  neox_profiles:
     endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
     normal_data:
       - "configs/neox_config/profiles/minmax/"
-    abnormal_data: []
-    cli_reference: []
-    status: "Generic min/max payloads are split by profile type for readwrite create verification; the old aggregate JSON was removed to avoid duplicate sources."
-
-  neox_profile_observed_failures:
-    endpoint: "/configNeoXSeries/profile/{devicename}/{profile_type}/{profilename}"
-    normal_data: []
     abnormal_data:
-      - "configs/neox_config/profiles/observed/neox_profile_observed_failures.json"
-      - "configs/neox_config/profiles/observed/neox_igmp_group_privilege_probe_cases.json"
-    cli_reference: []
-    status: "Observed profile payloads that currently return retstatus=Fail or schema errors; keep for follow-up and future negative tests."
+      - "configs/neox_config/profiles/minmax/#negative_cases"
+    cli_reference:
+      - "configs/neox_config/profiles/minmax/#cli_verify"
+    status: "Profile min/max payloads, CLI verification metadata, and active negative cases are consolidated into one JSON file per profile type."
+
+
+
+
+
+
+
+

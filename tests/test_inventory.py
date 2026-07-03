@@ -47,10 +47,11 @@ def ge_inventory_seed_data(request, services, session_manager, env_config):
         env_config.dut.ge_port_id,
     )
     if cache_key in _GE_READINESS_CACHE:
-        yield
+        yield None
         return
     if cache_key in _GE_SETUP_FAILURES:
-        pytest.skip(_GE_SETUP_FAILURES[cache_key])
+        yield _GE_SETUP_FAILURES[cache_key]
+        return
 
     with session_manager.credentials_session(env_config.readwrite) as session_id:
         try:
@@ -61,9 +62,10 @@ def ge_inventory_seed_data(request, services, session_manager, env_config):
         except AssertionError as error:
             reason = f"GE inventory setup failed: {error}"
             _GE_SETUP_FAILURES[cache_key] = reason
-            pytest.skip(reason)
+            yield reason
+            return
         _GE_READINESS_CACHE.add(cache_key)
-        yield
+        yield None
 
 
 @pytest.mark.inventory
@@ -71,6 +73,7 @@ def ge_inventory_seed_data(request, services, session_manager, env_config):
 @pytest.mark.smoke
 @pytest.mark.parametrize("case", INVENTORY_READ_CASES, ids=lambda case: case.name)
 def test_inventory_read_endpoints_readwrite(services, readwrite_session, ge_inventory_seed_data, case):
+    assert_ge_inventory_seed_ready(ge_inventory_seed_data)
     services.inventory.verify_read_success(readwrite_session, case, "readwrite")
 
 
@@ -78,6 +81,7 @@ def test_inventory_read_endpoints_readwrite(services, readwrite_session, ge_inve
 @pytest.mark.readonly
 @pytest.mark.parametrize("case", INVENTORY_READ_CASES, ids=lambda case: case.name)
 def test_inventory_read_endpoints_readonly(services, readonly_session, ge_inventory_seed_data, case):
+    assert_ge_inventory_seed_ready(ge_inventory_seed_data)
     services.inventory.verify_read_success(readonly_session, case, "readonly")
 
 
@@ -86,6 +90,11 @@ def test_inventory_read_endpoints_readonly(services, readonly_session, ge_invent
 @pytest.mark.parametrize("case", INVENTORY_READ_CASES, ids=lambda case: case.name)
 def test_inventory_read_endpoints_noaccess(services, noaccess_session, case):
     services.inventory.verify_noaccess_rejected(noaccess_session, case)
+
+
+def assert_ge_inventory_seed_ready(setup_failure: str | None) -> None:
+    if setup_failure:
+        pytest.fail(setup_failure)
 
 
 @pytest.mark.ont

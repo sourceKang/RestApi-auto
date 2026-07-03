@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from clients.ssh_cli import CliCommandResult, SshCliClient
+from clients.ssh_cli import CliCommandResult, FileTokenSemaphore, SshCliClient, SshSessionPool
 
 
 class FakeTransport:
@@ -39,11 +39,13 @@ class FakeSshClient:
         self.channel = channel
         self.transport = FakeTransport()
         self.closed = False
+        self.connect_count = 0
 
     def set_missing_host_key_policy(self, policy) -> None:
         self.policy = policy
 
     def connect(self, **kwargs) -> None:
+        self.connect_count += 1
         self.connect_kwargs = kwargs
 
     def invoke_shell(self, **kwargs) -> FakeChannel:
@@ -143,3 +145,68 @@ def test_ssh_cli_closes_session_when_command_send_fails(monkeypatch: pytest.Monk
     assert channel.closed
     assert fake_client.transport.closed
     assert fake_client.closed
+
+
+
+def test_ssh_session_pool_reuses_healthy_session(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    channel = FakeChannel()
+    fake_client = FakeSshClient(channel)
+    install_fake_paramiko(monkeypatch, fake_client)
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(lambda *args, **kwargs: "ok"))
+    pool = SshSessionPool(
+        "NODE3",
+        "host",
+        "user",
+        "password",
+        max_sessions=1,
+        acquire_timeout_seconds=1,
+        token_directory=tmp_path,
+    )
+
+    first_results, first_timing = pool.run_commands(["show one"], owner="first")
+    second_results, second_timing = pool.run_commands(["show two"], owner="second")
+    pool.close_all()
+
+    assert first_results == [CliCommandResult(command="show one", output="ok")]
+    assert second_results == [CliCommandResult(command="show two", output="ok")]
+    assert not first_timing.reused_session
+    assert second_timing.reused_session
+    assert fake_client.connect_count == 1
+    assert channel.sent == ["show one\n", "show two\n", "exit\n"]
+    assert not list(tmp_path.glob("*.token"))
+
+
+def test_file_token_semaphore_times_out_when_tokens_are_exhausted(tmp_path):
+    semaphore = FileTokenSemaphore("node3", 1, tmp_path, timeout_seconds=0.01)
+    token_path, _wait_seconds = semaphore.acquire("first")
+    try:
+        with pytest.raises(TimeoutError, match="SSH token timed out"):
+            semaphore.acquire("second")
+    finally:
+        semaphore.release(token_path)
+
+    assert not list(tmp_path.glob("*.token"))
+
+
+
+def test_ssh_session_pool_can_release_token_after_each_batch(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    channel = FakeChannel()
+    fake_client = FakeSshClient(channel)
+    install_fake_paramiko(monkeypatch, fake_client)
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(lambda *args, **kwargs: "ok"))
+    pool = SshSessionPool(
+        "NODE3",
+        "host",
+        "user",
+        "password",
+        max_sessions=1,
+        acquire_timeout_seconds=1,
+        token_directory=tmp_path,
+        reuse_sessions=False,
+    )
+
+    _results, timing = pool.run_commands(["show one"], owner="first")
+
+    assert timing.closed
+    assert channel.sent == ["show one\n", "exit\n"]
+    assert not list(tmp_path.glob("*.token"))

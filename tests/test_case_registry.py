@@ -33,3 +33,4 @@ def test_summary_case_ids_are_registered_as_fixed_contracts():
 
 def test_openapi_yaml_case_id_is_registered():
     assert "EMS1-7116" in cases.automated_case_ids()
+    assert "EMS1-7210" in cases.automated_case_ids()

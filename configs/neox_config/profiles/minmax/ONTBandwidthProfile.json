@@ -1,20 +1,53 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTBandwidthProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "sir": "0",
-      "air": "0",
-      "pir": "256"
-    }
-  },
-  "max": {
-    "Content": {
-      "sir": "0",
-      "air": "0",
-      "pir": "10000000"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTBandwidthProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "sir":  "0",
+                                "air":  "0",
+                                "pir":  "256"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "sir":  "0",
+                                "air":  "0",
+                                "pir":  "10000000"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon qos bwprof {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "256"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon qos bwprof {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "10000000"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

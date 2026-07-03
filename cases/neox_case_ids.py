@@ -14,6 +14,7 @@ DIRECT_NEOX_READWRITE_CASES: dict[str, NeoXCase] = {
     "test_ge_config_clear_readwrite": NeoXCase("EMS1-7118", "test_ge_config_clear_readwrite"),
     "test_ge_config_min_create_readwrite": NeoXCase("EMS1-7119", "test_ge_config_min_create_readwrite"),
     "test_ge_config_max_create_readwrite": NeoXCase("EMS1-7120", "test_ge_config_max_create_readwrite"),
+    "test_ge_config_max_variant_readwrite": NeoXCase("EMS1-7120", "test_ge_config_max_variant_readwrite"),
     "test_ge_config_error_readwrite": NeoXCase("EMS1-7121", "test_ge_config_error_readwrite"),
     "test_nni_config_clear_readwrite": NeoXCase("EMS1-7122", "test_nni_config_clear_readwrite"),
     "test_nni_config_min_create_readwrite": NeoXCase("EMS1-7123", "test_nni_config_min_create_readwrite"),

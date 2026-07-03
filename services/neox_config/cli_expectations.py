@@ -54,12 +54,13 @@ def vlan_cli_expectation(vid: str, payload: dict[str, Any], output: str) -> Vlan
     expected_port_states = vlan_expected_port_states(payload)
     expected_checks = expected_tokens + vlan_port_state_checks(expected_port_states)
     missing = _missing_tokens(output, expected_tokens)
-    missing.extend(missing_vlan_port_states(output, vid, expected_port_states))
+    for vlan_id in parse_vlan_ids(vid):
+        missing.extend(missing_vlan_port_states(output, vlan_id, expected_port_states))
     return VlanCliExpectation(expected_checks=expected_checks, missing=missing)
 
 
 def vlan_expected_tokens(vid: str, payload: dict[str, Any]) -> list[str]:
-    tokens = [vid, f"VLAN Name: {payload['vlanname']}"]
+    tokens = parse_vlan_ids(vid) + [f"VLAN Name: {payload['vlanname']}"]
     if payload.get("tpid") == "qinq-tpid":
         tokens.append("QinQ")
     elif payload.get("tpid") == "default-tpid":
@@ -101,6 +102,21 @@ def parse_vlan_ports(value: Any) -> set[int]:
         else:
             ports.add(int(part))
     return ports
+
+
+def parse_vlan_ids(value: Any) -> list[str]:
+    if value in (None, ""):
+        return []
+    vlan_ids: list[str] = []
+    for part in str(value).replace(" ", "").split(","):
+        if not part:
+            continue
+        if "~" in part:
+            start, end = part.split("~", 1)
+            vlan_ids.extend(str(vlan_id) for vlan_id in range(int(start), int(end) + 1))
+        else:
+            vlan_ids.append(part)
+    return vlan_ids
 
 
 def vlan_port_state_checks(expected_states: dict[int, str]) -> list[str]:

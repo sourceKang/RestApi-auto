@@ -1,210 +1,1059 @@
 {
-  "source": {
-    "generated_from": "tests/test_neox_ge_full_probe.py",
-    "observed": "2026-05-13",
-    "report": "reports/full-probes/neox_ge_full_probe_20260513_134259.json",
-    "target_scope": "NODE3 GE safe port",
-    "note": "This payload contains GE fields that were added one at a time and retained only after REST API returned Success. Some successful fields are not visible in show running-config because the device omits defaults or non-running display fields."
-  },
-  "rest_timeout_seconds": 180,
-  "payload": {
-    "Content": {
-      "anti_spoofing": "enable",
-      "arpinspection": "enable",
-      "auto_nego": "enable",
-      "portenable": "enable",
-      "flow": "disable",
-      "portspeed": "auto",
-      "frametype": "all",
-      "mtu": 2112,
-      "portname": "REST_GE_39",
-      "algorithm": "sp",
-      "bpdu": "peer",
-      "copycpbit": "disable",
-      "dot1xcontrol": "auto",
-      "dotlxactive": "disable",
-      "dotlxauthone": "disable",
-      "dscp": "disable",
-      "groupprivilege": "disable",
-      "ldrapolicy": "drop",
-      "lldp_admin": "disabled",
-      "lldp_management": "disable",
-      "lldp_notification": "disable",
-      "lldp_org_dot1": "disable",
-      "lldp_org_dot3_link": "disable",
-      "lldp_org_dot3_macphy": "disable",
-      "lldp_org_dot3_maxframe": "disable",
-      "lldp_portdesc": "disable",
-      "acl_maclist": [
-        {
-          "aclmac": "00:11:22:33:44:55"
-        }
-      ],
-      "acl_ouilist": [
-        {
-          "acloui": "00:11:22"
-        }
-      ],
-      "bias_alarm_high": "79",
-      "bias_alarm_low": "0",
-      "bias_warn_high": "79",
-      "bias_warn_low": "0",
-      "broadcast_rate": "0",
-      "dlf_rate": "0",
-      "dot1xreauthpeiod": 3600,
-      "dotlxcircuitinfo": "REST_GE_39",
-      "dotlxserverindex": 1,
-      "egress_profile_list": [
-        {
-          "egress_profile": "",
-          "egress_profile_priority": 0
-        }
-      ],
-      "fdb_list": [
-        {
-          "mac": "00:11:22:33:44:55",
-          "vid": 1314
-        }
-      ],
-      "igmp_bandwidth": 100,
-      "lldp_systemcap": "enable",
-      "lldp_systemdsc": "enable",
-      "lldp_systemname": "enable",
-      "lldralinklocal": "skip-src",
-      "loopguard": "enable",
-      "loopguard_policy": "dynamic",
-      "loopguard_recovertime": 180,
-      "macfilter": "enable",
-      "macfiltermode": "accept",
-      "maxcount": 100,
-      "maxgroup": 10,
-      "maxmsg": 20,
-      "multicast_rate": "64",
-      "nnimaxcount": 1,
-      "nnivlan": 1314,
-      "opt82policy": "keep",
-      "ouifilter": "enable",
-      "outertpid": "enable",
-      "packfiltertype": "pppoe-only",
-      "pbit": 0,
-      "pppoepolicy": "keep",
-      "pvid": 1314,
-      "pwsaving": "enable",
-      "pwsaving_awake": 10,
-      "pwsaving_sleep": 120,
-      "snooping_dhcp": "untrust",
-      "snooping_dhcpv6": "untrust",
-      "snooping_ipmacbinding": "enable",
-      "snooping_maxlease": 5,
-      "snooping_vlanlist": "1314",
-      "smcastip_list": [
-        {
-          "ip": "239.1.1.1",
-          "nnivid": 1314,
-          "role": "fix"
-        }
-      ],
-      "staticipfilter_ipmacbinding": "enable",
-      "staticipfilter_list": [
-        {
-          "staticindex": 1,
-          "ip": "192.0.2.10",
-          "mask": 32
-        }
-      ],
-      "tel": "0000"
-    }
-  },
-  "running_config_visible_lines": [
-    "enable",
-    "auto-negotiation enable",
-    "flow-control disable",
-    "speed auto",
-    "name \"REST_GE_39\"",
-    "loopguard",
-    "loopguard policy dynamic",
-    "loopguard recover-time 180",
-    "acl packet-filter pppoe-only",
-    "acl mac-filter enable",
-    "acl mac-filter mode accept",
-    "acl mac-filter mac 00:11:22:33:44:55",
-    "acl oui-filter enable",
-    "acl oui-filter mac 00:11:22",
-    "arp-inspection enable",
-    "power-saving enable",
-    "power-saving sleep-interval 120",
-    "power-saving awake-interval 10",
-    "vlan copy_cpbit disable",
-    "vlan outer-tpid enable",
-    "pvid 1314 pbit 0",
-    "frame-type all",
-    "igmp-mld max-group 10",
-    "igmp-mld cac bandwidth 100",
-    "igmp-mld max-message 20",
-    "fdb max-count 100",
-    "fdb nni-vlan-max-count 1 nni-vlan 1314",
-    "dhcp l2agent snooping dhcp untrust",
-    "dhcp l2agent snooping dhcpv6 untrust",
-    "dhcp l2agent snooping ip-mac-binding",
-    "dhcp l2agent snooping max-lease 5",
-    "dhcp l2agent snooping priority-vlan 1314",
-    "dhcp l2agent static-ip-filtering ip-mac-binding",
-    "dhcp l2agent static-ip-filtering static-ip 1 192.0.2.10",
-    "dhcp l2agent opt82-policy policy keep",
-    "dhcp l2agent opt-ldra-policy linklocal skip-src",
-    "pppoe intermediate-agent opt-policy policy keep",
-    "smcast ip 239.1.1.1 nni-vlan 1314 fix",
-    "lldp basic-tlv system-capabilities",
-    "lldp basic-tlv system-description",
-    "lldp basic-tlv system-name",
-    "fdb mac 00:11:22:33:44:55 vlan 1314",
-    "dot1x circuit-id option-info REST_GE_39"
-  ],
-  "additional_cli_visible_checks": {
-    "show interface ge {slot_id}-{port_id} mtu": [
-      "{slot_id}-{port_id} MTU: 2112 bytes"
-    ],
-    "show interface ge {slot_id}-{port_id} config": [
-      "0000"
-    ],
-    "show interface ge {slot_id}-{port_id} storm-control": [
-      "64"
-    ]
-  },
-  "failed_fields": [
-    "customtype",
-    "igmp_grouppriprofile_list",
-    "igmp_mvid_list",
-    "ouifiltermode",
-    "port_aclprofile_list",
-    "profile_aclprofilename",
-    "ratelimitname",
-    "rxpower_alarm_high",
-    "rxpower_alarm_low",
-    "rxpower_warn_high",
-    "rxpower_warn_low",
-    "shapingname",
-    "smcastmac_list",
-    "spoofing_action",
-    "temperature_alarm_high",
-    "temperature_alarm_low",
-    "temperature_warn_high",
-    "temperature_warn_low",
-    "txpower_alarm_high",
-    "txpower_alarm_low",
-    "txpower_warn_high",
-    "txpower_warn_low",
-    "vlan_list",
-    "vlantls_list",
-    "vlantrans_list",
-    "vlantrunk_ether_list",
-    "vlantrunk_subnet_list",
-    "vlantrunk_untag_list",
-    "vlantrunk_vlan_list",
-    "voltage_alarm_high",
-    "voltage_alarm_low",
-    "voltage_warn_high",
-    "voltage_warn_low",
-    "weightname"
-  ]
+    "source":  {
+                   "generated_from":  "tests/test_neox_ge_full_probe.py",
+                   "observed":  "2026-05-13",
+                   "report":  "reports/full-probes/neox_ge_full_probe_20260513_134259.json",
+                   "target_scope":  "NODE3 GE safe port",
+                   "note":  "This payload contains GE fields retained after REST Success and CLI verification. DDMI alarm limits and selected formerly probe-only GE groups were merged into EMS1-7120 on 2026-06-29. ACL profile list and mutually exclusive VLAN modes remain official variant candidates."
+               },
+    "rest_timeout_seconds":  180,
+    "payload":  {
+                    "Content":  {
+                                    "anti_spoofing":  "enable",
+                                    "arpinspection":  "enable",
+                                    "auto_nego":  "enable",
+                                    "portenable":  "enable",
+                                    "flow":  "disable",
+                                    "portspeed":  "auto",
+                                    "frametype":  "all",
+                                    "mtu":  2112,
+                                    "portname":  "REST_GE_39",
+                                    "algorithm":  "sp",
+                                    "bpdu":  "peer",
+                                    "copycpbit":  "disable",
+                                    "dot1xcontrol":  "auto",
+                                    "dotlxactive":  "disable",
+                                    "dotlxauthone":  "disable",
+                                    "dscp":  "disable",
+                                    "groupprivilege":  "disable",
+                                    "ldrapolicy":  "drop",
+                                    "lldp_admin":  "disabled",
+                                    "lldp_management":  "disable",
+                                    "lldp_notification":  "disable",
+                                    "lldp_org_dot1":  "disable",
+                                    "lldp_org_dot3_link":  "disable",
+                                    "lldp_org_dot3_macphy":  "disable",
+                                    "lldp_org_dot3_maxframe":  "disable",
+                                    "lldp_portdesc":  "disable",
+                                    "acl_maclist":  [
+                                                        {
+                                                            "aclmac":  "00:11:22:33:44:55"
+                                                        }
+                                                    ],
+                                    "acl_ouilist":  [
+                                                        {
+                                                            "acloui":  "00:11:22"
+                                                        }
+                                                    ],
+                                    "bias_alarm_high":  "79",
+                                    "bias_alarm_low":  "0",
+                                    "temperature_alarm_high":  "100",
+                                    "temperature_alarm_low":  "-40",
+                                    "voltage_alarm_high":  "3.59",
+                                    "voltage_alarm_low":  "2.8",
+                                    "broadcast_rate":  "0",
+                                    "dlf_rate":  "0",
+                                    "dot1xreauthpeiod":  3600,
+                                    "dotlxcircuitinfo":  "REST_GE_39",
+                                    "dotlxserverindex":  1,
+                                    "egress_profile_list":  [
+                                                                {
+                                                                    "egress_profile":  "",
+                                                                    "egress_profile_priority":  0
+                                                                }
+                                                            ],
+                                    "fdb_list":  [
+                                                     {
+                                                         "mac":  "00:11:22:33:44:55",
+                                                         "vid":  1314
+                                                     }
+                                                 ],
+                                    "igmp_bandwidth":  100,
+                                    "lldralinklocal":  "skip-src",
+                                    "loopguard":  "enable",
+                                    "loopguard_policy":  "dynamic",
+                                    "loopguard_recovertime":  180,
+                                    "macfilter":  "enable",
+                                    "macfiltermode":  "accept",
+                                    "maxcount":  100,
+                                    "maxgroup":  10,
+                                    "maxmsg":  20,
+                                    "multicast_rate":  "64",
+                                    "nnimaxcount":  1,
+                                    "nnivlan":  1314,
+                                    "opt82policy":  "keep",
+                                    "ouifilter":  "enable",
+                                    "outertpid":  "enable",
+                                    "packfiltertype":  "custom",
+                                    "pbit":  0,
+                                    "pppoepolicy":  "keep",
+                                    "pvid":  1314,
+                                    "snooping_dhcp":  "untrust",
+                                    "snooping_dhcpv6":  "untrust",
+                                    "snooping_maxlease":  5,
+                                    "snooping_vlanlist":  "1314",
+                                    "smcastip_list":  [
+                                                          {
+                                                              "ip":  "239.1.1.1",
+                                                              "nnivid":  1314,
+                                                              "role":  "fix"
+                                                          }
+                                                      ],
+                                    "staticipfilter_list":  [
+                                                                {
+                                                                    "staticindex":  1,
+                                                                    "ip":  "192.0.2.10",
+                                                                    "mask":  32
+                                                                }
+                                                            ],
+                                    "tel":  "0000",
+                                    "lineid":  "REST_LINE_39",
+                                    "profile_aclprofilename":  "RestApiGeAcl",
+                                    "ouifiltermode":  "accept",
+                                    "customtype":  "ip",
+                                    "txpower_alarm_high":  "1600",
+                                    "txpower_alarm_low":  "160",
+                                    "rxpower_alarm_high":  "1200",
+                                    "rxpower_alarm_low":  "30",
+                                    "lldp_systemcap":  "enable",
+                                    "lldp_systemdsc":  "enable",
+                                    "lldp_systemname":  "enable",
+                                    "snooping_ipmacbinding":  "enable",
+                                    "staticipfilter_ipmacbinding":  "enable",
+                                    "smcastmac_list":  [
+                                                           {
+                                                               "mac":  "33:33:00:00:00:01",
+                                                               "nnivid":  1314
+                                                           }
+                                                       ],
+                                    "igmp_mvid_list":  [
+                                                           {
+                                                               "igmp_mvid":  1314,
+                                                               "igmp_univid":  1314,
+                                                               "igmp_untag":  "disable"
+                                                           }
+                                                       ],
+                                    "ratelimitname":  "RestApi_NeoX_RateLimit",
+                                    "shapingname":  "RestApi_NeoX_Shaping",
+                                    "weightname":  "RestApi_NeoX_Weight",
+                                    "igmp_grouppriprofile_list":  [
+                                                                      {
+                                                                          "grouppriprofile":  "RestApi_NeoX_IGMPGroupPriv"
+                                                                      }
+                                                                  ],
+                                    "spoofing_action":  "enable",
+                                    "pwsaving":  "enable",
+                                    "pwsaving_sleep":  120,
+                                    "pwsaving_awake":  10
+                                }
+                },
+    "running_config_visible_lines":  [
+                                         "enable",
+                                         "auto-negotiation enable",
+                                         "flow-control disable",
+                                         "speed auto",
+                                         "name \"REST_GE_39\"",
+                                         "line-id \"REST_LINE_39\"",
+                                         "loopguard",
+                                         "loopguard policy dynamic",
+                                         "loopguard recover-time 180",
+                                         "acl packet-filter custom ip",
+                                         "acl mac-filter enable",
+                                         "acl mac-filter mode accept",
+                                         "acl mac-filter mac 00:11:22:33:44:55",
+                                         "acl oui-filter enable",
+                                         "acl oui-filter mode accept",
+                                         "acl oui-filter mac 00:11:22",
+                                         "acl RestApiGeAcl",
+                                         "arp-inspection enable",
+                                         "vlan copy_cpbit disable",
+                                         "vlan outer-tpid enable",
+                                         "pvid 1314 pbit 0",
+                                         "frame-type all",
+                                         "igmp-mld max-group 10",
+                                         "igmp-mld cac bandwidth 100",
+                                         "igmp-mld max-message 20",
+                                         "fdb max-count 100",
+                                         "fdb nni-vlan-max-count 1 nni-vlan 1314",
+                                         "dhcp l2agent snooping dhcp untrust",
+                                         "dhcp l2agent snooping dhcpv6 untrust",
+                                         "dhcp l2agent snooping max-lease 5",
+                                         "dhcp l2agent snooping priority-vlan 1314",
+                                         "dhcp l2agent static-ip-filtering static-ip 1 192.0.2.10",
+                                         "dhcp l2agent opt82-policy policy keep",
+                                         "dhcp l2agent opt-ldra-policy linklocal skip-src",
+                                         "pppoe intermediate-agent opt-policy policy keep",
+                                         "smcast ip 239.1.1.1 nni-vlan 1314 fix",
+                                         "fdb mac 00:11:22:33:44:55 vlan 1314",
+                                         "dot1x circuit-id option-info REST_GE_39",
+                                         "power-saving enable",
+                                         "power-saving sleep-interval 120",
+                                         "power-saving awake-interval 10",
+                                         "lldp basic-tlv system-capabilities",
+                                         "lldp basic-tlv system-description",
+                                         "lldp basic-tlv system-name",
+                                         "dhcp l2agent snooping ip-mac-binding",
+                                         "dhcp l2agent static-ip-filtering ip-mac-binding",
+                                         "smcast mac 33:33:00:00:00:01 nni-vlan 1314",
+                                         "igmp-mld mvlan 1314",
+                                         "igmp-mld group-privilege-profile RestApi_NeoX_IGMPGroupPriv",
+                                         "qos shaping-profile RestApi_NeoX_Shaping",
+                                         "qos weight-profile RestApi_NeoX_Weight",
+                                         "qos ratelimit-profile RestApi_NeoX_RateLimit"
+                                     ],
+    "additional_cli_visible_checks":  {
+                                          "show interface ge {slot_id}-{port_id} mtu":  [
+                                                                                            "{slot_id}-{port_id} MTU: 2112 bytes"
+                                                                                        ],
+                                          "show interface ge {slot_id}-{port_id} config":  [
+                                                                                               "0000",
+                                                                                               "REST_LINE_39"
+                                                                                           ],
+                                          "show interface ge {slot_id}-{port_id} storm-control":  [
+                                                                                                      "64"
+                                                                                                  ],
+                                          "show interface ge {slot_id}-{port_id} ddmi config":  [
+                                                                                                    "Temperature(C)        100.00       -40.00",
+                                                                                                    "Voltage(V)          3.59         2.80",
+                                                                                                    "TX Bias",
+                                                                                                    "79.00",
+                                                                                                    "0.00",
+                                                                                                    "TX Power(uW)",
+                                                                                                    "1600.00",
+                                                                                                    "160.00",
+                                                                                                    "RX Power(uW)",
+                                                                                                    "1200.00",
+                                                                                                    "30.00"
+                                                                                                ],
+                                          "show interface ge {slot_id}-{port_id} acl":  [
+                                                                                            "RestApiGeAcl"
+                                                                                        ],
+                                          "show running-config interface ge {slot_id}-{port_id}":  [
+                                                                                                       "lldp basic-tlv system-capabilities",
+                                                                                                       "lldp basic-tlv system-description",
+                                                                                                       "lldp basic-tlv system-name",
+                                                                                                       "dhcp l2agent opt-ldra-policy linklocal skip-src",
+                                                                                                       "dhcp l2agent opt82-policy policy keep",
+                                                                                                       "acl packet-filter custom ip",
+                                                                                                       "pvid 1314 pbit 0",
+                                                                                                       "dhcp l2agent snooping dhcp untrust",
+                                                                                                       "dhcp l2agent snooping dhcpv6 untrust",
+                                                                                                       "dhcp l2agent snooping ip-mac-binding",
+                                                                                                       "dhcp l2agent snooping max-lease 5",
+                                                                                                       "dhcp l2agent snooping priority-vlan 1314",
+                                                                                                       "dhcp l2agent static-ip-filtering ip-mac-binding",
+                                                                                                       "dhcp l2agent static-ip-filtering static-ip 1 192.0.2.10",
+                                                                                                       "smcast mac 33:33:00:00:00:01 nni-vlan 1314",
+                                                                                                       "igmp-mld mvlan 1314",
+                                                                                                       "RestApi_NeoX_RateLimit",
+                                                                                                       "RestApi_NeoX_Shaping",
+                                                                                                       "RestApi_NeoX_Weight",
+                                                                                                       "igmp-mld group-privilege",
+                                                                                                       "igmp-mld group-privilege-profile RestApi_NeoX_IGMPGroupPriv",
+                                                                                                       "power-saving enable",
+                                                                                                       "power-saving sleep-interval 120",
+                                                                                                       "power-saving awake-interval 10"
+                                                                                                   ],
+                                          "show interface ge {slot_id}-{port_id} igmp-mld":  [
+                                                                                                 "port privilege checking:disable",
+                                                                                                 "group privilege profile:RestApi_NeoX_IGMPGroupPriv",
+                                                                                                 "mvlan:1314"
+                                                                                             ],
+                                          "show interface ge {slot_id}-{port_id} qos":  [
+                                                                                            "RestApi_NeoX_RateLimit",
+                                                                                            "RestApi_NeoX_Shaping",
+                                                                                            "RestApi_NeoX_Weight"
+                                                                                        ],
+                                          "show interface ge {slot_id}-{port_id} fdb spoofing-action":  [
+                                                                                                            "enable"
+                                                                                                        ]
+                                      },
+    "failed_fields":  [
+                          "ouifiltermode",
+                          "port_aclprofile_list",
+                          "vlan_list",
+                          "vlantls_list",
+                          "vlantrans_list",
+                          "vlantrunk_ether_list",
+                          "vlantrunk_subnet_list",
+                          "vlantrunk_untag_list",
+                          "vlantrunk_vlan_list"
+                      ],
+    "setup_global_commands":  [
+                                  "acl-profile mode profile",
+                                  "y",
+                                  "acl-profile RestApiGeAcl",
+                                  "source-ip 192.0.2.1",
+                                  "permit",
+                                  "profile-priority 1",
+                                  "exit",
+                                  "igmp-mld mvlan 1314"
+                              ],
+    "cleanup_global_commands":  [
+                                    "acl-profile mode port",
+                                    "y",
+                                    "no acl-profile RestApiGeAcl",
+                                    "no igmp-mld mvlan 1314"
+                                ],
+    "variant_candidates":  {
+                               "acl_profile_list":  {
+                                                        "reason":  "Direct merge into EMS1-7120 max payload returned Acl-profile mode conflict: please set Acl-profile mode: port.",
+                                                        "fields":  [
+                                                                       "port_aclprofile_list"
+                                                                   ],
+                                                        "target":  "official_variant"
+                                                    },
+                               "vlan_modes":  {
+                                                  "reason":  "VLAN membership/translation/TLS/trunk modes are mutually exclusive or conflict-prone; keep as official variants instead of the single max payload.",
+                                                  "groups":  [
+                                                                 "vlan_membership",
+                                                                 "vlan_translation",
+                                                                 "vlan_tls",
+                                                                 "vlan_trunk_untag",
+                                                                 "vlan_trunk_ether",
+                                                                 "vlan_trunk_subnet",
+                                                                 "vlan_trunk_vlan"
+                                                             ],
+                                                  "target":  "official_variants"
+                                              }
+                           },
+    "setup_profile_types":  [
+                                "RateLimitProfile",
+                                "ShapingProfile",
+                                "WeightProfile",
+                                "IGMPGroupPrivilegeProfile"
+                            ],
+    "merged_probe_groups":  {
+                                "date":  "2026-06-29",
+                                "node3_report":  "reports/03.00.11 (AAVV.221) b7/Web_Ems_Rest_Api_03.00.11 (AAVV.221) b7_NeoX-03_NXC400_report_2026-06-29_15-59-26.txt",
+                                "groups":  [
+                                               "accepted_enable_cli_delta",
+                                               "dhcp_binding_limits",
+                                               "static_ip_filtering",
+                                               "smcast_mac",
+                                               "igmp_mvid",
+                                               "qos_profiles",
+                                               "igmp_privilege_profile",
+                                               "spoofing_action",
+                                               "power_saving"
+                                           ],
+                                "note":  "Merged into EMS1-7120 max payload and Node3 verified after CLI mapping was scoped to valid show commands."
+                            },
+    "max_variants":  {
+                         "metadata":  {
+                                          "purpose":  "Official EMS1-7120 GE max variant payloads and CLI expectations.",
+                                          "source":  "Promoted from NODE3 GE live verification into this consolidated GE payload config.",
+                                          "note":  "Keep official max variant testcase data here so tests do not depend on field-catalog probe metadata."
+                                      },
+                         "variant_order":  [
+                                               "acl_profile_list",
+                                               "vlan_membership",
+                                               "vlan_translation",
+                                               "vlan_tls",
+                                               "vlan_trunk_untag",
+                                               "vlan_trunk_ether",
+                                               "vlan_trunk_subnet",
+                                               "vlan_trunk_vlan"
+                                           ],
+                         "variants":  {
+                                          "acl_profile_list":  {
+                                                                   "fields":  [
+                                                                                  "port_aclprofile_list"
+                                                                              ],
+                                                                   "payload_patch":  {
+                                                                                         "port_aclprofile_list":  [
+                                                                                                                      {
+                                                                                                                          "aclprofile":  "RestApiGeAcl",
+                                                                                                                          "aclprofile_priority":  1
+                                                                                                                      }
+                                                                                                                  ]
+                                                                                     },
+                                                                   "expected_tokens":  [
+                                                                                           "acl RestApiGeAcl priority 1"
+                                                                                       ],
+                                                                   "exclude_fields":  [
+                                                                                          "profile_aclprofilename"
+                                                                                      ],
+                                                                   "exclude_setup_global_commands":  [
+                                                                                                         "acl-profile mode profile",
+                                                                                                         "y",
+                                                                                                         "acl-profile RestApiGeAcl",
+                                                                                                         "source-ip 192.0.2.1",
+                                                                                                         "permit",
+                                                                                                         "profile-priority 1",
+                                                                                                         "exit"
+                                                                                                     ],
+                                                                   "setup_global_commands":  [
+                                                                                                 "acl-profile mode port",
+                                                                                                 "y",
+                                                                                                 "acl-profile RestApiGeAcl",
+                                                                                                 "source-ip 192.0.2.1",
+                                                                                                 "permit",
+                                                                                                 "exit"
+                                                                                             ],
+                                                                   "cleanup_global_commands":  [
+                                                                                                   "no acl-profile RestApiGeAcl"
+                                                                                               ],
+                                                                   "cleanup_commands":  [
+                                                                                            "no acl RestApiGeAcl"
+                                                                                        ],
+                                                                   "show_commands":  [
+                                                                                         "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                         "show interface ge {ge_slot_id}-{ge_port_id} acl"
+                                                                                     ],
+                                                                   "rest_timeout_seconds":  180,
+                                                                   "status":  "node3_b8_rest_cli_verified",
+                                                                   "risk":  "medium",
+                                                                   "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_acl_profile_list_20260702_104632.json"
+                                                               },
+                                          "vlan_membership":  {
+                                                                  "fields":  [
+                                                                                 "vlan_list"
+                                                                             ],
+                                                                  "payload_patch":  {
+                                                                                        "vlan_list":  [
+                                                                                                          {
+                                                                                                              "vid":  1314,
+                                                                                                              "vlanmode":  "fixed"
+                                                                                                          }
+                                                                                                      ]
+                                                                                    },
+                                                                  "expected_tokens":  [
+                                                                                          "vlan vid 1314 fixed"
+                                                                                      ],
+                                                                  "cleanup_commands":  [
+                                                                                           "no vlan vid 1314 fixed",
+                                                                                           "no vlan translation uni-vlan 1314",
+                                                                                           "no vlan tls",
+                                                                                           "no vlan trunk uni-untag",
+                                                                                           "no vlan trunk uni-untag ether-type 0800",
+                                                                                           "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                           "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                           "no vlan trunk uni-vlan 1314"
+                                                                                       ],
+                                                                  "show_commands":  [
+                                                                                        "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                        "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                    ],
+                                                                  "rest_timeout_seconds":  180,
+                                                                  "status":  "node3_b8_rest_cli_verified",
+                                                                  "risk":  "medium",
+                                                                  "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                                  "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_membership_20260702_105115.json"
+                                                              },
+                                          "vlan_translation":  {
+                                                                   "fields":  [
+                                                                                  "vlantrans_list"
+                                                                              ],
+                                                                   "payload_patch":  {
+                                                                                         "vlantrans_list":  [
+                                                                                                                {
+                                                                                                                    "univid":  1314,
+                                                                                                                    "svlan":  1314,
+                                                                                                                    "spbit":  0,
+                                                                                                                    "cvid":  1314,
+                                                                                                                    "trans_mode":  "uni-vlan"
+                                                                                                                }
+                                                                                                            ]
+                                                                                     },
+                                                                   "expected_tokens":  [
+                                                                                           "vlan translation uni-vlan 1314 svlan 1314 spbit 0 cvlan 1314"
+                                                                                       ],
+                                                                   "cleanup_commands":  [
+                                                                                            "no vlan vid 1314 fixed",
+                                                                                            "no vlan translation uni-vlan 1314",
+                                                                                            "no vlan tls",
+                                                                                            "no vlan trunk uni-untag",
+                                                                                            "no vlan trunk uni-untag ether-type 0800",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                            "no vlan trunk uni-vlan 1314"
+                                                                                        ],
+                                                                   "show_commands":  [
+                                                                                         "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                         "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                     ],
+                                                                   "rest_timeout_seconds":  180,
+                                                                   "status":  "node3_b8_rest_cli_verified",
+                                                                   "risk":  "medium",
+                                                                   "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                                   "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_translation_20260702_111545.json"
+                                                               },
+                                          "vlan_tls":  {
+                                                           "fields":  [
+                                                                          "vlantls_list"
+                                                                      ],
+                                                           "payload_patch":  {
+                                                                                 "vlantls_list":  [
+                                                                                                      {
+                                                                                                          "svid":  1314,
+                                                                                                          "spbit":  0
+                                                                                                      }
+                                                                                                  ]
+                                                                             },
+                                                           "expected_tokens":  [
+                                                                                   "vlan tls svlan 1314 spbit 0"
+                                                                               ],
+                                                           "cleanup_commands":  [
+                                                                                    "no vlan vid 1314 fixed",
+                                                                                    "no vlan translation uni-vlan 1314",
+                                                                                    "no vlan tls",
+                                                                                    "no vlan trunk uni-untag",
+                                                                                    "no vlan trunk uni-untag ether-type 0800",
+                                                                                    "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                    "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                    "no vlan trunk uni-vlan 1314"
+                                                                                ],
+                                                           "show_commands":  [
+                                                                                 "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                 "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                             ],
+                                                           "rest_timeout_seconds":  180,
+                                                           "status":  "node3_b8_rest_cli_verified",
+                                                           "risk":  "medium",
+                                                           "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                           "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_tls_20260702_105942.json"
+                                                       },
+                                          "vlan_trunk_untag":  {
+                                                                   "fields":  [
+                                                                                  "vlantrunk_untag_list"
+                                                                              ],
+                                                                   "payload_patch":  {
+                                                                                         "vlantrunk_untag_list":  [
+                                                                                                                      {
+                                                                                                                          "svid":  1314,
+                                                                                                                          "spbit":  0,
+                                                                                                                          "cvid":  1314
+                                                                                                                      }
+                                                                                                                  ]
+                                                                                     },
+                                                                   "expected_tokens":  [
+                                                                                           "vlan trunk uni-untag svlan 1314 spbit 0 cvlan 1314"
+                                                                                       ],
+                                                                   "cleanup_commands":  [
+                                                                                            "no vlan vid 1314 fixed",
+                                                                                            "no vlan translation uni-vlan 1314",
+                                                                                            "no vlan tls",
+                                                                                            "no vlan trunk uni-untag",
+                                                                                            "no vlan trunk uni-untag ether-type 0800",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                            "no vlan trunk uni-vlan 1314"
+                                                                                        ],
+                                                                   "show_commands":  [
+                                                                                         "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                         "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                     ],
+                                                                   "rest_timeout_seconds":  180,
+                                                                   "status":  "node3_b8_rest_cli_verified",
+                                                                   "risk":  "medium",
+                                                                   "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                                   "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_trunk_untag_20260702_112058.json"
+                                                               },
+                                          "vlan_trunk_ether":  {
+                                                                   "fields":  [
+                                                                                  "vlantrunk_ether_list"
+                                                                              ],
+                                                                   "payload_patch":  {
+                                                                                         "vlantrunk_ether_list":  [
+                                                                                                                      {
+                                                                                                                          "etype":  "0800",
+                                                                                                                          "svid":  1314,
+                                                                                                                          "spbit":  0
+                                                                                                                      }
+                                                                                                                  ]
+                                                                                     },
+                                                                   "expected_tokens":  [
+                                                                                           "vlan trunk uni-untag ether-type 0800 svlan 1314 spbit 0"
+                                                                                       ],
+                                                                   "cleanup_commands":  [
+                                                                                            "no vlan vid 1314 fixed",
+                                                                                            "no vlan translation uni-vlan 1314",
+                                                                                            "no vlan tls",
+                                                                                            "no vlan trunk uni-untag",
+                                                                                            "no vlan trunk uni-untag ether-type 0800",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                            "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                            "no vlan trunk uni-vlan 1314"
+                                                                                        ],
+                                                                   "show_commands":  [
+                                                                                         "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                         "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                     ],
+                                                                   "rest_timeout_seconds":  180,
+                                                                   "status":  "node3_b8_rest_cli_verified",
+                                                                   "risk":  "medium",
+                                                                   "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                                   "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_trunk_ether_20260702_112608.json"
+                                                               },
+                                          "vlan_trunk_subnet":  {
+                                                                    "fields":  [
+                                                                                   "vlantrunk_subnet_list"
+                                                                               ],
+                                                                    "payload_patch":  {
+                                                                                          "vlantrunk_subnet_list":  [
+                                                                                                                        {
+                                                                                                                            "ip":  "192.0.3.1",
+                                                                                                                            "mask":  "24",
+                                                                                                                            "svid":  1314,
+                                                                                                                            "spbit":  0
+                                                                                                                        }
+                                                                                                                    ]
+                                                                                      },
+                                                                    "expected_tokens":  [
+                                                                                            "vlan trunk uni-untag subnet 192.0.3.1/24 svlan 1314 spbit 0"
+                                                                                        ],
+                                                                    "cleanup_commands":  [
+                                                                                             "no vlan vid 1314 fixed",
+                                                                                             "no vlan translation uni-vlan 1314",
+                                                                                             "no vlan tls",
+                                                                                             "no vlan trunk uni-untag",
+                                                                                             "no vlan trunk uni-untag ether-type 0800",
+                                                                                             "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                             "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                             "no vlan trunk uni-vlan 1314"
+                                                                                         ],
+                                                                    "show_commands":  [
+                                                                                          "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                          "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                      ],
+                                                                    "rest_timeout_seconds":  180,
+                                                                    "status":  "node3_b8_rest_cli_verified",
+                                                                    "risk":  "medium",
+                                                                    "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_trunk_subnet_20260702_113118.json",
+                                                                    "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output."
+                                                                },
+                                          "vlan_trunk_vlan":  {
+                                                                  "fields":  [
+                                                                                 "vlantrunk_vlan_list"
+                                                                             ],
+                                                                  "payload_patch":  {
+                                                                                        "vlantrunk_vlan_list":  [
+                                                                                                                    {
+                                                                                                                        "univid":  1314,
+                                                                                                                        "svid":  1314
+                                                                                                                    }
+                                                                                                                ]
+                                                                                    },
+                                                                  "expected_tokens":  [
+                                                                                          "vlan trunk uni-vlan 1314 svlan 1314"
+                                                                                      ],
+                                                                  "cleanup_commands":  [
+                                                                                           "no vlan vid 1314 fixed",
+                                                                                           "no vlan translation uni-vlan 1314",
+                                                                                           "no vlan tls",
+                                                                                           "no vlan trunk uni-untag",
+                                                                                           "no vlan trunk uni-untag ether-type 0800",
+                                                                                           "no vlan trunk uni-untag subnet 192.0.3.1/24",
+                                                                                           "no vlan trunk uni-untag subnet 192.0.3.1/6",
+                                                                                           "no vlan trunk uni-vlan 1314"
+                                                                                       ],
+                                                                  "show_commands":  [
+                                                                                        "show running-config interface ge {ge_slot_id}-{ge_port_id}",
+                                                                                        "show interface ge {ge_slot_id}-{ge_port_id} vlan"
+                                                                                    ],
+                                                                  "rest_timeout_seconds":  180,
+                                                                  "status":  "node3_b8_rest_cli_verified",
+                                                                  "risk":  "medium",
+                                                                  "cleanup_note":  "Remove mutually exclusive GE VLAN modes before and after each variant; /6 is retained because NODE3 observed REST subnet cleanup materialized 192.0.3.1/24 as /6 in CLI output.",
+                                                                  "verified_report":  "reports/device-verification/neox_config_ge_cli_verify_max_variant_vlan_trunk_vlan_20260702_113630.json"
+                                                              }
+                                      }
+                     },
+    "negative_cases":  {
+                           "source":  {
+                                          "generated_from":  "tests/test_neox_ge_negative_probes.py",
+                                          "first_observed":  "2026-05-13",
+                                          "target_scope":  "NODE3 GE safe port",
+                                          "report_example":  "reports/negative-probes/neox_ge_negative_probe_20260513_103254.json"
+                                      },
+                           "cases":  [
+                                         {
+                                             "name":  "invalid_portenable",
+                                             "field":  "portenable",
+                                             "value":  "invalid",
+                                             "expected_status_code":  400,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid JSON input"
+                                         },
+                                         {
+                                             "name":  "invalid_auto_nego",
+                                             "field":  "auto_nego",
+                                             "value":  "invalid",
+                                             "expected_status_code":  400,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid JSON input"
+                                         },
+                                         {
+                                             "name":  "invalid_flow",
+                                             "field":  "flow",
+                                             "value":  "invalid",
+                                             "expected_status_code":  400,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid JSON input"
+                                         },
+                                         {
+                                             "name":  "invalid_portspeed",
+                                             "field":  "portspeed",
+                                             "value":  "invalid",
+                                             "expected_status_code":  400,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid JSON input"
+                                         },
+                                         {
+                                             "name":  "invalid_frametype",
+                                             "field":  "frametype",
+                                             "value":  "invalid",
+                                             "expected_status_code":  400,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid JSON input"
+                                         },
+                                         {
+                                             "name":  "portname_too_long",
+                                             "field":  "portname",
+                                             "value":  "REST_GE_NAME_EXCEEDS_31_CHARS_1234567890",
+                                             "expected_status_code":  200,
+                                             "expected_retstatus":  "Fail",
+                                             "expected_message_contains":  "Invalid input detected"
+                                         }
+                                     ]
+                       },
+    "show_commands":  {
+                          "source":  {
+                                         "origin":  "NeoX CLI help: show interface ge 1-?",
+                                         "target_scope":  "NODE3 GE safe port",
+                                         "note":  "Read-only commands used to verify GE parameters beyond running-config."
+                                     },
+                          "commands":  [
+                                           {
+                                               "feature":  "acl",
+                                               "command_suffix":  "acl"
+                                           },
+                                           {
+                                               "feature":  "acl-egress",
+                                               "command_suffix":  "acl-egress"
+                                           },
+                                           {
+                                               "feature":  "alarm",
+                                               "command_suffix":  "alarm"
+                                           },
+                                           {
+                                               "feature":  "arp-inspection",
+                                               "command_suffix":  "arp-inspection"
+                                           },
+                                           {
+                                               "feature":  "bpdu-control",
+                                               "command_suffix":  "bpdu-control"
+                                           },
+                                           {
+                                               "feature":  "config",
+                                               "command_suffix":  "config"
+                                           },
+                                           {
+                                               "feature":  "ddmi",
+                                               "command_suffix":  "ddmi"
+                                           },
+                                           {
+                                               "feature":  "dhcp",
+                                               "command_suffix":  "dhcp"
+                                           },
+                                           {
+                                               "feature":  "dot1x",
+                                               "command_suffix":  "dot1x"
+                                           },
+                                           {
+                                               "feature":  "dscp",
+                                               "command_suffix":  "dscp"
+                                           },
+                                           {
+                                               "feature":  "fdb",
+                                               "command_suffix":  "fdb"
+                                           },
+                                           {
+                                               "feature":  "frame-type",
+                                               "command_suffix":  "frame-type"
+                                           },
+                                           {
+                                               "feature":  "igmp-mld",
+                                               "command_suffix":  "igmp-mld"
+                                           },
+                                           {
+                                               "feature":  "lldp",
+                                               "command_suffix":  "lldp"
+                                           },
+                                           {
+                                               "feature":  "loopguard",
+                                               "command_suffix":  "loopguard"
+                                           },
+                                           {
+                                               "feature":  "macff",
+                                               "command_suffix":  "macff"
+                                           },
+                                           {
+                                               "feature":  "mtu",
+                                               "command_suffix":  "mtu"
+                                           },
+                                           {
+                                               "feature":  "oam",
+                                               "command_suffix":  "oam discovery"
+                                           },
+                                           {
+                                               "feature":  "power-saving",
+                                               "command_suffix":  "power-saving"
+                                           },
+                                           {
+                                               "feature":  "pppoe",
+                                               "command_suffix":  "pppoe"
+                                           },
+                                           {
+                                               "feature":  "pvid",
+                                               "command_suffix":  "pvid"
+                                           },
+                                           {
+                                               "feature":  "qos",
+                                               "command_suffix":  "qos"
+                                           },
+                                           {
+                                               "feature":  "smcast",
+                                               "command_suffix":  "smcast"
+                                           },
+                                           {
+                                               "feature":  "statistics",
+                                               "command_suffix":  "statistics"
+                                           },
+                                           {
+                                               "feature":  "status",
+                                               "command_suffix":  "status"
+                                           },
+                                           {
+                                               "feature":  "storm-control",
+                                               "command_suffix":  "storm-control"
+                                           },
+                                           {
+                                               "feature":  "vlan",
+                                               "command_suffix":  "vlan"
+                                           }
+                                       ],
+                          "field_to_features":  {
+                                                    "acl_maclist":  [
+                                                                        "acl"
+                                                                    ],
+                                                    "acl_ouilist":  [
+                                                                        "acl"
+                                                                    ],
+                                                    "anti_spoofing":  [
+                                                                          "config"
+                                                                      ],
+                                                    "arpinspection":  [
+                                                                          "arp-inspection"
+                                                                      ],
+                                                    "bpdu":  [
+                                                                 "bpdu-control"
+                                                             ],
+                                                    "broadcast_rate":  [
+                                                                           "storm-control"
+                                                                       ],
+                                                    "copycpbit":  [
+                                                                      "vlan"
+                                                                  ],
+                                                    "dlf_rate":  [
+                                                                     "storm-control"
+                                                                 ],
+                                                    "dot1xcontrol":  [
+                                                                         "dot1x"
+                                                                     ],
+                                                    "dot1xreauthpeiod":  [
+                                                                             "dot1x"
+                                                                         ],
+                                                    "dotlxactive":  [
+                                                                        "dot1x"
+                                                                    ],
+                                                    "dotlxauthone":  [
+                                                                         "dot1x"
+                                                                     ],
+                                                    "dotlxcircuitinfo":  [
+                                                                             "dot1x"
+                                                                         ],
+                                                    "dotlxserverindex":  [
+                                                                             "dot1x"
+                                                                         ],
+                                                    "dscp":  [
+                                                                 "dscp"
+                                                             ],
+                                                    "egress_profile_list":  [
+                                                                                "acl-egress"
+                                                                            ],
+                                                    "fdb_list":  [
+                                                                     "fdb"
+                                                                 ],
+                                                    "flow":  [
+                                                                 "config"
+                                                             ],
+                                                    "frametype":  [
+                                                                      "frame-type"
+                                                                  ],
+                                                    "groupprivilege":  [
+                                                                           "igmp-mld"
+                                                                       ],
+                                                    "igmp_bandwidth":  [
+                                                                           "igmp-mld"
+                                                                       ],
+                                                    "igmp_grouppriprofile_list":  [
+                                                                                      "igmp-mld"
+                                                                                  ],
+                                                    "igmp_mvid_list":  [
+                                                                           "igmp-mld"
+                                                                       ],
+                                                    "ldrapolicy":  [
+                                                                       "dhcp"
+                                                                   ],
+                                                    "lldp_admin":  [
+                                                                       "lldp"
+                                                                   ],
+                                                    "lldp_management":  [
+                                                                            "lldp"
+                                                                        ],
+                                                    "lldp_notification":  [
+                                                                              "lldp"
+                                                                          ],
+                                                    "lldp_org_dot1":  [
+                                                                          "lldp"
+                                                                      ],
+                                                    "lldp_org_dot3_link":  [
+                                                                               "lldp"
+                                                                           ],
+                                                    "lldp_org_dot3_macphy":  [
+                                                                                 "lldp"
+                                                                             ],
+                                                    "lldp_org_dot3_maxframe":  [
+                                                                                   "lldp"
+                                                                               ],
+                                                    "lldp_portdesc":  [
+                                                                          "lldp"
+                                                                      ],
+                                                    "lldp_systemcap":  [
+                                                                           "lldp"
+                                                                       ],
+                                                    "lldp_systemdsc":  [
+                                                                           "lldp"
+                                                                       ],
+                                                    "lldp_systemname":  [
+                                                                            "lldp"
+                                                                        ],
+                                                    "lldralinklocal":  [
+                                                                           "dhcp"
+                                                                       ],
+                                                    "loopguard":  [
+                                                                      "loopguard"
+                                                                  ],
+                                                    "loopguard_policy":  [
+                                                                             "loopguard"
+                                                                         ],
+                                                    "loopguard_recovertime":  [
+                                                                                  "loopguard"
+                                                                              ],
+                                                    "macfilter":  [
+                                                                      "acl"
+                                                                  ],
+                                                    "macfiltermode":  [
+                                                                          "acl"
+                                                                      ],
+                                                    "maxcount":  [
+                                                                     "igmp-mld"
+                                                                 ],
+                                                    "maxgroup":  [
+                                                                     "igmp-mld"
+                                                                 ],
+                                                    "maxmsg":  [
+                                                                   "igmp-mld"
+                                                               ],
+                                                    "mtu":  [
+                                                                "mtu"
+                                                            ],
+                                                    "multicast_rate":  [
+                                                                           "storm-control"
+                                                                       ],
+                                                    "opt82policy":  [
+                                                                        "dhcp"
+                                                                    ],
+                                                    "ouifilter":  [
+                                                                      "acl"
+                                                                  ],
+                                                    "ouifiltermode":  [
+                                                                          "acl"
+                                                                      ],
+                                                    "outertpid":  [
+                                                                      "vlan"
+                                                                  ],
+                                                    "packfiltertype":  [
+                                                                           "acl"
+                                                                       ],
+                                                    "port_aclprofile_list":  [
+                                                                                 "acl"
+                                                                             ],
+                                                    "portenable":  [
+                                                                       "config",
+                                                                       "status"
+                                                                   ],
+                                                    "portname":  [
+                                                                     "config"
+                                                                 ],
+                                                    "portspeed":  [
+                                                                      "config",
+                                                                      "status"
+                                                                  ],
+                                                    "pppoepolicy":  [
+                                                                        "pppoe"
+                                                                    ],
+                                                    "pvid":  [
+                                                                 "pvid"
+                                                             ],
+                                                    "pwsaving":  [
+                                                                     "power-saving"
+                                                                 ],
+                                                    "snooping_dhcp":  [
+                                                                          "dhcp"
+                                                                      ],
+                                                    "snooping_dhcpv6":  [
+                                                                            "dhcp"
+                                                                        ],
+                                                    "snooping_ipmacbinding":  [
+                                                                                  "dhcp"
+                                                                              ],
+                                                    "snooping_maxlease":  [
+                                                                              "dhcp"
+                                                                          ],
+                                                    "snooping_vlanlist":  [
+                                                                              "dhcp"
+                                                                          ],
+                                                    "spoofing_action":  [
+                                                                            "config"
+                                                                        ],
+                                                    "staticipfilter_ipmacbinding":  [
+                                                                                        "dhcp"
+                                                                                    ],
+                                                    "staticipfilter_list":  [
+                                                                                "dhcp"
+                                                                            ],
+                                                    "vlan_list":  [
+                                                                      "vlan"
+                                                                  ],
+                                                    "vlantrans_list":  [
+                                                                           "vlan"
+                                                                       ],
+                                                    "vlantrunk_ether_list":  [
+                                                                                 "vlan"
+                                                                             ],
+                                                    "vlantrunk_subnet_list":  [
+                                                                                  "vlan"
+                                                                              ],
+                                                    "vlantrunk_untag_list":  [
+                                                                                 "vlan"
+                                                                             ],
+                                                    "vlantrunk_vlan_list":  [
+                                                                                "vlan"
+                                                                            ]
+                                                }
+                      }
 }
+

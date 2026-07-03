@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
@@ -8,6 +8,7 @@ import pytest
 from clients.session import SessionManager
 from clients import EmsApiClient
 from config_loader import load_environment
+from tests.support.options import neox_parallel_worker_auth_profile
 from utils.assertions import assert_api_success
 
 
@@ -43,7 +44,7 @@ def skip_unready_dut_items(config: pytest.Config, items: list[pytest.Item]) -> N
 
     result = run_device_preflight(
         node=config.getoption("--ems-node"),
-        auth_profile=config.getoption("--auth-profile"),
+        auth_profile=neox_parallel_worker_auth_profile(config),
     )
     if not result.ok:
         skip_dut = pytest.mark.skip(reason=f"DUT preflight failed: {result.reason}")

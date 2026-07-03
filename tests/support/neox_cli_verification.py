@@ -9,14 +9,22 @@ from typing import Any
 
 import pytest
 
-from clients.ssh_cli import SshCliClient
+from clients.ssh_cli import ssh_session_pool
+from config_loader import load_environment
 from utils.allure_helpers import attach_json
 from utils.redaction import redact
 
 
 def neox_cli_credentials(env_config, feature: str) -> tuple[str, str]:
-    ssh_username = os.environ.get("NEOX_SSH_USERNAME") or env_config.readwrite.username
-    ssh_password = os.environ.get("NEOX_SSH_PASSWORD") or env_config.readwrite.password
+    ssh_username = os.environ.get("NEOX_SSH_USERNAME")
+    ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
+    if not ssh_username or not ssh_password:
+        ssh_env = env_config
+        ssh_auth_profile = os.environ.get("NEOX_SSH_AUTH_PROFILE")
+        if ssh_auth_profile or env_config.auth_profile != "default":
+            ssh_env = load_environment(node=env_config.dut.node_key, auth_profile=ssh_auth_profile or "default")
+        ssh_username = ssh_env.readwrite.username
+        ssh_password = ssh_env.readwrite.password
     if not ssh_username or not ssh_password:
         pytest.skip(
             f"Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run {feature} CLI verification."
@@ -26,25 +34,46 @@ def neox_cli_credentials(env_config, feature: str) -> tuple[str, str]:
 
 def run_neox_cli_commands(env_config, credentials: tuple[str, str], commands: list[str]) -> dict[str, str]:
     ssh_username, ssh_password = credentials
-    client = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
+    xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
+    pool = ssh_session_pool(
+        env_config.dut.node_key,
+        env_config.dut.device_ip,
+        ssh_username,
+        ssh_password,
+        max_sessions=1 if xdist_worker else None,
+        reuse_sessions=False if xdist_worker else None,
+    )
+    owner = f"{env_config.dut.node_key}:{commands[0] if commands else 'no_commands'}"
     started = time.monotonic()
+    timing = None
     try:
-        results = client.run_commands(commands)
-    except Exception as error:
+        results, timing = pool.run_commands(commands, owner=owner)
         attach_json(
-            "NeoX SSH failure diagnostics",
-            {
-                "node": env_config.dut.node_key,
-                "device_name": env_config.dut.device_name,
-                "target": env_config.dut.device_ip,
-                "username": ssh_username,
-                "commands": commands,
-                "timeout_seconds": client.timeout,
-                "duration_seconds": round(time.monotonic() - started, 3),
-                "error_type": type(error).__name__,
-                "error": str(error),
-            },
+            "NeoX SSH session pool timing",
+            redact(
+                {
+                    **timing.as_dict(),
+                    "command_count": len(commands),
+                    "duration_seconds": round(time.monotonic() - started, 3),
+                }
+            ),
         )
+    except Exception as error:
+        diagnostics = {
+            "node": env_config.dut.node_key,
+            "device_name": env_config.dut.device_name,
+            "target": env_config.dut.device_ip,
+            "username": ssh_username,
+            "commands": commands,
+            "pool_max_sessions": pool.max_sessions,
+            "pool_token_directory": str(pool.token_directory),
+            "duration_seconds": round(time.monotonic() - started, 3),
+            "error_type": type(error).__name__,
+            "error": str(error),
+        }
+        if timing is not None:
+            diagnostics["timing"] = timing.as_dict()
+        attach_json("NeoX SSH failure diagnostics", redact(diagnostics))
         raise
     return {result.command: result.output for result in results}
 
@@ -99,6 +128,7 @@ def write_neox_cli_verify_report(
                 "status_code": api_response.status_code,
                 "retstatus": api_response.retstatus,
                 "retresult": api_response.retresult,
+                "elapsed_seconds": round(float(getattr(api_response, "elapsed", 0.0) or 0.0), 3),
             },
         },
         "cli": {

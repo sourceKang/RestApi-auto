@@ -1,30 +1,83 @@
 {
-  "source": {
-    "derived_from": [
-      "configs/neox_config/reference/neox_swagger_data.yaml"
-    ],
-    "purpose": "VLAN min/max create payloads. All VlanPort fields are populated."
-  },
-  "cases": {
-    "min": {
-      "vid": "1",
-      "payload": {
-        "vlanname": "REST_API_VLAN_MIN",
-        "fixedport": "1",
-        "untaggedport": "1",
-        "forbiddenport": "2",
-        "tpid": "default-tpid"
-      }
-    },
-    "max": {
-      "vid": "4094",
-      "payload": {
-        "vlanname": "REST_API_VLAN_MAX",
-        "fixedport": "2~11",
-        "untaggedport": "1~4",
-        "forbiddenport": "5~8",
-        "tpid": "qinq-tpid"
-      }
-    }
-  }
+    "source":  {
+                   "derived_from":  [
+                                        "configs/neox_config/reference/neox_swagger_data.yaml"
+                                    ],
+                   "purpose":  "VLAN min/max create payloads. All VlanPort fields are populated."
+               },
+    "cases":  {
+                  "min":  {
+                              "vid":  "1",
+                              "payload":  {
+                                              "vlanname":  "REST_API_VLAN_MIN",
+                                              "fixedport":  "1",
+                                              "untaggedport":  "1",
+                                              "forbiddenport":  "2",
+                                              "tpid":  "default-tpid"
+                                          }
+                          },
+                  "max":  {
+                              "vid":  "4090~4094",
+                              "payload":  {
+                                              "vlanname":  "REST_API_VLAN_MAX",
+                                              "fixedport":  "2~11",
+                                              "untaggedport":  "1~4",
+                                              "forbiddenport":  "5~8",
+                                              "tpid":  "qinq-tpid"
+                                          }
+                          }
+              },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_tpid",
+                               "field":  "tpid",
+                               "payload":  {
+                                               "vlanname":  "REST_API_BAD_VLAN",
+                                               "tpid":  "invalid-tpid"
+                                           },
+                               "error_layer":  "api_schema",
+                               "expected_status_code":  400,
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  "Invalid JSON input"
+                           },
+                           {
+                               "name":  "invalid_fixedport_syntax",
+                               "field":  "fixedport",
+                               "payload":  {
+                                               "vlanname":  "REST_API_BAD_VLAN",
+                                               "fixedport":  "bad-port",
+                                               "untaggedport":  "",
+                                               "forbiddenport":  "",
+                                               "tpid":  "default-tpid"
+                                           },
+                               "error_layer":  "device_cli",
+                               "expected_retstatus":  "Fail"
+                           },
+                           {
+                               "name":  "invalid_untaggedport_syntax",
+                               "field":  "untaggedport",
+                               "payload":  {
+                                               "vlanname":  "REST_API_BAD_VLAN",
+                                               "fixedport":  "",
+                                               "untaggedport":  "1~~2",
+                                               "forbiddenport":  "",
+                                               "tpid":  "default-tpid"
+                                           },
+                               "error_layer":  "device_cli",
+                               "expected_retstatus":  "Fail"
+                           },
+                           {
+                               "name":  "invalid_forbiddenport_syntax",
+                               "field":  "forbiddenport",
+                               "payload":  {
+                                               "vlanname":  "REST_API_BAD_VLAN",
+                                               "fixedport":  "",
+                                               "untaggedport":  "",
+                                               "forbiddenport":  "999",
+                                               "tpid":  "default-tpid"
+                                           },
+                               "error_layer":  "device_cli",
+                               "expected_retstatus":  "Fail"
+                           }
+                       ]
 }

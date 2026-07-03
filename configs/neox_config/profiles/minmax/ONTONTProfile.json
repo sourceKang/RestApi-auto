@@ -1,18 +1,70 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTONTProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "fwlevel": "low",
-      "telnetport": "23"
-    }
-  },
-  "max": {
-    "Content": {
-      "fwlevel": "medium",
-      "telnetport": "23"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTONTProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "fwlevel":  "low",
+                                "telnetport":  "23"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "fwlevel":  "medium",
+                                "telnetport":  "23"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon ont-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Firewall",
+                                                           "Service"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon ont-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Firewall",
+                                                           "Service"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           },
+                           {
+                               "name":  "snmpenable_invalid_field_observed",
+                               "enabled":  true,
+                               "field":  "snmpenable",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "snmpenable":  "disable"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "snmpenable"
+                                                             ],
+                               "observed_reason":  "Swagger summary once exposed snmpenable, but live NeoX endpoint rejected it. Promoted into the NeoX profile error matrix for focused live validation."
+                           }
+                       ]
 }

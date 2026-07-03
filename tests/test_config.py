@@ -42,3 +42,14 @@ def test_rad_external_auth_profile_loads_expected_accounts():
     assert env.readonly.username == "readonly1"
     assert env.noaccess_account.account_name == "noaccess1"
     assert env.noaccess.username == "noaccess1"
+
+
+def test_ems_local_rw2_auth_profile_loads_second_local_readwrite_account():
+    env = load_environment(node="NODE1", auth_profile="ems_local_rw2")
+    assert env.auth_profile == "ems_local_rw2"
+    assert env.readwrite_account.account_name == "readwrite2"
+    assert env.readwrite.username == "RestApiRW"
+    assert env.readonly_account.account_name == "default"
+    assert env.readonly.username == "RestApiRO"
+    assert env.noaccess_account.account_name == "default"
+    assert env.noaccess.username == "RestApiNA"

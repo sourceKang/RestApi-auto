@@ -1,11 +1,7 @@
 # NeoX Profile Payloads
 
-This directory separates NeoX profile payload data by test intent.
+This directory keeps official NeoX profile readwrite data by profile type.
 
-- `minmax/`: success payloads used by official min/max readwrite create verification.
-- `invalid/`: future negative payload cases with expected failure details.
-- `observed/`: future live-device observations and known endpoint limits that are not official success data.
+- `minmax/`: one JSON file per profile type. Each file contains `min`, `max`, `cli_verify`, and active `negative_cases` for that profile.
 
-Keep success payloads out of `invalid/` and `observed/` so official create tests only load data expected to return `Success`.
-
-Root-level JSON files are reserved for active profile case catalogs and CLI verification metadata. Min/max payloads are loaded only from `minmax/*.json`; do not reintroduce an aggregate min/max payload file.
+Do not reintroduce root-level aggregate profile catalogs or a separate invalid-cases folder. Official profile tests should load profile data through `services.neox_config.service` helpers.

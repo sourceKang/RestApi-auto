@@ -24,9 +24,9 @@ class RunContext:
         return self.env.auth_profile
 
 
-def build_run_context(config: Any) -> RunContext:
+def build_run_context(config: Any, auth_profile_override: str | None = None) -> RunContext:
     node = config.getoption("--ems-node")
-    auth_profile = config.getoption("--auth-profile")
+    auth_profile = auth_profile_override if auth_profile_override is not None else config.getoption("--auth-profile")
     return RunContext(
         env=load_environment(node=node, auth_profile=auth_profile),
         node=node,

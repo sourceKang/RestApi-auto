@@ -1,30 +1,67 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTMulticastProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "univid": "1",
-      "igmp": "IGMPv2",
-      "mode": "transparent",
-      "groupprofile": "RestApi_NeoX_IGMPGroupPriv",
-      "txtagvid": "1",
-      "txtagpbit": "0",
-      "maxgroup": "1",
-      "maxmsg": "1"
-    }
-  },
-  "max": {
-    "Content": {
-      "univid": "4094",
-      "igmp": "IGMPv3",
-      "mode": "transparent",
-      "groupprofile": "RestApi_NeoX_IGMPGroupPriv",
-      "txtagvid": "4094",
-      "txtagpbit": "7",
-      "maxgroup": "512",
-      "maxmsg": "64"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTMulticastProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "univid":  "1",
+                                "igmp":  "IGMPv2",
+                                "mode":  "transparent",
+                                "groupprofile":  "RestApi_NeoX_IGMPGroupPriv",
+                                "txtagvid":  "1",
+                                "txtagpbit":  "0",
+                                "maxgroup":  "1",
+                                "maxmsg":  "1"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "univid":  "4094",
+                                "igmp":  "IGMPv3",
+                                "mode":  "transparent",
+                                "groupprofile":  "RestApi_NeoX_IGMPGroupPriv",
+                                "txtagvid":  "4094",
+                                "txtagpbit":  "7",
+                                "maxgroup":  "512",
+                                "maxmsg":  "64"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon multicast-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "1",
+                                                           "IGMPv2",
+                                                           "transparent"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon multicast-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "4094",
+                                                           "IGMPv3",
+                                                           "transparent"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

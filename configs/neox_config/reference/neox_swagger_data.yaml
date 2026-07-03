@@ -1,14 +1,15 @@
 # Read-only snapshot from Swagger/OpenAPI.
-# Source: https://192.168.128.35:9116/netatlasemsapi/v3/api-docs
-# Captured: 2026-05-13
+# Source: https://192.168.128.100:9116/netatlasemsapi/v3/api-docs
+# Captured: 2026-06-23
 #
 # This file records schema data exposed by Swagger. Most schemas define field
 # names/types only, without examples/defaults, so runnable values still need to
 # be supplied by environment-safe test data and verified against the target node.
 
 source:
-  swagger_ui: "https://192.168.128.35:9116/netatlasemsapi/swagger-ui/index.html#/"
-  openapi_json: "https://192.168.128.35:9116/netatlasemsapi/v3/api-docs"
+  swagger_ui: "https://192.168.128.100:9116/netatlasemsapi/swagger-ui/index.html#/"
+  openapi_json: "https://192.168.128.100:9116/netatlasemsapi/v3/api-docs"
+  openapi_yaml: "NetAtlasEMS_OpenAPI_20260614.yaml"
   raw_snapshot: "reports/swagger-readonly/v3_api-docs.txt"
 
 endpoints:
@@ -43,7 +44,7 @@ endpoints:
 
 schemas:
   GePortInfoContent:
-    field_count: 103
+    field_count: 99
     fields:
       - "acl_maclist"
       - "acl_ouilist"
@@ -52,7 +53,7 @@ schemas:
       - "arpinspection"
       - "auto_nego"
       - "flow"
-      - "mode"
+      - "lineid"
       - "mtu"
       - "portenable"
       - "portname"
@@ -126,7 +127,7 @@ schemas:
     sample_fields: ["aclprof1..16", "acsactive", "acsinfoactive", "acsinterval", "acsurl", "acsuser", "ctype1..8", "fwlevel", "lanip", "lanmask", "snmpenable", "telnetport", "wanvlan1..8", "wifi24g_enable1", "wifi5g_enable1"]
 
   OntSecurityProfileForNeoXContent:
-    fields: ["fdb", "spoofingdisable"]
+    fields: ["fdb", "spoofingable"]
 
   OntServiceProfileForNeoXContent:
     fields: ["lan", "mode", "pbit", "uniport", "vlan", "xlan"]
@@ -156,3 +157,5 @@ schemas:
 
   WeightProfileForNeoXContent:
     fields: ["weight0", "weight1", "weight2", "weight3", "weight4", "weight5", "weight6", "weight7"]
+
+

@@ -5,6 +5,16 @@ import os
 import pytest
 
 
+FULL_TESTCASE_INCLUDED_OPTIONS = {
+    "--auth-matrix",
+    "--run-remote",
+    "--run-alarm-delete",
+    "--run-neox-config",
+    "--run-neox-ont-error",
+    "--run-live-swagger-check",
+}
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--ems-node",
@@ -16,13 +26,22 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--auth-profile",
         action="store",
         default=None,
-        help="Select auth profile from configs/auth_accounts.yaml, for example default or rad_external.",
+        help="Select auth profile from configs/auth_accounts.yaml, for example default or ems_local_rw2.",
     )
     parser.addoption(
         "--auth-matrix",
         action="store_true",
         default=False,
         help="Also run lightweight RAD external account summary checks in the same pytest session.",
+    )
+    parser.addoption(
+        "--run-full-testcases",
+        action="store_true",
+        default=False,
+        help=(
+            "Run the official full testcase suite by enabling auth matrix, remote console, "
+            "alarm delete, NeoX config, NeoX ONT error, and live Swagger checks."
+        ),
     )
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
@@ -73,6 +92,25 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Run NeoX config REST API workflows without SSH CLI verification.",
     )
     parser.addoption(
+        "--neox-parallel-mode",
+        action="store",
+        choices=("off", "conservative", "resource"),
+        default=os.environ.get("NEOX_PARALLEL_MODE", "off"),
+        help=(
+            "NeoX xdist grouping mode. off keeps current serial behavior; conservative groups all NeoX "
+            "config/profile cases together; resource groups GE/NNI/VLAN/ONT/profile resources separately."
+        ),
+    )
+    parser.addoption(
+        "--neox-parallel-auth-profiles",
+        action="store",
+        default=os.environ.get("NEOX_PARALLEL_AUTH_PROFILES", ""),
+        help=(
+            "Comma-separated auth profile names assigned to xdist workers when --neox-parallel-mode is not off. "
+            "Example: default,ems_local_rw2 assigns gw0=default and gw1=ems_local_rw2."
+        ),
+    )
+    parser.addoption(
         "--neox-profile-delay-seconds",
         action="store",
         type=float,
@@ -97,6 +135,45 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Generate an Allure HTML report at session finish. Implies --archive-allure.",
     )
+    parser.addoption(
+        "--skip-integrated-evidence-report",
+        action="store_true",
+        default=False,
+        help="Skip the merged HTML evidence report generated from txt report and raw Allure attachments.",
+    )
+
+
+def neox_parallel_worker_auth_profile(config: pytest.Config) -> str | None:
+    return neox_parallel_auth_profile_for_worker(
+        selected_auth_profile=config.getoption("--auth-profile"),
+        parallel_mode=str(config.getoption("--neox-parallel-mode") or "off"),
+        auth_profiles=str(config.getoption("--neox-parallel-auth-profiles") or ""),
+        worker_id=os.environ.get("PYTEST_XDIST_WORKER"),
+    )
+
+
+def neox_parallel_auth_profile_for_worker(
+    selected_auth_profile: str | None,
+    parallel_mode: str,
+    auth_profiles: str,
+    worker_id: str | None,
+) -> str | None:
+    if parallel_mode == "off" or not worker_id or not auth_profiles.strip():
+        return selected_auth_profile
+    profiles = [profile.strip() for profile in auth_profiles.split(",") if profile.strip()]
+    if not profiles:
+        return selected_auth_profile
+    if not worker_id.startswith("gw") or not worker_id[2:].isdigit():
+        return selected_auth_profile
+    worker_index = int(worker_id[2:])
+    if len(profiles) == 1:
+        return profiles[0]
+    if worker_index >= len(profiles):
+        raise ValueError(
+            f"--neox-parallel-auth-profiles defines {len(profiles)} profile(s), "
+            f"but xdist worker {worker_id} needs index {worker_index}."
+        )
+    return profiles[worker_index]
 
 
 def option_or_env(config: pytest.Config, option_name: str, env_name: str) -> bool:
@@ -106,3 +183,9 @@ def option_or_env(config: pytest.Config, option_name: str, env_name: str) -> boo
         "yes",
         "on",
     }
+
+
+def option_or_full_testcases(config: pytest.Config, option_name: str) -> bool:
+    if option_name in FULL_TESTCASE_INCLUDED_OPTIONS and config.getoption("--run-full-testcases"):
+        return True
+    return bool(config.getoption(option_name))

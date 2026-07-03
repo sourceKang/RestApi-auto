@@ -1,42 +1,77 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTAclProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-	  "enable": " ",
-      "policy": "trust",
-      "interface": "lan",
-      "protocol": "0",
-      "srcport": "1",
-      "destport": "1",
-      "srcip": "1.1.1.10",
-	  "srcmask": "1",
-	  "destip": "10.9.19.86",
-	  "destmask": "1",
-	  "srcmac": "10:10:10:10:10:01",
-      "destmac": "10:10:10:10:10:02",
-	  "logging": "disable",
-      "counter": "disable"
-    }
-  },
-  "max": {
-    "Content": {
-		"enable": "no",
-		"policy": "trust",
-		"interface": "both",
-		"counter": "enable",
-		"logging": "enable",
-		"protocol": "255",
-		"srcport": "65535",
-		"destport": "65535",
-		"srcip": "210.109.190.100",
-		"srcmask": "32",
-		"destip": "210.109.190.86",
-		"destmask": "32",
-		"srcmac": "FE:DC:BA:98:76:54",
-		"destmac": "01:23:45:67:89:AB"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTAclProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "enable":  "disable",
+                                "policy":  "trust",
+                                "interface":  "lan",
+                                "protocol":  "0",
+                                "srcport":  "1",
+                                "destport":  "1",
+                                "srcip":  "1.1.1.10",
+                                "srcmask":  "1",
+                                "destip":  "10.9.19.86",
+                                "destmask":  "1",
+                                "srcmac":  "10:10:10:10:10:01",
+                                "destmac":  "10:10:10:10:10:02",
+                                "logging":  "disable",
+                                "counter":  "disable"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "enable":  "disable",
+                                "policy":  "trust",
+                                "interface":  "both",
+                                "counter":  "enable",
+                                "logging":  "enable",
+                                "protocol":  "255",
+                                "srcport":  "65535",
+                                "destport":  "65535",
+                                "srcip":  "210.109.190.100",
+                                "srcmask":  "32",
+                                "destip":  "210.109.190.86",
+                                "destmask":  "32",
+                                "srcmac":  "FE:DC:BA:98:76:54",
+                                "destmac":  "01:23:45:67:89:AB"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon ont-acl-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Policy",
+                                                           "Interface"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon ont-acl-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "Policy",
+                                                           "Interface"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

@@ -1,24 +1,59 @@
 {
-  "source": {
-    "derived_from": "configs/neox_config/profiles/minmax/",
-    "purpose": "NeoX ONTServiceProfile success min/max payloads for readwrite create verification."
-  },
-  "min": {
-    "Content": {
-      "mode": "veip",
-      "uniport": "lan",
-      "lan": "1",
-      "vlan": "1",
-      "pbit": "0"
-    }
-  },
-  "max": {
-    "Content": {
-      "mode": "bridge",
-      "uniport": "xlan",
-      "xlan": "8",
-      "vlan": "4094",
-      "pbit": "7"
-    }
-  }
+    "source":  {
+                   "derived_from":  "configs/neox_config/profiles/minmax/",
+                   "purpose":  "NeoX ONTServiceProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+               },
+    "min":  {
+                "Content":  {
+                                "mode":  "veip",
+                                "lan":  "1",
+                                "vlan":  "1",
+                                "pbit":  "0"
+                            }
+            },
+    "max":  {
+                "Content":  {
+                                "mode":  "bridge",
+                                "xlan":  "8",
+                                "vlan":  "4094",
+                                "pbit":  "7"
+                            }
+            },
+    "cli_verify":  {
+                       "min":  {
+                                   "show_command":  "show xpon service-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "1",
+                                                           "veip",
+                                                           "port_lan: 1"
+                                                       ]
+                               },
+                       "max":  {
+                                   "show_command":  "show xpon service-profile {profile_name}",
+                                   "expected_tokens":  [
+                                                           "{profile_name}",
+                                                           "4094",
+                                                           "veip",
+                                                           "port_lan: 1"
+                                                       ]
+                               }
+                   },
+    "negative_cases":  [
+                           {
+                               "name":  "invalid_field_rejected",
+                               "field":  "__invalid_field__",
+                               "error_layer":  "api_schema",
+                               "payload":  {
+                                               "Content":  {
+                                                               "__invalid_field__":  "invalid"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "expected_message_contains":  [
+                                                                 "Invalid field",
+                                                                 "invalid field"
+                                                             ]
+                           }
+                       ]
 }

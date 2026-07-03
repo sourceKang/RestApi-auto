@@ -93,7 +93,7 @@ nodes:
     slots:
       4:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)_260604c"
         hw_version: "AAB"
         role: "controller"
         ports:
@@ -105,7 +105,7 @@ nodes:
             speed: "10G"
       3:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)_260604c"
         role: "line"
         ports:
           16:
@@ -120,13 +120,13 @@ nodes:
                 fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)_260604b"
         hw_version: "AA"
         role: "line"
         ports:
           39:
             type: "GE"
-            speed: "10G"
+            speed: "1G"
             ge_service:
     test_targets:
       report_slots: ["4", "3", "1"]
@@ -170,7 +170,7 @@ nodes:
     slots:
       5:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)_260604c"
         role: "controller"
         ports:
           1:
@@ -178,7 +178,7 @@ nodes:
             speed: "1G"
       8:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)_260604c"
         role: "line"
         ports:
           1:
@@ -193,7 +193,7 @@ nodes:
                 fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)_260604b"
         role: "line"
         ports:
           16:
@@ -275,7 +275,7 @@ nodes:
     slots:
       4:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)_260604c"
         hw_version: "AAB"
         role: "controller"
         ports:
@@ -287,7 +287,7 @@ nodes:
             speed: "10G"
       3:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)_260604c"
         role: "line"
         ports:
           16:
@@ -302,7 +302,7 @@ nodes:
                 fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)_260604b"
         hw_version: "AA"
         role: "line"
         ports:
@@ -333,7 +333,7 @@ nodes:
     slots:
       4:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)"
+        fw_version: "V1.02(ACKG.1)_260604c"
         role: "controller"
         ports:
           12:
@@ -341,7 +341,7 @@ nodes:
             speed: "10G"
       8:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)"
+        fw_version: "V1.02(ACKI.1)_260604c"
         role: "line"
         ports:
           16:
@@ -356,7 +356,7 @@ nodes:
                 fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)"
+        fw_version: "V1.02(ACQE.1)_260604b"
         hw_version: "AA"
         role: "line"
         ports:

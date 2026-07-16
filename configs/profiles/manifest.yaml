@@ -1,0 +1,3 @@
+# Profile files are loaded in this explicit order.
+version: 1
+files: ['ont_alarm.yaml', 'ont_acl.yaml', 'ont_voip.yaml', 'ont_access.yaml', 'igmp.yaml', 'qos.yaml', 'ge_template.yaml', 'ont_multicast.yaml', 'ont_service.yaml']

@@ -236,13 +236,13 @@ profiles:
   ONTVoipCommonProfile:
     source_lines: "9065-9177"
     fields:
-      1codec:
+      codec1:
         manual_name: "1st codec"
         allowed: ["PCMU", "GSM", "G723", "DVI4-8000", "DVI4-16000", "LPC", "PCMA", "G722", "L16-2", "L16-1", "QCELP", "CN", "MPA", "G728", "DVI4-11025", "DVI4-22050", "G729"]
-      1packet:
+      packet1:
         manual_name: "1st packet period"
         range: ["10", "30"]
-      1silence:
+      silence1:
         manual_name: "1st silence"
         allowed: ["0", "1", "enable", "disable"]
       minport:

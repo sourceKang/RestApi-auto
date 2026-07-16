@@ -11,7 +11,9 @@ only from the YAML files in `configs/`.
 | `configs/auth_accounts.yaml` | default local accounts, RAD external accounts, auth profiles |
 | `configs/hardware_matrix.yaml` | chassis rules, supported controller cards, line cards, GE service cards |
 | `configs/test_targets.yaml` | topology-oriented node, slots, cards, ports, ONTs and service selectors |
-| `configs/profiles.yaml` | profile API test definitions referenced by case catalog metadata |
+| `configs/profiles/manifest.yaml` | ordered profile data files referenced by case catalog metadata |
+
+Profile definitions are grouped by domain under `configs/profiles/`. Add a new data file to `manifest.yaml` before referencing its config keys from the case catalog. Duplicate config keys and duplicate `profiletype + profilename` identities are rejected during loading.
 
 ## Normal Run
 
@@ -80,3 +82,15 @@ pytest --ems-node NODE1 --auth-matrix
 
 `--auth-matrix` keeps the main run on the selected/default profile and adds
 RAD external summary checks in the same report.
+
+## Local Private Overrides
+
+The tracked YAML files contain shareable placeholder credentials. Keep real lab
+values in the ignored files below:
+
+- `configs/auth_accounts.local.yaml`
+- `configs/test_targets.local.yaml`
+
+The loaders prefer these local files when present. Set
+`EMS_AUTH_ACCOUNTS_FILE` or `EMS_TEST_TARGETS_FILE` to select another private
+file explicitly. Never commit the local override files.

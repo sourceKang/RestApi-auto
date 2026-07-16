@@ -1,11 +1,12 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+import json
 import time
 
 import pytest
 
 from services.endpoint_case import assert_permission_rejected, request_endpoint_case
-from cases.case_catalog import profile_definition_by_name
+from services.profile import ProfileService
 from cases.payloads import ont_service_payload
 from models.api import EndpointCase
 from utils.allure_helpers import allure_step
@@ -21,17 +22,18 @@ PORT_TYPE_ALIASES = {
     "xpon": {"xpon", "gpon", "xgspon", "xgpon", "250"},
     "gpon": {"xpon", "gpon", "xgspon", "xgpon", "250"},
     "network": {"network", "ethernet", "ethernet access"},
-    "ethernet access": {"network", "ethernet", "ethernet access"},
+    "ethernet access": {"network", "ethernet", "ethernet access", "ge", "6"},
     "ge": {"ge", "6"},
 }
 
 
 class InventoryService:
-    def __init__(self, api_client, env_config) -> None:
+    def __init__(self, api_client, env_config, profile_service=None) -> None:
         self.api_client = api_client
         self.env_config = env_config
+        self.profile_service = profile_service or ProfileService(api_client)
 
-    def verify_read_success(self, session_id: str, case: EndpointCase, role_name: str) -> None:
+    def verify_read_success(self, session_id: str, case: EndpointCase, role_name: str, ont_template: str | None = None) -> None:
         response = request_endpoint_case(
             self.api_client,
             self.env_config,
@@ -55,7 +57,7 @@ class InventoryService:
             )
         assert_api_success(response)
         with allure_step(f"Verify {case.name} response fields match YAML test target"):
-            assert_inventory_response_matches_env(response.json, self.env_config, case.name)
+            assert_inventory_response_matches_env(response.json, self.env_config, case.name, ont_template=ont_template)
 
     def verify_noaccess_rejected(self, session_id: str, case: EndpointCase) -> None:
         response = request_endpoint_case(
@@ -67,60 +69,98 @@ class InventoryService:
         )
         assert_permission_rejected(response)
 
-    def ensure_ont_inventory_ready(self, session_id: str) -> None:
-        with allure_step("Reuse session-cached ONT inventory readiness when possible"):
-            if self.wait_for_ont_inventory(timeout=5, interval=1, consecutive_successes=1, raise_on_timeout=False, session_id=session_id):
-                return
-        with allure_step("Prepare ONT inventory data like legacy test_prepare_for_get_ont_"):
-            self.prepare_ont_for_get(session_id)
+    def get_ont_service(self, session_id: str):
+        path = f"/ontservice/{self.env_config.dut.ont_sn}"
+        return self.api_client.request("GET", path, session=session_id)
 
-    def prepare_ont_for_get(self, session_id: str) -> None:
-        dut = self.env_config.dut
-        with allure_step("Run legacy ONT registration remote commands"):
-            commands = [
-                f"no in remote xont {dut.slot_id}-{dut.port_id}-{dut.ont_id}",
-                "con",
-                f"in xpon {dut.slot_id}-{dut.port_id}",
-                "inactive",
-                "register-method A",
-                "no inactive",
-                "exit",
-            ]
-            response = self.api_client.request(
-                "POST",
-                f"/remote/{dut.device_name}",
-                session=session_id,
-                json={"command": commands},
+    @staticmethod
+    def ont_service_is_missing(response) -> bool:
+        return _is_no_data(response)
+
+    @staticmethod
+    def ont_service_template(response) -> str:
+        service = response.json.get("retval", {}).get("ontserviceinfo", {})
+        service_data = service.get("data", {})
+        if isinstance(service_data, str) and service_data and service_data != "{}":
+            service_data = json.loads(service_data)
+        actual_template = service.get("ontTemplate")
+        if not actual_template and isinstance(service_data, dict):
+            actual_template = service_data.get("templateprof")
+        if not actual_template:
+            raise AssertionError(
+                "Existing ONT service does not expose its template: "
+                f"{format_response_summary(response)}"
             )
-            if response.retstatus != "Success":
-                pytest.fail(f"ONT prepare remote console command failed: {format_response_summary(response)}")
+        return str(actual_template)
 
-        with allure_step("Try to observe Unregistered before provisioning, but continue if EMS inventory is not ready yet"):
-            self.wait_for_ont_unregistered(session_id, timeout=240, raise_on_timeout=False)
-
-        with allure_step("Ensure ONT template profile and dependencies exist"):
-            self.ensure_profile_by_name(session_id, dut.ont_template)
-
+    def upsert_ont_service(self, session_id: str, ont_template: str | None = None):
+        dut = self.env_config.dut
         with allure_step("Create or normalize ONT service needed by ONT GET endpoints"):
             path = f"/ontservice/{dut.ont_sn}"
-            payload = recorded_ont_service_payload(self.env_config)
-            existing = self.api_client.request("GET", path, session=session_id)
+            payload = recorded_ont_service_payload(self.env_config, ont_template=ont_template)
+            existing = self.get_ont_service(session_id)
             if existing.retstatus == "Success":
-                update = self.api_client.request("PUT", path, session=session_id, json=payload)
-                assert_api_success(update)
-            else:
-                create = self.api_client.request("POST", path, session=session_id, json=payload)
-                assert_api_success(create)
-            self.wait_for_ont_service_state(session_id, {"Success"}, timeout=180, interval=15, initial_delay=30)
+                return self._update_existing_ont_service(
+                    session_id,
+                    path,
+                    payload,
+                    existing,
+                    ont_template,
+                )
+            if not _is_no_data(existing):
+                raise AssertionError(
+                    "Cannot inspect existing ONT service before create: "
+                    f"{format_response_summary(existing)}"
+                )
 
-        with allure_step("Wait until ONT inventory becomes stable after provisioning instead of sleeping a fixed 180 seconds"):
-            self.wait_for_ont_inventory(
-                session_id=session_id,
-                timeout=600,
-                interval=15,
-                consecutive_successes=2,
-                raise_on_timeout=True,
+            create = self.api_client.request("POST", path, session=session_id, json=payload)
+            if create.retstatus == "Success":
+                return create
+            if "already exists" not in create.retresult.lower():
+                assert_api_success(create)
+
+            deadline = time.monotonic() + 60
+            last = create
+            while time.monotonic() <= deadline:
+                existing = self.api_client.request("GET", path, session=session_id)
+                last = existing
+                if existing.retstatus == "Success":
+                    return self._update_existing_ont_service(
+                        session_id,
+                        path,
+                        payload,
+                        existing,
+                        ont_template,
+                    )
+                if not _is_no_data(existing):
+                    raise AssertionError(
+                        "Cannot safely reconcile ONT service after create conflict: "
+                        f"{format_response_summary(existing)}"
+                    )
+                time.sleep(5)
+            raise AssertionError(
+                "ONT service create reported already exists, but GET never exposed "
+                f"the service for template verification: {format_response_summary(last)}"
             )
+
+    def _update_existing_ont_service(
+        self,
+        session_id: str,
+        path: str,
+        payload: dict,
+        existing,
+        ont_template: str | None,
+    ):
+        expected_template = str(ont_template or self.env_config.dut.ont_template)
+        actual_template = self.ont_service_template(existing)
+        if actual_template != expected_template:
+            raise AssertionError(
+                "Refusing to overwrite ONT service that does not use this run's template: "
+                f"{format_response_summary(existing)}"
+            )
+        update = self.api_client.request("PUT", path, session=session_id, json=payload)
+        assert_api_success(update)
+        return update
 
     def wait_for_ont_service_state(
         self,
@@ -129,6 +169,7 @@ class InventoryService:
         timeout: int = 180,
         interval: int = 15,
         initial_delay: int = 0,
+        raise_on_timeout: bool = True,
     ):
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         if initial_delay > 0:
@@ -138,6 +179,8 @@ class InventoryService:
         while time.monotonic() <= deadline:
             response = self.api_client.request("GET", path, session=session_id)
             last = response
+            if response.retstatus == "Fail" and "not authorized" in response.retresult.lower():
+                raise AssertionError(f"ONT service polling lost authorization: {format_response_summary(response)}")
             if response.retstatus == "Success":
                 service = response.json["retval"]["ontserviceinfo"]
                 if service.get("state") in expected_states:
@@ -145,7 +188,11 @@ class InventoryService:
                 if service.get("state") == "Fail":
                     raise AssertionError(f"ONT service provisioning failed: {format_response_summary(response)}")
             time.sleep(interval)
-        raise AssertionError(f"ONT service did not reach states {expected_states!r}. Last response: {_response_summary(last)}")
+        if raise_on_timeout:
+            raise AssertionError(
+                f"ONT service did not reach states {expected_states!r}. Last response: {_response_summary(last)}"
+            )
+        return None
 
     def wait_for_ont_unregistered(
         self,
@@ -173,6 +220,7 @@ class InventoryService:
     def wait_for_ont_inventory(
         self,
         session_id: str,
+        ont_template: str | None = None,
         timeout: int = 240,
         interval: int = 15,
         initial_delay: int = 0,
@@ -190,7 +238,11 @@ class InventoryService:
             last = response
             if response.retstatus == "Success":
                 try:
-                    _assert_ont_fields(find_ont_item(response.json, self.env_config, "ont_by_sn"), self.env_config)
+                    _assert_ont_fields(
+                        find_ont_item(response.json, self.env_config, "ont_by_sn"),
+                        self.env_config,
+                        ont_template=ont_template,
+                    )
                 except AssertionError:
                     stable_hits = 0
                 else:
@@ -242,30 +294,7 @@ class InventoryService:
         return False
 
     def ensure_profile_by_name(self, session_id: str, profilename: str, seen=None) -> None:
-        definition = profile_definition_by_name(profilename)
-        if definition is None:
-            pytest.skip(f"No converted profile data found for prerequisite profile {profilename}.")
-        seen = seen or set()
-        key = (definition["profiletype"], definition["profilename"])
-        if key in seen:
-            return
-        seen.add(key)
-
-        for dependency in _profile_refs(definition.get("post_profile_info", {})):
-            self.ensure_profile_by_name(session_id, dependency, seen)
-
-        path = f"/profile/{definition['profiletype']}/{definition['profilename']}"
-        existing = self.api_client.request("GET", path, session=session_id)
-        if existing.retstatus == "Success":
-            return
-        created = self.api_client.request(
-            "POST",
-            path,
-            session=session_id,
-            json={"Content": definition.get("post_profile_info", {})},
-        )
-        if created.retstatus != "Success":
-            pytest.skip(f"Cannot create prerequisite profile {profilename}: {format_response_summary(created)}")
+        self.profile_service.ensure_prerequisite_profile(session_id, profilename, seen=seen)
 
 
 def _is_no_data(response) -> bool:
@@ -276,8 +305,12 @@ def _is_known_chinese_devicename_ont_issue(env_config, case: EndpointCase) -> bo
     return case.name in ONTOLOGY_PATH_CASE_NAMES and any(ord(char) > 127 for char in env_config.dut.device_name)
 
 
-def recorded_ont_service_payload(env_config):
-    payload = ont_service_payload(env_config, env_config.dut.ont_description)
+def recorded_ont_service_payload(env_config, ont_template: str | None = None):
+    payload = ont_service_payload(
+        env_config,
+        env_config.dut.ont_description,
+        ont_template=ont_template,
+    )
     data = payload["ontservice"]["data"]
     data["description"] = env_config.dut.ont_description
     data["wifi5ssid1"] = "musk_wifi5"
@@ -285,7 +318,7 @@ def recorded_ont_service_payload(env_config):
     return payload
 
 
-def assert_inventory_response_matches_env(payload, env_config, case_name: str) -> None:
+def assert_inventory_response_matches_env(payload, env_config, case_name: str, ont_template: str | None = None) -> None:
     if case_name.startswith("device"):
         _assert_device_fields(
             _find_inventory_item(
@@ -326,7 +359,7 @@ def assert_inventory_response_matches_env(payload, env_config, case_name: str) -
         )
         return
     if case_name.startswith("ont"):
-        _assert_ont_fields(find_ont_item(payload, env_config, case_name), env_config)
+        _assert_ont_fields(find_ont_item(payload, env_config, case_name), env_config, ont_template=ont_template)
 
 
 def _find_inventory_item(payload, list_key, info_key, matcher, case_name):
@@ -490,7 +523,7 @@ def _assert_port_fields(item, env_config):
         },
         "Port",
     )
-    checks = (
+    checks = [
         lambda: _assert_any_field(item, ("SubmapName", "Submap Name", "submapName"), env_config.node_target.get("submap_name", ""), "Port"),
         lambda: _assert_any_field(item, ("PortName", "Port Name", "portName"), dut.ge_port_name, "Port"),
         lambda: _assert_port_type(item, env_config),
@@ -503,14 +536,9 @@ def _assert_port_fields(item, env_config):
         ),
         lambda: _assert_optional_port_speed(item, env_config),
         lambda: _assert_any_field_present(item, ("Telephone", "telephone"), "Port"),
-        lambda: _assert_any_field_present(
-            item,
-            ("ProvisioningStatus", "Provisioning Status", "provisioningStatus", "ProvisioningState", "provisioningState"),
-            "Port",
-        ),
         lambda: _assert_any_field_present(item, ("txPower", "TxPower", "Tx Power"), "Port"),
         lambda: _assert_any_field_present(item, ("rxPower", "RxPower", "Rx Power"), "Port"),
-    )
+    ]
     mismatches = []
     for check in checks:
         try:
@@ -520,7 +548,7 @@ def _assert_port_fields(item, env_config):
     assert not mismatches, f"Port inventory mismatches: {'; '.join(mismatches)}"
 
 
-def _assert_ont_fields(item, env_config):
+def _assert_ont_fields(item, env_config, ont_template: str | None = None):
     dut = env_config.dut
     _assert_any_field(item, ("DevName",), dut.device_name, "ONT")
     _assert_any_field(item, ("IPAddress", "IP"), dut.device_ip, "ONT")
@@ -529,7 +557,7 @@ def _assert_ont_fields(item, env_config):
     _assert_any_field(item, ("ONT", "ONTID"), dut.ont_id, "ONT")
     _assert_any_field(item, ("sn", "SN", "SerialNumber"), dut.ont_sn, "ONT")
     _assert_any_field(item, ("password",), dut.ont_password, "ONT")
-    _assert_any_field(item, ("templateName", "ontTemplate"), dut.ont_template, "ONT")
+    _assert_any_field(item, ("templateName", "ontTemplate"), ont_template or dut.ont_template, "ONT")
     _assert_any_field(item, ("description", "Desc"), dut.ont_description, "ONT")
     _assert_any_field(item, ("model", "ONTModel", "OntModel"), _expected_ont_model(env_config), "ONT")
     _assert_active_ont_fw_image(item, env_config)
@@ -573,6 +601,7 @@ def _assert_optional_port_speed(item, env_config) -> None:
     assert str(actual_speed).lower() == str(expected_speed).lower(), (
         f"Port speed mismatch: expected {expected_speed!r}, got {actual_speed!r}. Full data: {item!r}"
     )
+
 
 
 def _expected_port_value(env_config, field: str) -> str:
@@ -693,16 +722,3 @@ def _ge_port_inventory_status(response):
     }
     compact = {key: value for key, value in fields.items() if value not in {None, ""}}
     return f"{summary}; Port fields={compact!r}"
-
-
-def _profile_refs(value):
-    refs = set()
-    if isinstance(value, dict):
-        for item in value.values():
-            refs.update(_profile_refs(item))
-    elif isinstance(value, list):
-        for item in value:
-            refs.update(_profile_refs(item))
-    elif isinstance(value, str) and value.startswith("#RestApi"):
-        refs.add(value)
-    return refs

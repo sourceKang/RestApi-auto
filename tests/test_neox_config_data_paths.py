@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from services.neox_config.service import (
     NEOX_CONFIG_DATA_FILES,
     NEOX_CONFIG_DIR,
@@ -56,7 +58,8 @@ def test_neox_parallel_auth_profile_mapping_is_disabled_by_default():
 def test_neox_parallel_auth_profile_mapping_assigns_xdist_workers():
     assert neox_parallel_auth_profile_for_worker(None, "resource", "default,ems_local_rw2", "gw0") == "default"
     assert neox_parallel_auth_profile_for_worker(None, "resource", "default,ems_local_rw2", "gw1") == "ems_local_rw2"
-    assert neox_parallel_auth_profile_for_worker(None, "resource", "default", "gw1") == "default"
+    with pytest.raises(ValueError, match="defines 1 profile"):
+        neox_parallel_auth_profile_for_worker(None, "resource", "default", "gw1")
 
 def test_neox_parallel_grouping_defaults_to_off():
     assert neox_parallel_group_for_name("test_ge_config_min_create_readwrite", {"neox_config"}, "off") is None

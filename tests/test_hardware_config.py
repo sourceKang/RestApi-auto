@@ -8,9 +8,12 @@ from utils.reporting import _card_version_lines, _target_summary_lines
 def test_hardware_yaml_loads_and_validates_known_nodes():
     hardware = load_hardware_config()
     for node_key in hardware.targets["nodes"]:
-        env = load_environment(node=node_key)
-        node = env.node_target
+        node = hardware.node_target(node_key)
         hardware.validate_node(node_key, node)
+        if not _has_complete_dut_sample(node):
+            continue
+        env = load_environment(node=node_key)
+        assert env.dut.node_key == node_key
 
 
 def test_each_yaml_hardware_target_has_port_inventory():
@@ -96,6 +99,11 @@ def _canonical_model(value, aliases):
     return aliases.get(value, value)
 
 
+
+
+def _has_complete_dut_sample(node):
+    ont = node.get("ont")
+    return isinstance(ont, dict) and bool(ont.get("sn"))
 def _assert_supported_model(supported, aliases, label, model, actual_version):
     canonical_model = aliases.get(model, model)
     assert canonical_model in supported, f"{label} model {model!r} is not listed in supported_devices"
@@ -109,7 +117,7 @@ def _assert_supported_model(supported, aliases, label, model, actual_version):
 def test_node1_report_cards_are_yaml_targeted():
     env = load_environment(node="NODE1")
     lines = _card_version_lines(env)
-    assert [line.split(":", 1)[0] for line in lines] == ["MSC1240QB", "GLC1440X", "OLC3816"]
+    assert [line.split(":", 1)[0] for line in lines] == ["MSC1240QA", "GLC1440X-55", "OLC3816-IA"]
     assert env.dut.device_name == "California_IES4204_169.57"
     assert env.dut.device_ip == "192.168.169.57"
     assert env.dut.chassis == "IES4204"

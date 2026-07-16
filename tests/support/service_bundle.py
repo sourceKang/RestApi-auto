@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -27,14 +27,15 @@ class ServiceBundle:
 
 
 def build_service_bundle(api_client, env_config) -> ServiceBundle:
+    profile = ProfileService(api_client)
     return ServiceBundle(
         alarm=AlarmService(api_client, env_config),
         auth_matrix=AuthMatrixService(api_client),
-        invalid_params=InvalidParamsService(api_client, env_config),
-        inventory=InventoryService(api_client, env_config),
+        invalid_params=InvalidParamsService(api_client, env_config, profile_service=profile),
+        inventory=InventoryService(api_client, env_config, profile_service=profile),
         neox_config=NeoXConfigService(api_client, env_config),
-        profile=ProfileService(api_client),
-        provision=ProvisionService(api_client, env_config),
+        profile=profile,
+        provision=ProvisionService(api_client, env_config, profile_service=profile),
         remote=RemoteService(api_client, env_config),
         user_session=UserSessionService(api_client, env_config),
     )

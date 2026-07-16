@@ -1,5 +1,5 @@
 # Read-only snapshot from Swagger/OpenAPI.
-# Source: https://192.168.128.100:9116/netatlasemsapi/v3/api-docs
+# Source: https://192.168.128.8:9116/netatlasemsapi/v3/api-docs
 # Captured: 2026-06-23
 #
 # This file records schema data exposed by Swagger. Most schemas define field
@@ -7,8 +7,8 @@
 # be supplied by environment-safe test data and verified against the target node.
 
 source:
-  swagger_ui: "https://192.168.128.100:9116/netatlasemsapi/swagger-ui/index.html#/"
-  openapi_json: "https://192.168.128.100:9116/netatlasemsapi/v3/api-docs"
+  swagger_ui: "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
+  openapi_json: "https://192.168.128.8:9116/netatlasemsapi/v3/api-docs"
   openapi_yaml: "NetAtlasEMS_OpenAPI_20260614.yaml"
   raw_snapshot: "reports/swagger-readonly/v3_api-docs.txt"
 
@@ -141,7 +141,7 @@ schemas:
     sample_fields: ["lanactive1..8", "lanbroadcast1..8", "landlf1..8", "landspir1..8", "lanenable", "lanfdb1..8", "lanmulticast1..8", "potsenable", "potsportactive1..2", "veipactive1", "veipenable", "xlanactive1..8", "xlanenable", "xlanvlan1..32"]
 
   OntVoIPCommonProfileForNeoXContent:
-    fields: ["1codec", "1packet", "1silence", "2codec", "2packet", "2silence", "3codec", "3packet", "3silence", "4codec", "4packet", "4silence", "announce", "buf", "cas", "dscp", "dtmf", "echo", "fax", "maxport", "minport", "oobdtmf", "piggyback", "pstn", "signal", "target", "tone"]
+    fields: ["codec1", "codec2", "codec3", "codec4", "packet1", "packet2", "packet3", "packet4", "silence1", "silence2", "silence3", "silence4", "announce", "buf", "cas", "dscp", "dtmf", "echo", "fax", "maxport", "minport", "oobdtmf", "piggyback", "pstn", "signal", "target", "tone"]
 
   OntVoIPDialPlanProfileForNeoXContent:
     fields: ["critical", "format", "identifier", "max", "partial"]

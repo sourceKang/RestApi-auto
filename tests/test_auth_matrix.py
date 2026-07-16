@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from utils.cleanup import CleanupRegistry
+
 
 
 @pytest.fixture(scope="module")
-def auth_matrix_seed_data(services, session_manager):
-    registry = CleanupRegistry()
-    with session_manager.credentials_session(services.provision.env_config.readwrite) as session_id:
-        services.inventory.ensure_ont_inventory_ready(session_id)
-        services.provision.ensure_ge_seed_data(session_id, registry)
-        yield
+def auth_matrix_seed_data(prepared_ont_inventory, prepared_ge_service):
+    yield {"ont_template": prepared_ont_inventory, "ge_template": prepared_ge_service}
 
 
 @pytest.mark.authmatrix
@@ -29,7 +25,13 @@ def test_rad_external_readonly_summary(
     rad_readwrite_session,
     auth_matrix_seed_data,
 ):
-    services.auth_matrix.verify_rad_readonly_summary(rad_env_config, rad_readonly_session, rad_readwrite_session)
+    services.auth_matrix.verify_rad_readonly_summary(
+        rad_env_config,
+        rad_readonly_session,
+        rad_readwrite_session,
+        ont_template=auth_matrix_seed_data["ont_template"],
+        ge_template=auth_matrix_seed_data["ge_template"],
+    )
 
 
 @pytest.mark.authmatrix
@@ -41,4 +43,10 @@ def test_rad_external_noaccess_summary(
     rad_readwrite_session,
     auth_matrix_seed_data,
 ):
-    services.auth_matrix.verify_rad_noaccess_summary(rad_env_config, rad_noaccess_session, rad_readwrite_session)
+    services.auth_matrix.verify_rad_noaccess_summary(
+        rad_env_config,
+        rad_noaccess_session,
+        rad_readwrite_session,
+        ont_template=auth_matrix_seed_data["ont_template"],
+        ge_template=auth_matrix_seed_data["ge_template"],
+    )

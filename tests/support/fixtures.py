@@ -9,9 +9,14 @@ from clients.runtime import build_run_context
 from clients.session import SessionManager
 from tests.support.service_bundle import ServiceBundle, build_service_bundle
 from tests.support.options import neox_parallel_worker_auth_profile
+from tests.support.ge_cli_config import wait_for_ge_cli_config
+from tests.support.ge_workflow import GeServiceWorkflowState
+from tests.support.ont_cli_status import read_ont_cli_status, wait_for_ont_cli_is
+from tests.support.ont_workflow import OntServiceWorkflowState
 from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
+from services.profile import TemporaryGeTemplate, TemporaryOntTemplate
 from utils.cleanup import CleanupRegistry
 from utils.allure_helpers import attach_json
 from utils.case_metadata import format_case_title
@@ -114,6 +119,239 @@ def session_manager(api_client, env_config):
 @pytest.fixture(scope="session")
 def services(api_client, env_config) -> ServiceBundle:
     return build_service_bundle(api_client, env_config)
+
+
+@pytest.fixture(scope="session")
+def ont_service_workflow_state() -> OntServiceWorkflowState:
+    return OntServiceWorkflowState()
+
+
+@pytest.fixture(scope="session")
+def ge_service_workflow_state() -> GeServiceWorkflowState:
+    return GeServiceWorkflowState()
+
+
+@pytest.fixture(scope="session")
+def temporary_ge_template(services, session_manager, env_config):
+    with session_manager.credentials_session(env_config.readwrite) as session_id:
+        graph = services.profile.create_temporary_profile_graph(
+            session_id,
+            env_config.dut.ge_template,
+            env_config.ems_version,
+            env_config.dut.node_key,
+        )
+    profile_name = TemporaryGeTemplate(graph)
+    try:
+        yield profile_name
+    finally:
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            services.provision.delete_ge_service_if_uses_template(session_id, profile_name)
+            for definition in reversed(graph.definitions):
+                services.profile.delete_temporary_profile(
+                    session_id,
+                    definition,
+                    timeout=90,
+                    interval=5,
+                )
+
+
+@pytest.fixture(scope="session")
+def temporary_ont_template(services, session_manager, env_config, request):
+    with session_manager.credentials_session(env_config.readwrite) as session_id:
+        graph = services.profile.create_temporary_profile_graph(
+            session_id,
+            env_config.dut.ont_template,
+            env_config.ems_version,
+            env_config.dut.node_key,
+        )
+    profile_name = TemporaryOntTemplate(graph)
+
+    try:
+        yield profile_name
+    finally:
+        if request.config.getoption("--keep-ont-service-for-manual-check"):
+            attach_json(
+                "ONT service retained for manual inspection",
+                {
+                    "node": env_config.dut.node_key,
+                    "sn": env_config.dut.ont_sn,
+                    "template": str(profile_name),
+                },
+            )
+            return
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            services.provision.delete_ont_service_if_uses_template(session_id, profile_name)
+            for definition in reversed(graph.definitions):
+                services.profile.delete_temporary_profile(
+                    session_id,
+                    definition,
+                    timeout=90,
+                    interval=5,
+                )
+
+
+def prepare_ont_inventory_with_session_rotation(
+    services,
+    session_manager,
+    env_config,
+    ont_template_factory,
+    *,
+    cli_status_reader=read_ont_cli_status,
+    cli_is_waiter=wait_for_ont_cli_is,
+    workflow_state: OntServiceWorkflowState | None = None,
+) -> str:
+    with session_manager.credentials_session(env_config.readwrite) as session_id:
+        existing = services.inventory.get_ont_service(session_id)
+
+    cli_status = cli_status_reader(env_config)
+    if existing.retstatus == "Success":
+        existing_template = services.inventory.ont_service_template(existing)
+        if workflow_state is not None and workflow_state.post_succeeded:
+            if existing_template != workflow_state.template:
+                raise AssertionError(
+                    "EMS1-6666 created an ONT service with an unexpected template: "
+                    f"expected={workflow_state.template}, actual={existing_template}"
+                )
+            if cli_status.state != "IS":
+                cli_is_waiter(
+                    env_config,
+                    status_reader=cli_status_reader,
+                    timeout=180,
+                    interval=15,
+                )
+        elif cli_status.state != "IS":
+            raise AssertionError(
+                "ONT service already exists, but CLI is not IS; refusing to modify the existing service. "
+                f"CLI state={cli_status.state}, source={cli_status.source}, template={existing_template}"
+            )
+        selected_template = existing_template
+    else:
+        if workflow_state is not None and workflow_state.post_succeeded:
+            raise AssertionError(
+                "EMS1-6666 POST reached Success, but the ONT service disappeared before inventory verification."
+            )
+        if not services.inventory.ont_service_is_missing(existing):
+            raise AssertionError(
+                "Cannot determine whether ONT service exists: "
+                f"{existing.retstatus} {existing.retresult}"
+            )
+        if cli_status.state == "IS":
+            raise AssertionError(
+                "CLI reports IS but GET ONT service returned no data; refusing to create a duplicate service."
+            )
+        if cli_status.state != "UnReg":
+            raise AssertionError(
+                "ONT service is absent, but CLI is not UnReg; refusing automatic provisioning. "
+                f"CLI state={cli_status.state}, source={cli_status.source}"
+            )
+
+        selected_template = ont_template_factory()
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            services.inventory.upsert_ont_service(session_id, selected_template)
+            ready = services.inventory.wait_for_ont_service_state(
+                session_id,
+                {"Success"},
+                timeout=120,
+                interval=15,
+                initial_delay=30,
+                raise_on_timeout=False,
+            )
+
+        if ready is None:
+            with session_manager.credentials_session(env_config.readwrite) as session_id:
+                services.provision.delete_ont_service_if_uses_template(
+                    session_id,
+                    str(selected_template),
+                    timeout=90,
+                    interval=5,
+                )
+                services.inventory.upsert_ont_service(session_id, selected_template)
+                services.inventory.wait_for_ont_service_state(
+                    session_id,
+                    {"Success"},
+                    timeout=300,
+                    interval=15,
+                    initial_delay=15,
+                )
+
+        cli_is_waiter(
+            env_config,
+            status_reader=cli_status_reader,
+            timeout=180,
+            interval=15,
+        )
+
+    with session_manager.credentials_session(env_config.readwrite) as session_id:
+        services.inventory.wait_for_ont_inventory(
+            session_id=session_id,
+            ont_template=str(selected_template),
+            timeout=240,
+            interval=15,
+            consecutive_successes=2,
+            raise_on_timeout=True,
+        )
+    if workflow_state is not None:
+        workflow_state.mark_inventory_ready(str(selected_template))
+    return str(selected_template)
+
+
+@pytest.fixture(scope="session")
+def prepared_ont_inventory(services, session_manager, env_config, request, ont_service_workflow_state):
+    if ont_service_workflow_state.post_failure:
+        pytest.skip(
+            "Blocked because EMS1-6666 POST failed: "
+            f"{ont_service_workflow_state.post_failure}"
+        )
+    if ont_service_workflow_state.readiness_failure:
+        pytest.skip(
+            "Blocked because ONT workflow readiness failed: "
+            f"{ont_service_workflow_state.readiness_failure}"
+        )
+    if ont_service_workflow_state.inventory_ready and ont_service_workflow_state.template:
+        return ont_service_workflow_state.template
+    try:
+        return prepare_ont_inventory_with_session_rotation(
+            services,
+            session_manager,
+            env_config,
+            lambda: request.getfixturevalue("temporary_ont_template"),
+            workflow_state=ont_service_workflow_state,
+        )
+    except AssertionError as error:
+        ont_service_workflow_state.fail_readiness(error)
+        pytest.fail(f"ONT inventory setup failed: {error}")
+
+
+@pytest.fixture(scope="session")
+def prepared_ge_service(
+    services,
+    session_manager,
+    env_config,
+    request,
+    ge_service_workflow_state,
+):
+    if ge_service_workflow_state.post_failure:
+        pytest.skip(f"Blocked because EMS1-6661 POST failed: {ge_service_workflow_state.post_failure}")
+    if ge_service_workflow_state.cli_failure:
+        pytest.skip(f"Blocked because GE CLI verification failed: {ge_service_workflow_state.cli_failure}")
+    if ge_service_workflow_state.post_succeeded and ge_service_workflow_state.cli_verified:
+        return ge_service_workflow_state.template
+
+    template = request.getfixturevalue("temporary_ge_template")
+    ge_service_workflow_state.begin_post(str(template))
+    try:
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            services.provision.verify_ge_service_post(session_id, ge_template=template)
+        ge_service_workflow_state.complete_post()
+        wait_for_ge_cli_config(env_config, template.definition, timeout=120, interval=10)
+        ge_service_workflow_state.complete_cli()
+    except Exception as error:
+        if not ge_service_workflow_state.post_succeeded:
+            ge_service_workflow_state.fail_post(error)
+        else:
+            ge_service_workflow_state.fail_cli(error)
+        pytest.fail(f"GE service setup failed: {error}")
+    return str(template)
 
 
 @pytest.fixture(scope="session")

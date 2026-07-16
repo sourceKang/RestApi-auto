@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from clients.ssh_cli import CliCommandResult, FileTokenSemaphore, SshCliClient, SshSessionPool
+from clients.ssh_cli import CliCommandResult, FileTokenSemaphore, SshCliClient, SshCliSession, SshSessionPool
 
 
 class FakeTransport:
@@ -80,6 +80,32 @@ def test_ssh_cli_closes_channel_transport_and_client(monkeypatch: pytest.MonkeyP
     assert channel.closed
     assert fake_client.transport.closed
     assert fake_client.closed
+
+
+def test_ssh_session_run_command_forwards_custom_read_window(monkeypatch: pytest.MonkeyPatch):
+    channel = FakeChannel()
+    session = SshCliSession("host", "user", "password")
+    session.channel = channel
+    calls = []
+
+    def read_available(_channel, **kwargs):
+        calls.append(kwargs)
+        return "complete output"
+
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(read_available))
+
+    output, _elapsed, confirmed = session.run_command(
+        "show running-config interface ge 1-39",
+        first_wait=1.0,
+        idle_wait=1.5,
+        max_wait=15,
+    )
+
+    assert output == "complete output"
+    assert not confirmed
+    assert calls == [{"first_wait": 1.0, "idle_wait": 1.5, "max_wait": 15}]
+    assert channel.sent == ["show running-config interface ge 1-39\n"]
+
 
 
 def test_ssh_cli_confirms_logout_prompt(monkeypatch: pytest.MonkeyPatch):

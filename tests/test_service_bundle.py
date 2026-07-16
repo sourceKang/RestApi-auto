@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from services.alarm import AlarmService
 from services.auth_matrix import AuthMatrixService
@@ -27,3 +27,6 @@ def test_build_service_bundle_groups_domain_services():
     assert isinstance(services.provision, ProvisionService)
     assert isinstance(services.remote, RemoteService)
     assert isinstance(services.user_session, UserSessionService)
+    assert services.inventory.profile_service is services.profile
+    assert services.provision.profile_service is services.profile
+    assert services.invalid_params.profile_service is services.profile

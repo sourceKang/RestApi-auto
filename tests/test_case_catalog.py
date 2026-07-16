@@ -26,7 +26,7 @@ def test_case_catalog_profile_data_contains_test_and_validation_data():
 
 
 @pytest.mark.smoke
-def test_profiles_yaml_contains_all_catalog_profile_refs():
+def test_profile_configs_contain_all_catalog_profile_refs():
     profiles = load_profile_definitions()
     refs = {
         ref

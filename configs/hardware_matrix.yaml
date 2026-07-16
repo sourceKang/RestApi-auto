@@ -78,10 +78,10 @@ chassis:
   IES4204:
     max_controller_cards: 2
     max_line_cards: 2
-    report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
     controller_cards: ["MSC1240QA", "MSC1240QB"]
-    line_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X", "OLC3816", "OLC3416B", "OLC3416-42A", "OLC3708"]
-    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1540", "GLC1540X"]
+    line_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X"]
 
   IES5206:
     max_controller_cards: 2

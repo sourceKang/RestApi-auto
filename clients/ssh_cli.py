@@ -165,13 +165,25 @@ class SshCliSession:
             results.append(CliCommandResult(command=command, output=output))
         return results
 
-    def run_command(self, command: str) -> tuple[str, float, bool]:
+    def run_command(
+        self,
+        command: str,
+        *,
+        first_wait: float = 0.8,
+        idle_wait: float = 0.4,
+        max_wait: float = 8,
+    ) -> tuple[str, float, bool]:
         if self.channel is None:
             raise RuntimeError("SSH channel is not available")
         started = time.monotonic()
         confirmed = False
         self.channel.send(command + "\n")
-        output = SshCliClient._read_available(self.channel)
+        output = SshCliClient._read_available(
+            self.channel,
+            first_wait=first_wait,
+            idle_wait=idle_wait,
+            max_wait=max_wait,
+        )
         if YES_NO_CONFIRM_PROMPT.search(output):
             confirmed = True
             self.channel.send("y\n")

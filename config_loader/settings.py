@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +13,7 @@ from models.api import SessionRole
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_EMS_FILE = CONFIG_DIR / "ems.yaml"
-EXPECTED_NOACCESS_USER = "RestApiNA"
-EXPECTED_READONLY_USER = "RestApiRO"
+
 
 
 class ConfigError(RuntimeError):
@@ -24,7 +23,7 @@ class ConfigError(RuntimeError):
 @dataclass(frozen=True)
 class Credentials:
     username: str
-    password: str
+    password: str = field(repr=False)
 
 
 @dataclass(frozen=True)
@@ -39,7 +38,7 @@ class DutSample:
     ge_port_id: str
     ont_id: str
     ont_sn: str
-    ont_password: str
+    ont_password: str = field(repr=False)
     ont_template: str
     ont_description: str
     ge_template: str
@@ -50,20 +49,20 @@ class DutSample:
 @dataclass(frozen=True)
 class EnvironmentConfig:
     source_path: Path
-    hardware: HardwareConfig
+    hardware: HardwareConfig = field(repr=False)
     auth_profile: str
     base_url: str
     ems_version: str
     verify_tls: bool
     timeout: float
-    readwrite: Credentials
-    readonly: Credentials
-    noaccess: Credentials
-    readwrite_account: ResolvedAccount
-    readonly_account: ResolvedAccount
-    noaccess_account: ResolvedAccount
+    readwrite: Credentials = field(repr=False)
+    readonly: Credentials = field(repr=False)
+    noaccess: Credentials = field(repr=False)
+    readwrite_account: ResolvedAccount = field(repr=False)
+    readonly_account: ResolvedAccount = field(repr=False)
+    noaccess_account: ResolvedAccount = field(repr=False)
     dut: DutSample
-    node_target: dict[str, Any]
+    node_target: dict[str, Any] = field(repr=False)
 
     def credentials_for(self, role: SessionRole) -> Credentials:
         if role is SessionRole.READWRITE:
@@ -86,18 +85,9 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
         raise ConfigError(f"Cannot load auth YAML configuration: {error}") from error
     ems = _load_ems_yaml(path)
 
-    selected_node_key = node or os.environ.get("EMS_NODE", "NODE3")
-    default_accounts = auth.resolve_profile("default")
-    user4_name = default_accounts["noaccess"].username
-    user5_name = default_accounts["readonly"].username
-    if user4_name != EXPECTED_NOACCESS_USER:
-        raise ConfigError(
-            f"EMS.USER.USER4.name must be {EXPECTED_NOACCESS_USER!r}, got {user4_name!r}."
-        )
-    if user5_name != EXPECTED_READONLY_USER:
-        raise ConfigError(
-            f"EMS.USER.USER5.name must be {EXPECTED_READONLY_USER!r}, got {user5_name!r}."
-        )
+    env_node = os.environ.get("EMS_NODE")
+    selected_node_key = node or env_node or "NODE3"
+    allow_node_fallback = node is None and not env_node
 
     selected_auth_profile = auth_profile or os.environ.get("EMS_AUTH_PROFILE", "default")
     try:
@@ -105,7 +95,7 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
     except AuthConfigError as error:
         raise ConfigError(f"Cannot resolve auth profile {selected_auth_profile!r}: {error}") from error
 
-    dut = _select_dut_sample(hardware, selected_node_key)
+    dut = _select_dut_sample(hardware, selected_node_key, allow_fallback=allow_node_fallback)
     selected_node = hardware.node_target(dut.node_key)
     try:
         hardware.validate_node(dut.node_key, selected_node)
@@ -153,18 +143,22 @@ def _target_cards(target: dict[str, Any]) -> dict[str, Any]:
     return cards if isinstance(cards, dict) else {}
 
 
-def _select_dut_sample(hardware: HardwareConfig, preferred_node: str) -> DutSample:
+def _select_dut_sample(hardware: HardwareConfig, preferred_node: str, *, allow_fallback: bool = True) -> DutSample:
     nodes = hardware.targets["nodes"]
-    candidates = [preferred_node] + [key for key in nodes if key != preferred_node]
+    candidates = [preferred_node]
+    if allow_fallback:
+        candidates += [key for key in nodes if key != preferred_node]
+    failures: list[str] = []
     for node_key in candidates:
         node = hardware.node_target(node_key)
-        if not isinstance(node, dict):
+        if not isinstance(node, dict) or not node:
+            failures.append(f"{node_key} is not defined in test_targets.yaml")
             continue
         try:
             target = node
             ont_target = _target_section(target, "ont")
             if not ont_target.get("sn"):
-                raise ValueError("No ONT test target")
+                raise ValueError("no ONT test target")
             ge_target = _target_section(target, "ge_service")
             card = _target_or_first_pon_card(node_key, node, hardware)
             ge_card = _target_or_first_ge_service_card(node_key, node, hardware) if _has_ge_service_target(target) else None
@@ -188,8 +182,12 @@ def _select_dut_sample(hardware: HardwareConfig, preferred_node: str) -> DutSamp
                 ge_port_name=str(_target_value(ge_target, "port_name", _port_info_value(ge_port, "port_name", _ge_card_info_value(ge_card, "port_name", "AUTO_REST_GE") if ge_card else ""))),
                 ge_telephone=str(_target_value(ge_target, "telephone", _port_info_value(ge_port, "telephone", _ge_card_info_value(ge_card, "telephone", "000") if ge_card else ""))),
             )
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError) as error:
+            failures.append(f"{node_key} has {error}")
             continue
+    if not allow_fallback:
+        detail = failures[0] if failures else f"{preferred_node} cannot be used as DUT sample"
+        raise ConfigError(detail)
     raise ConfigError("Cannot find a DUT sample with device, port and ONT data.")
 
 

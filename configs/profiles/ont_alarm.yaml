@@ -1,0 +1,74 @@
+# REST API profile test data.
+profiles:
+  ont_alarm_profile_data:
+    profiletype: 'ONTAlarmProfile'
+    profilename: '#RestApi_ontAlarmProfile'
+    post_profile_info: |
+      {
+        "ontalarmprofile_highrxpowerthresold": "0",
+        "ontalarmprofile_lowrxpowerthreshold": "-127",
+        "ontalarmprofile_lowcurrentthreshold": "0",
+        "ontalarmprofile_hightempthreshold": "100",
+        "ontalarmprofile_lowtempthreshold": "-40",
+        "ontalarmprofile_hightxpowerthreshold": "6.5",
+        "ontalarmprofile_lowtxpowerthreshold": "-15.3",
+        "ontalarmprofile_lowvoltthreshold": "2.8",
+        "ontalarmprofile_highvoltthreshold": "3.59",
+        "ontalarmprofile_highcurrentthreshold": "79"
+      }
+    patch_profile_info: |
+      {
+        "ontalarmprofile_highrxpowerthresold": "0",
+        "ontalarmprofile_lowrxpowerthreshold": "-126",
+        "ontalarmprofile_lowcurrentthreshold": "0",
+        "ontalarmprofile_hightempthreshold": "99",
+        "ontalarmprofile_lowtempthreshold": "-39",
+        "ontalarmprofile_hightxpowerthreshold": "6.5",
+        "ontalarmprofile_lowtxpowerthreshold": "-15.3",
+        "ontalarmprofile_lowvoltthreshold": "2.8",
+        "ontalarmprofile_highvoltthreshold": "3.59",
+        "ontalarmprofile_highcurrentthreshold": "79"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ontalarmprofile_highrxpowerthresold": "##",
+          "expected_error": "[Invalid parameter] High Rx Power Threshold: Range -127.0~0.0"
+        },
+        {
+          "ontalarmprofile_lowrxpowerthreshold": "###",
+          "expected_error": "[Invalid parameter] Low Rx Power Threshold: Range -127.0~0.0"
+        },
+        {
+          "ontalarmprofile_lowcurrentthreshold": "$5",
+          "expected_error": "[Invalid parameter] Low Current Threshold: Range 0~79"
+        },
+        {
+          "ontalarmprofile_hightempthreshold": "9!5",
+          "expected_error": "[Invalid parameter] High Temp Threshold: Range -40~100"
+        },
+        {
+          "ontalarmprofile_lowtempthreshold": "-3!5",
+          "expected_error": "[Invalid parameter] Low Temp Threshold: Range -40~100"
+        },
+        {
+          "ontalarmprofile_hightxpowerthreshold": "##",
+          "expected_error": "[Invalid parameter] High Tx Power Threshold: Range -15.3~6.5"
+        },
+        {
+          "ontalarmprofile_lowtxpowerthreshold": "$$",
+          "expected_error": "[Invalid parameter] Low Tx Power Threshold: Range -15.3~6.5"
+        },
+        {
+          "ontalarmprofile_lowvoltthreshold": "$$23",
+          "expected_error": "[Invalid parameter] Low Voltage Threshold: Range 2.8~3.59"
+        },
+        {
+          "ontalarmprofile_highvoltthreshold": "1234#",
+          "expected_error": "[Invalid parameter] High Voltage Threshold: Range 2.8~3.59"
+        },
+        {
+          "ontalarmprofile_highcurrentthreshold": "@3@",
+          "expected_error": "[Invalid parameter] High Current Threshold: Range 0~79"
+        }
+      ]

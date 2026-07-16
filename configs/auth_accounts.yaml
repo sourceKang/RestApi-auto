@@ -11,33 +11,50 @@ profiles:
     readonly_account: "readonly1"
     noaccess_account: "noaccess1"
 
+
+  ems_local_rw2:
+    readwrite_account: "readwrite2"
+    readonly_account: "readonly2"
+    noaccess_account: "noaccess2"
 accounts:
   readwrite:
     default:
       source: "ems_local"
-      username: "admin"
-      password: "Pqa1234!!"
+      username: "example_readwrite_default"
+      password: "CHANGE_ME"
     readwrite1:
-      username: "readwrite1"
-      password: "readwrite1PW"
+      username: "example_readwrite_readwrite1"
+      password: "CHANGE_ME"
       source: "rad_external"
 
+    readwrite2:
+      source: "ems_local"
+      username: "example_readwrite_readwrite2"
+      password: "CHANGE_ME"
   readonly:
     default:
       source: "ems_local"
-      username: "RestApiRO"
-      password: "Pqa1234!!"
+      username: "example_readonly_default"
+      password: "CHANGE_ME"
     readonly1:
-      username: "readonly1"
-      password: "readonly1PW"
+      username: "example_readonly_readonly1"
+      password: "CHANGE_ME"
       source: "rad_external"
+    readonly2:
+      source: "ems_local"
+      username: "example_readonly_readonly2"
+      password: "CHANGE_ME"
 
   noaccess:
     default:
       source: "ems_local"
-      username: "RestApiNA"
-      password: "Pqa1234!!"
+      username: "example_noaccess_default"
+      password: "CHANGE_ME"
     noaccess1:
-      username: "noaccess1"
-      password: "noaccess1PW"
+      username: "example_noaccess_noaccess1"
+      password: "CHANGE_ME"
       source: "rad_external"
+    noaccess2:
+      source: "ems_local"
+      username: "example_noaccess_noaccess2"
+      password: "CHANGE_ME"

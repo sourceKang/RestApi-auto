@@ -6,15 +6,29 @@ import pytest
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
-def test_ont_service_post_various_invalid_parameters_should_return_error(services, readwrite_session):
-    services.invalid_params.verify_ont_service_post_invalid_parameters(readwrite_session)
+def test_ont_service_post_various_invalid_parameters_should_return_error(
+    services,
+    readwrite_session,
+    temporary_ont_template,
+):
+    services.invalid_params.verify_ont_service_post_invalid_parameters(
+        readwrite_session,
+        ont_template=temporary_ont_template,
+    )
 
 
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
-def test_ge_service_post_various_invalid_parameters_should_return_error(services, readwrite_session):
-    services.invalid_params.verify_ge_service_post_invalid_parameters(readwrite_session)
+def test_ge_service_post_various_invalid_parameters_should_return_error(
+    services,
+    readwrite_session,
+    temporary_ge_template,
+):
+    services.invalid_params.verify_ge_service_post_invalid_parameters(
+        readwrite_session,
+        ge_template=temporary_ge_template,
+    )
 
 
 @pytest.mark.alarm

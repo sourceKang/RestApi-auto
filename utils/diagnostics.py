@@ -4,6 +4,8 @@ import json
 import os
 from typing import Any
 
+from utils.redaction import redact
+
 
 FULL_JSON_ENV = "EMS_ATTACH_FULL_JSON"
 MAX_DEPTH = 5
@@ -35,7 +37,7 @@ def summarize_value(
 
 
 def format_value_summary(value: Any, *, max_length: int = MAX_MESSAGE_LENGTH) -> str:
-    rendered = _to_json(summarize_value(value, max_depth=4, max_list_items=5, max_string_length=240))
+    rendered = _to_json(summarize_value(redact(value), max_depth=4, max_list_items=5, max_string_length=240))
     if len(rendered) <= max_length:
         return rendered
     return f"{rendered[:max_length]}...<truncated {len(rendered) - max_length} chars>"

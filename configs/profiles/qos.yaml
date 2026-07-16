@@ -1,0 +1,224 @@
+# REST API profile test data.
+profiles:
+  rate_limit_profile_data:
+    profiletype: 'RateLimitProfile'
+    profilename: '#RestApi_ratelimit'
+    post_profile_info: |
+      {
+        "ratelimitprofile_ebsrate": "16000000",
+        "ratelimitprofile_eirrate": "10000000",
+        "ratelimitprofile_egress_active": "1",
+        "ratelimitprofile_cirrate": "10000000",
+        "ratelimitprofile_cbsrate": "16000000",
+        "ratelimitprofile_ingress_active": "1",
+        "ratelimitprofile_egressrate": "10000000",
+        "ratelimitprofile_burstrate": "128000"
+      }
+    patch_profile_info: |
+      {
+        "ratelimitprofile_ebsrate": "64",
+        "ratelimitprofile_eirrate": "64",
+        "ratelimitprofile_egress_active": "2",
+        "ratelimitprofile_cirrate": "64",
+        "ratelimitprofile_cbsrate": "64",
+        "ratelimitprofile_ingress_active": "2",
+        "ratelimitprofile_egressrate": "64",
+        "ratelimitprofile_burstrate": "64"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ratelimitprofile_ebsrate": "17000000",
+          "expected_error": "[Invalid parameter] EBS: Range 64~16000000"
+        },
+        {
+          "ratelimitprofile_eirrate": "-100",
+          "expected_error": "[Invalid parameter] EIR: Range 64~10000000"
+        },
+        {
+          "ratelimitprofile_egress_active": "abc",
+          "expected_error": "The key ratelimitprofile_egress_active value is invalid, please check it again."
+        },
+        {
+          "ratelimitprofile_cirrate": "20000000",
+          "expected_error": "[Invalid parameter] CIR: Range 64~10000000"
+        },
+        {
+          "ratelimitprofile_cbsrate": "-500",
+          "expected_error": "[Invalid parameter] CBS: Range 64~16000000"
+        },
+        {
+          "ratelimitprofile_ingress_active": "3",
+          "expected_error": "The key ratelimitprofile_ingress_active value is invalid, please check it again."
+        },
+        {
+          "ratelimitprofile_egressrate": "999999999",
+          "expected_error": "[Invalid parameter] Rate: Range 64~10000000"
+        },
+        {
+          "ratelimitprofile_burstrate": "XYZ",
+          "expected_error": "[Invalid parameter] Burst: Range 64~128000"
+        }
+      ]
+  rate_limit_profile_data_1:
+    profiletype: 'RateLimitProfile'
+    profilename: '#RestApi_ratelimit_1'
+    post_profile_info: |
+      {
+        "ratelimitprofile_ebsrate": "64",
+        "ratelimitprofile_eirrate": "64",
+        "ratelimitprofile_egress_active": "2",
+        "ratelimitprofile_cirrate": "64",
+        "ratelimitprofile_cbsrate": "64",
+        "ratelimitprofile_ingress_active": "2",
+        "ratelimitprofile_egressrate": "64",
+        "ratelimitprofile_burstrate": "64"
+      }
+  shaping_profile_data:
+    profiletype: 'ShapingProfile'
+    profilename: '#RestApi_shaping'
+    post_profile_info: |
+      {
+        "shapingprofile_ratequeue0": "0",
+        "shapingprofile_ratequeue1": "1000000",
+        "shapingprofile_ratequeue2": "2000000",
+        "shapingprofile_ratequeue3": "3000000",
+        "shapingprofile_ratequeue4": "4000000",
+        "shapingprofile_ratequeue5": "5000000",
+        "shapingprofile_ratequeue6": "6000000",
+        "shapingprofile_ratequeue7": "7000000"
+      }
+    patch_profile_info: |
+      {
+        "shapingprofile_ratequeue0": "10000000",
+        "shapingprofile_ratequeue1": "6000000",
+        "shapingprofile_ratequeue2": "5000000",
+        "shapingprofile_ratequeue3": "4000000",
+        "shapingprofile_ratequeue4": "3000000",
+        "shapingprofile_ratequeue5": "2000000",
+        "shapingprofile_ratequeue6": "1000000",
+        "shapingprofile_ratequeue7": "0"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "shapingprofile_ratequeue0": "100000001",
+          "expected_error": "[Invalid parameter] Max Rate Queue 0: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue1": "!!",
+          "expected_error": "[Invalid parameter] Max Rate Queue 1: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue2": "abxc",
+          "expected_error": "[Invalid parameter] Max Rate Queue 2: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue3": "322!",
+          "expected_error": "[Invalid parameter] Max Rate Queue 3: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue4": "@22",
+          "expected_error": "[Invalid parameter] Max Rate Queue 4: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue5": "3*",
+          "expected_error": "[Invalid parameter] Max Rate Queue 5: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue6": "2as2",
+          "expected_error": "[Invalid parameter] Max Rate Queue 6: Range 0~10000000"
+        },
+        {
+          "shapingprofile_ratequeue7": " ",
+          "expected_error": "[Invalid parameter] Max Rate Queue 7: Range 0~10000000"
+        }
+      ]
+  shaping_profile_data_1:
+    profiletype: 'ShapingProfile'
+    profilename: '#RestApi_shaping_1'
+    post_profile_info: |
+      {
+        "shapingprofile_ratequeue0": "0",
+        "shapingprofile_ratequeue1": "1000000",
+        "shapingprofile_ratequeue2": "2000000",
+        "shapingprofile_ratequeue3": "3000000",
+        "shapingprofile_ratequeue4": "4000000",
+        "shapingprofile_ratequeue5": "5000000",
+        "shapingprofile_ratequeue6": "6000000",
+        "shapingprofile_ratequeue7": "7000000"
+      }
+  weight_profile_data:
+    profiletype: 'WeightProfile'
+    profilename: '#RestApi_weight'
+    post_profile_info: |
+      {
+        "weightprofile_weightqueue0": "0",
+        "weightprofile_weightqueue1": "1",
+        "weightprofile_weightqueue2": "2",
+        "weightprofile_weightqueue3": "3",
+        "weightprofile_weightqueue4": "4",
+        "weightprofile_weightqueue5": "5",
+        "weightprofile_weightqueue6": "6",
+        "weightprofile_weightqueue7": "7"
+      }
+    patch_profile_info: |
+      {
+        "weightprofile_weightqueue0": "50",
+        "weightprofile_weightqueue1": "50",
+        "weightprofile_weightqueue2": "50",
+        "weightprofile_weightqueue3": "50",
+        "weightprofile_weightqueue4": "50",
+        "weightprofile_weightqueue5": "50",
+        "weightprofile_weightqueue6": "50",
+        "weightprofile_weightqueue7": "50"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "weightprofile_weightqueue0": "101",
+          "expected_error": "[Invalid parameter] Weight Queue 0: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue1": "-1",
+          "expected_error": "[Invalid parameter] Weight Queue 1: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue2": "abc",
+          "expected_error": "[Invalid parameter] Weight Queue 2: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue3": "!",
+          "expected_error": "[Invalid parameter] Weight Queue 3: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue4": "999",
+          "expected_error": "[Invalid parameter] Weight Queue 4: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue5": "-50",
+          "expected_error": "[Invalid parameter] Weight Queue 5: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue6": "abcd",
+          "expected_error": "[Invalid parameter] Weight Queue 6: Range 0~50"
+        },
+        {
+          "weightprofile_weightqueue7": "%",
+          "expected_error": "[Invalid parameter] Weight Queue 7: Range 0~50"
+        }
+      ]
+  weight_profile_data_1:
+    profiletype: 'WeightProfile'
+    profilename: '#RestApi_weight_1'
+    post_profile_info: |
+      {
+        "weightprofile_weightqueue0": "0",
+        "weightprofile_weightqueue1": "1",
+        "weightprofile_weightqueue2": "2",
+        "weightprofile_weightqueue3": "3",
+        "weightprofile_weightqueue4": "4",
+        "weightprofile_weightqueue5": "5",
+        "weightprofile_weightqueue6": "6",
+        "weightprofile_weightqueue7": "7"
+      }

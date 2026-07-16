@@ -28,6 +28,9 @@ DIRECT_NEOX_READWRITE_CASES: dict[str, NeoXCase] = {
     "test_ont_config_min_create_readwrite": NeoXCase("EMS1-7131", "test_ont_config_min_create_readwrite"),
     "test_ont_config_max_create_readwrite": NeoXCase("EMS1-7132", "test_ont_config_max_create_readwrite"),
     "test_ont_config_error_readwrite": NeoXCase("EMS1-7133", "test_ont_config_error_readwrite"),
+    "test_ont_config_apply_provision_template_sfu_readwrite": NeoXCase(
+        "EMS1-7223", "test_ont_config_apply_provision_template_sfu_readwrite"
+    ),
 }
 
 

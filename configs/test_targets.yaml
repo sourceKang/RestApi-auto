@@ -8,7 +8,7 @@ defaults:
     service_mode: "veip"
   ge_service:
     template: "#RestApi_getemp_ge1"
-    port_name: "10g_Hsinchu"
+    port_name: "1g_Hsinchu"
     telephone: "011+886+7+2737"
 
 nodes:
@@ -20,17 +20,16 @@ nodes:
     map_name: "EMS"
     geo_position: "California"
     slots:
-      3:
-        card: "MSC1240QB"
-        fw_version: "V2.03(ACJM.9)"
+      4:
+        card: "MSC1240QA"
+        fw_version: "V2.03(ABGX.9)"
         role: "controller"
         ports:
           1:
             type: "Network"
             speed: "1G"
       1:
-        card: "GLC1440X"
-        model: "GLC1440X-55A"
+        card: "GLC1440X-55"
         fw_version: "V2.03(AAWO.9)"
         role: "line"
         ports:
@@ -39,8 +38,7 @@ nodes:
             speed: "1G"
             ge_service:
       2:
-        card: "OLC3816"
-        model: "OLC3816-IA"
+        card: "OLC3816-IA"
         fw_version: "V2.03(ACHD.9)"
         role: "line"
         ports:
@@ -50,12 +48,12 @@ nodes:
             onts:
               1:
                 sn: "5A5958458CADDDC3"
-                password: "F44D5C39E710"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "tony_test"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY4Z0"
     test_targets:
-      report_slots: ["3", "1", "2"]
+      report_slots: ["4", "1", "2"]
       ont:
         slot: "2"
         port: "16"
@@ -114,7 +112,7 @@ nodes:
             onts:
               1:
                 sn: "5A5958458CACE175"
-                password: "D41AD1009ED0"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY2Z0"
@@ -187,7 +185,7 @@ nodes:
             onts:
               1:
                 sn: "5A5958458CACE174"
-                password: "D41AD1009EC8"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY2Z0"
@@ -251,7 +249,7 @@ nodes:
             onts:
               1:
                 sn: "5A595845C601D0A6"
-                password: "DEFAULT"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "tony_test"
                 model: "PMG1005-T20C"
                 fw_image: "V542ABYY4Z0"
@@ -296,7 +294,7 @@ nodes:
             onts:
               1:
                 sn: "5A5958458CACE175"
-                password: "D41AD1009ED0"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY2Z0"
@@ -350,7 +348,7 @@ nodes:
             onts:
               1:
                 sn: "5A5958458CACE174"
-                password: "D41AD1009EC8"
+                password: "CHANGE_ME_ONT_PASSWORD"
                 description: "RestApi_test@1234des"
                 model: "PM7300-T0"
                 fw_image: "V542ABYY2Z0"

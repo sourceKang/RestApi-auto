@@ -24,6 +24,9 @@ from services.neox_config.service import (
     ont_negative_cases,
     ont_negative_payload,
     ont_config_payload,
+    ont_provision_template_sfu_payload,
+    PROVISION_TEMPLATE_SFU_NAME,
+    provision_template_sfu_payload,
     sanitize_ge_payload,
     vlan_case,
     vlan_negative_cases_config,
@@ -409,6 +412,116 @@ def test_ont_config_max_create_readwrite(
         verify_ont_config_create_cli_verified(
             api_client, env_config, neox_config_service, readwrite_session, cleanup_registry, case_name, request
         )
+
+
+@pytest.mark.mutating
+@pytest.mark.readwrite
+def test_ont_config_apply_provision_template_sfu_readwrite(
+    api_client,
+    env_config,
+    neox_config_service,
+    readwrite_session,
+    cleanup_registry,
+    request,
+):
+    with neox_config_connectivity_guard(env_config, "ont", "provision_template_sfu"):
+        neox_config_service.verify_required_target_data()
+        target = neox_config_service.target()
+        template_paths = neox_config_service.ensure_provision_template_sfu(readwrite_session)
+        template_path = template_paths[PROVISION_TEMPLATE_SFU_NAME]
+
+        path = neox_config_service.ont_path()
+        restore_payload = ont_config_payload(target)
+        payload = ont_provision_template_sfu_payload(target)
+        cleanup_registry.add(lambda: api_client.request("POST", path, session=readwrite_session, json=restore_payload))
+        cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+
+        api_client.request("DELETE", path, session=readwrite_session)
+        response = api_client.request("POST", path, session=readwrite_session, json=payload)
+        assert_api_success(response)
+
+        ont_read_path = f"/ont/sn/{target.ont_sn}"
+        ont_response = wait_for_rest_tokens(
+            api_client,
+            ont_read_path,
+            readwrite_session,
+            [
+                target.ont_id,
+                target.ont_sn,
+                "REST_API_PROVISION_TEMPLATE_SFU",
+                PROVISION_TEMPLATE_SFU_NAME,
+            ],
+            timeout=300,
+        )
+
+        attach_json(
+            "NeoX provision template SFU REST verification",
+            redact(
+                {
+                    "case_id": "EMS1-7223",
+                    "target": {
+                        "device_name": target.device_name,
+                        "ont_slot_id": target.ont_slot_id,
+                        "ont_port_id": target.ont_port_id,
+                        "ont_id": target.ont_id,
+                        "ont_sn": target.ont_sn,
+                    },
+                    "template_path": template_path,
+                    "template_payload": provision_template_sfu_payload(),
+                    "ont_path": path,
+                    "ont_read_path": ont_read_path,
+                    "ont_payload": payload,
+                }
+            ),
+        )
+
+        if skip_neox_cli_verify(request):
+            return
+
+        credentials = neox_cli_credentials(env_config, "ONT provision template SFU")
+        xpon = f"{target.ont_slot_id}-{target.ont_port_id}"
+        remote_xont = f"{xpon}-{target.ont_id}"
+        command_by_name = {
+            "running-config": f"show running-config interface xpon {xpon}",
+            "xont-by-sn": f"show interface remote xont sn {target.ont_sn}",
+        }
+        output_by_command = run_neox_cli_commands(env_config, credentials, list(command_by_name.values()))
+        assert_neox_config_node_reachable(env_config, "ont", "provision_template_sfu", "after_cli_verify")
+        expected_by_command = {
+            command_by_name["running-config"]: ont_running_config_tokens(remote_xont, payload["Content"]),
+            command_by_name["xont-by-sn"]: [remote_xont, target.ont_sn],
+        }
+        missing_by_command = missing_tokens_by_command(output_by_command, expected_by_command)
+        report_path = write_neox_cli_verify_report(
+            neox_config_service,
+            "ont",
+            "provision_template_sfu",
+            path,
+            payload,
+            response,
+            output_by_command,
+            expected_by_command,
+            missing_by_command,
+            target_extra={
+                "ont_slot_id": target.ont_slot_id,
+                "ont_port_id": target.ont_port_id,
+                "ont_id": target.ont_id,
+                "ont_sn": target.ont_sn,
+            },
+            metadata={
+                "testcase_id": "EMS1-7223",
+                "template_path": template_path,
+                "rest_read_path": ont_read_path,
+                "rest_read_response": {
+                    "status_code": ont_response.status_code,
+                    "retstatus": ont_response.retstatus,
+                    "retresult": ont_response.retresult,
+                },
+            },
+        )
+
+        missing = {command: tokens for command, tokens in missing_by_command.items() if tokens}
+        assert not missing, f"Missing ONT provision template CLI tokens for {remote_xont}: {missing}. Report: {report_path}"
 
 
 @pytest.mark.mutating
@@ -1476,6 +1589,50 @@ def ensure_ont_bandwidth_profile_supports_service_tcont(
     response = api_client.request("POST", path, session=readwrite_session, json=profile_payload)
     assert_api_success(response)
 
+
+def wait_for_rest_success(api_client, path: str, session_id: str, *, timeout: float = 90, interval: float = 5):
+    deadline = time.monotonic() + timeout
+    last_response = None
+    while time.monotonic() <= deadline:
+        last_response = api_client.request("GET", path, session=session_id)
+        if last_response.retstatus == "Success":
+            return last_response
+        time.sleep(interval)
+    assert last_response is not None
+    assert_api_success(last_response)
+    return last_response
+
+
+def wait_for_rest_tokens(
+    api_client,
+    path: str,
+    session_id: str,
+    expected_tokens: list[str],
+    *,
+    timeout: float = 300,
+    interval: float = 10,
+):
+    deadline = time.monotonic() + timeout
+    last_response = None
+    last_missing = expected_tokens
+    while time.monotonic() <= deadline:
+        last_response = wait_for_rest_success(api_client, path, session_id, timeout=interval, interval=interval)
+        body = json.dumps(last_response.json, ensure_ascii=False)
+        last_missing = [token for token in expected_tokens if token not in body]
+        if not last_missing:
+            return last_response
+        time.sleep(interval)
+    assert last_response is not None
+    body = json.dumps(last_response.json, ensure_ascii=False)
+    assert not last_missing, f"Missing expected REST response tokens {last_missing}: {body}"
+    return last_response
+
+
+def assert_response_contains_tokens(response, expected_tokens: list[str]) -> None:
+    assert_api_success(response)
+    body = json.dumps(response.json, ensure_ascii=False)
+    missing = [token for token in expected_tokens if token not in body]
+    assert not missing, f"Missing expected REST response tokens {missing}: {body}"
 
 def verify_clear_restores_cli_output(
     api_client,

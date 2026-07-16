@@ -3,15 +3,17 @@ from __future__ import annotations
 from typing import Any
 
 
-def ont_service_payload(env: Any, unique_name: str) -> dict[str, Any]:
+def ont_service_payload(env: Any, unique_name: str, ont_template: str | None = None) -> dict[str, Any]:
     dut = env.dut
+    template_profile = str(ont_template or dut.ont_template)
+    bandwidth_profile = str(getattr(ont_template, "bandwidth_name", "#RestApi_1G"))
     data = {
         "ontdisable": "no",
         "ont_active_checkbox": 1,
         "description": unique_name,
-        "templateprof": dut.ont_template,
+        "templateprof": template_profile,
         "dspir": "",
-        "qoss": [{"qostcont": "service1", "qosds": "#RestApi_1G", "qosus": "#RestApi_1G"}],
+        "qoss": [{"qostcont": "service1", "qosds": bandwidth_profile, "qosus": bandwidth_profile}],
         "hostvlan": "",
         "hostmode": "1",
         "hostip": "",
@@ -68,27 +70,31 @@ def ont_service_payload(env: Any, unique_name: str) -> dict[str, Any]:
     }
 
 
-def ont_service_modified_payload(env: Any, unique_name: str) -> dict[str, Any]:
-    payload = ont_service_payload(env, unique_name)
+def ont_service_modified_payload(
+    env: Any,
+    unique_name: str,
+    ont_template: str | None = None,
+) -> dict[str, Any]:
+    payload = ont_service_payload(env, unique_name, ont_template=ont_template)
     payload["ontservice"]["data"]["description"] = f"{unique_name}_MOD"
     payload["ontservice"]["data"]["wifi5ssid1"] = f"{unique_name[:24]}_MOD"
     return payload
 
 
-def ge_service_payload(env: Any, unique_name: str) -> dict[str, Any]:
+def ge_service_payload(env: Any, unique_name: str, ge_template: str | None = None) -> dict[str, Any]:
     return {
         "geservice": {
-            "geTemplate": env.dut.ge_template,
+            "geTemplate": str(ge_template or env.dut.ge_template),
             "Tel": env.dut.ge_telephone,
             "PortName": unique_name[:31],
         }
     }
 
 
-def ge_service_modified_payload(env: Any, unique_name: str) -> dict[str, Any]:
+def ge_service_modified_payload(env: Any, unique_name: str, ge_template: str | None = None) -> dict[str, Any]:
     return {
         "geservice": {
-            "geTemplate": env.dut.ge_template,
+            "geTemplate": str(ge_template or env.dut.ge_template),
             "Tel": f"{env.dut.ge_telephone}0123",
             "PortName": f"{unique_name}_MOD"[:31],
         }

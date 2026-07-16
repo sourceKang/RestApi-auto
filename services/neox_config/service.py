@@ -218,6 +218,31 @@ class NeoXConfigService:
         response = self.api_client.request("DELETE", path, session=session_id)
         assert_api_success(response)
 
+    def ensure_provision_template_sfu(self, session_id: str) -> dict[str, str]:
+        self.verify_required_target_data()
+        ready_paths: dict[str, str] = {}
+        for profile_type, profile_name, payload in provision_template_sfu_dependency_profiles():
+            path = self.neox_profile_path_for_name(profile_type, profile_name)
+            self.ensure_neox_profile_ready(session_id, path, payload)
+            ready_paths[profile_name] = path
+
+        template_path = self.neox_profile_path_for_name("ONTTemplateProfile", PROVISION_TEMPLATE_SFU_NAME)
+        self.ensure_neox_profile_ready(session_id, template_path, provision_template_sfu_payload())
+        ready_paths[PROVISION_TEMPLATE_SFU_NAME] = template_path
+        return ready_paths
+
+    def ensure_neox_profile_ready(self, session_id: str, path: str, payload: dict[str, Any]) -> None:
+        existing = self.api_client.request("GET", path, session=session_id)
+        if existing.retstatus == "Success":
+            return
+        original_timeout = self.api_client.timeout
+        self.api_client.timeout = max(float(original_timeout), 300.0)
+        try:
+            created = self.api_client.request("POST", path, session=session_id, json=payload)
+        finally:
+            self.api_client.timeout = original_timeout
+        assert_api_success(created)
+
     def ensure_neox_profile_dependencies(
         self,
         session_id: str,
@@ -311,6 +336,9 @@ class NeoXConfigService:
         target = self.target()
         return f"/configNeoXSeries/profile/{target.device_name}/{profile_type}/{self.neox_profile_name(profile_type)}"
 
+    def neox_profile_path_for_name(self, profile_type: str, profile_name: str) -> str:
+        target = self.target()
+        return f"/configNeoXSeries/profile/{target.device_name}/{profile_type}/{profile_name}"
     def neox_profile_payload(self, profile_type: str) -> dict[str, Any]:
         definition = self.profile_definition(profile_type)
         content = normalize_neox_profile_content(profile_type, definition.get("post_profile_info", {}))
@@ -487,6 +515,85 @@ def ont_config_payload(target: NeoXTarget) -> dict[str, Any]:
             "ontenable": "enable",
             "adminstate": "enable",
             "ontdescription": "REST_API_NEOX_ONT",
+        }
+    }
+
+
+
+PROVISION_TEMPLATE_SFU_NAME = "#RestApi_provision_temp_SFU"
+
+
+def ont_provision_template_sfu_payload(target: NeoXTarget) -> dict[str, Any]:
+    payload = ont_config_payload(target)
+    payload["Content"].update(
+        {
+            "ontdescription": "REST_API_PROVISION_TEMPLATE_SFU",
+            "templatename": PROVISION_TEMPLATE_SFU_NAME,
+        }
+    )
+    return payload
+
+
+def provision_template_sfu_dependency_profiles() -> tuple[tuple[str, str, dict[str, Any]], ...]:
+    return (
+        ("ONTBandwidthProfile", "#RestApi_1G", {"Content": {"sir": "0", "air": "0", "pir": "1000000"}}),
+        (
+            "ONTUNIProfile",
+            "#RestApi_provision_SFU_7300",
+            {
+                "Content": {
+                    "xlanunivlan1": "169",
+                    "xlanuniport1": "1",
+                    "xlanvlan1": "169",
+                    "xlanactive1": "enable",
+                    "xlanunivlan2": "50",
+                    "xlanuniport2": "1",
+                    "xlanvlan2": "50",
+                    "xlanactive2": "enable",
+                    "xlanunivlan3": "101",
+                    "xlanuniport3": "1",
+                    "xlanvlan3": "101",
+                    "xlanactive3": "enable",
+                    "potsportactive1": "disable",
+                    "potsportactive2": "disable",
+                    "videoactive1": "disable",
+                }
+            },
+        ),
+        (
+            "ONTSecurityProfile",
+            "#RestApi_provision_security",
+            {"Content": {"spoofingable": "enable", "fdb": "1023"}},
+        ),
+        ("ONTServiceProfile", "#RestApi_XLanSFU_s169", provision_template_sfu_service_payload("169")),
+        ("ONTServiceProfile", "#RestApi_XLanSFU_s101", provision_template_sfu_service_payload("101")),
+        ("ONTServiceProfile", "#RestApi_XLanSFU_s50", provision_template_sfu_service_payload("50")),
+    )
+
+
+def provision_template_sfu_service_payload(vlan: str) -> dict[str, Any]:
+    return {"Content": {"mode": "bridge", "xlan": "1", "vlan": vlan, "pbit": "0,1,2,3,4,5,6,7"}}
+
+
+def provision_template_sfu_payload() -> dict[str, Any]:
+    return {
+        "Content": {
+            "dsop": "ont",
+            "enc_algorithm": "aes128",
+            "encscope_service": "enable",
+            "encscope_omci": "disable",
+            "encscope_iphost": "disable",
+            "secprof": "#RestApi_provision_security",
+            "uniprof": "#RestApi_provision_SFU_7300",
+            "sprof1": "#RestApi_XLanSFU_s169",
+            "susbwproftemplateprof1": "#RestApi_1G",
+            "sdsbwproftemplateprof1": "#RestApi_1G",
+            "sprof2": "#RestApi_XLanSFU_s101",
+            "susbwproftemplateprof2": "#RestApi_1G",
+            "sdsbwproftemplateprof2": "#RestApi_1G",
+            "sprof3": "#RestApi_XLanSFU_s50",
+            "susbwproftemplateprof3": "#RestApi_1G",
+            "sdsbwproftemplateprof3": "#RestApi_1G",
         }
     }
 

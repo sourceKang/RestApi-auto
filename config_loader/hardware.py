@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_HARDWARE_MATRIX_FILE = CONFIG_DIR / "hardware_matrix.yaml"
 DEFAULT_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.yaml"
+LOCAL_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.local.yaml"
 
 
 class HardwareConfigError(RuntimeError):
@@ -215,7 +217,7 @@ def load_hardware_config(
     targets_path: str | Path | None = None,
 ) -> HardwareConfig:
     matrix_file = Path(matrix_path or DEFAULT_HARDWARE_MATRIX_FILE)
-    targets_file = Path(targets_path or DEFAULT_TEST_TARGETS_FILE)
+    targets_file = Path(targets_path) if targets_path is not None else _default_test_targets_file()
     try:
         matrix = load_simple_yaml(matrix_file)
         targets = load_simple_yaml(targets_file)
@@ -225,6 +227,15 @@ def load_hardware_config(
     _validate_top_level(matrix_file, matrix, "chassis", allowed_versions={1})
     _validate_top_level(targets_file, targets, "nodes", allowed_versions={1, 2})
     return HardwareConfig(matrix_path=matrix_file, targets_path=targets_file, matrix=matrix, targets=targets)
+
+
+def _default_test_targets_file() -> Path:
+    override = os.environ.get("EMS_TEST_TARGETS_FILE")
+    if override:
+        return Path(override)
+    if LOCAL_TEST_TARGETS_FILE.exists():
+        return LOCAL_TEST_TARGETS_FILE
+    return DEFAULT_TEST_TARGETS_FILE
 
 
 def _validate_top_level(path: Path, data: dict[str, Any], required_key: str, allowed_versions: set[int]) -> None:

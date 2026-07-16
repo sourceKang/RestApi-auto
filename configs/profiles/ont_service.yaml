@@ -1,0 +1,245 @@
+# REST API profile test data.
+profiles:
+  ont_bandwidth_profile_data:
+    profiletype: 'ONTBandwidthProfile'
+    profilename: '#RestApi_qosbandwitdhprofile'
+    post_profile_info: |
+      {
+        "bwprofile_gpon_sir": "0",
+        "bwprofile_pir": "10000000",
+        "bwprofile_air": "8509952",
+        "bwprofile_sir": "0",
+        "bwprofile_gpon_air": "2400000",
+        "bwprofile_gpon_pir": "2400000"
+      }
+    patch_profile_info: |
+      {
+        "bwprofile_gpon_sir": "2400000",
+        "bwprofile_pir": "10000000",
+        "bwprofile_air": "0",
+        "bwprofile_sir": "8509952",
+        "bwprofile_gpon_air": "0",
+        "bwprofile_gpon_pir": "2400000"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "bwprofile_gpon_sir": "-1",
+          "expected_error": "[Invalid parameter] SIR: Range 0~2400000"
+        },
+        {
+          "bwprofile_pir": "abc",
+          "expected_error": "[Invalid parameter] PIR: Range 256~10000000"
+        },
+        {
+          "bwprofile_air": "-8509952",
+          "expected_error": "[Invalid parameter] AIR: Range 0~8509952"
+        },
+        {
+          "bwprofile_sir": "-1",
+          "expected_error": "[Invalid parameter] SIR: Range 0~8509952"
+        },
+        {
+          "bwprofile_gpon_air": "3000000",
+          "expected_error": "[Invalid parameter] AIR: Range 0~2400000"
+        },
+        {
+          "bwprofile_gpon_pir": "-2400000",
+          "expected_error": "[Invalid parameter] PIR: Range 0~2400000"
+        }
+      ]
+  provision_ont_bandwidth_profile_data:
+    profiletype: 'ONTBandwidthProfile'
+    profilename: '#RestApi_1G'
+    post_profile_info: |
+      {
+        "bwprofile_gpon_sir": "0",
+        "bwprofile_pir": "1000000",
+        "bwprofile_air": "0",
+        "bwprofile_sir": "0",
+        "bwprofile_gpon_air": "0",
+        "bwprofile_gpon_pir": "1000000"
+      }
+  ont_service_profile_data:
+    profiletype: 'ONTServiceProfile'
+    profilename: '#RestApi_ontservice'
+    post_profile_info: |
+      {
+        "serviceprofile_mode": "bridge",
+        "serviceprofile_uniport": "lan",
+        "serviceprofile_lan": "1",
+        "serviceprofile_pbit": "0,1,2,3,4,5,6,7",
+        "serviceprofile_vlan": "1"
+      }
+    patch_profile_info: |
+      {
+        "serviceprofile_mode": "veip",
+        "serviceprofile_uniport": "xlan",
+        "serviceprofile_xlan": "8",
+        "serviceprofile_pbit": "3,4,5,6",
+        "serviceprofile_vlan": "4094"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "serviceprofile_mode": "invalid-mode",
+          "expected_error": "The key serviceprofile_mode value is invalid, please check it again."
+        },
+        {
+          "serviceprofile_uniport": "invalid-port",
+          "expected_error": "The key serviceprofile_uniport value is invalid, please check it again."
+        },
+        {
+          "serviceprofile_lan": "-1",
+          "expected_error": "The key serviceprofile_lan value is invalid, please check it again."
+        },
+        {
+          "serviceprofile_pbit": "8,9,10",
+          "expected_error": "The key serviceprofile_pbit value is invalid, please check it again."
+        },
+        {
+          "serviceprofile_vlan": "5000",
+          "expected_error": "[Invalid parameter] VLAN: Range 1~4094"
+        }
+      ]
+  provision_ont_service_profile_data:
+    profiletype: 'ONTServiceProfile'
+    profilename: '#RestApi_XLanSFU_s169'
+    post_profile_info: |
+      {
+        "serviceprofile_mode": "bridge",
+        "serviceprofile_uniport": "xlan",
+        "serviceprofile_xlan": "1",
+        "serviceprofile_pbit": "0,1,2,3,4,5,6,7",
+        "serviceprofile_vlan": "169"
+      }
+  provision_ont_service_profile_data_1:
+    profiletype: 'ONTServiceProfile'
+    profilename: '#RestApi_XLanSFU_s101'
+    post_profile_info: |
+      {
+        "serviceprofile_mode": "bridge",
+        "serviceprofile_uniport": "xlan",
+        "serviceprofile_xlan": "1",
+        "serviceprofile_pbit": "0,1,2,3,4,5,6,7",
+        "serviceprofile_vlan": "101"
+      }
+  provision_ont_service_profile_data_2:
+    profiletype: 'ONTServiceProfile'
+    profilename: '#RestApi_XLanSFU_s50'
+    post_profile_info: |
+      {
+        "serviceprofile_mode": "bridge",
+        "serviceprofile_uniport": "xlan",
+        "serviceprofile_xlan": "1",
+        "serviceprofile_pbit": "0,1,2,3,4,5,6,7",
+        "serviceprofile_vlan": "50"
+      }
+  ont_template_profile_data:
+    profiletype: 'ONTTemplateProfile'
+    profilename: '#RestApi_onttemplate_ont'
+    post_profile_info: |
+      {
+        "templateprofile_dsop": "ont",
+        "templateprofile_ontprof": "",
+        "templateprofile_uniprof": "#RestApi_ontuni",
+        "templateprofile_secprof": "#RestApi_Security",
+        "templateprofile_dspir": "",
+        "templateprofile_alarmprof": "",
+        "templateprofile_encryption_algorithm": "aes128",
+        "templateprofile_encryption_scope_service": "1",
+        "templateprofile_encryption_scope_omci": "1",
+        "templateprofile_encryption_scope_iphost": "1"
+      }
+    patch_profile_info: |
+      {
+        "templateprofile_dsop": "olt",
+        "templateprofile_ontprof": "",
+        "templateprofile_uniprof": "",
+        "templateprofile_secprof": "",
+        "templateprofile_dspir": "5000",
+        "templateprofile_alarmprof": "",
+        "templateprofile_encryption_algorithm": "none",
+        "templateprofile_encryption_scope_service": "2",
+        "templateprofile_encryption_scope_omci": "2",
+        "templateprofile_encryption_scope_iphost": "2"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "templateprofile_dsop": "invalid-dsop",
+          "expected_error": "The key templateprofile_dsop value is invalid, please check it again."
+        },
+        {
+          "templateprofile_ontprof": "invalid-prof",
+          "expected_error": "[Invalid parameter]  Profile \"invalid-prof\" is not exists."
+        },
+        {
+          "templateprofile_uniprof": "invalid-uniprof",
+          "expected_error": "[Invalid parameter]  Profile \"invalid-uniprof\" is not exists."
+        },
+        {
+          "templateprofile_secprof": "invalid-secprof",
+          "expected_error": "[Invalid parameter]  Profile \"invalid-secprof\" is not exists."
+        },
+        {
+          "templateprofile_dspir": "invalid-dspir",
+          "expected_error": "[Invalid parameter] DS PIR: Range 128~10000000"
+        },
+        {
+          "templateprofile_alarmprof": "invalid-alarmprof",
+          "expected_error": "[Invalid parameter]  Profile \"invalid-alarmprof\" is not exists."
+        },
+        {
+          "templateprofile_encryption_algorithm": "invalid-encryption_algorithm",
+          "expected_error": "The key templateprofile_encryption_algorithm value is invalid, please check it again."
+        },
+        {
+          "templateprofile_encryption_scope_service": "invalid-encryption_algorithm",
+          "expected_error": "The key templateprofile_encryption_scope_service value is invalid, please check it again."
+        },
+        {
+          "templateprofile_encryption_scope_omci": "invalid-encryption_algorithm",
+          "expected_error": "The key templateprofile_encryption_scope_omci value is invalid, please check it again."
+        },
+        {
+          "templateprofile_encryption_scope_iphost": "invalid-encryption_algorithm",
+          "expected_error": "The key templateprofile_encryption_scope_iphost value is invalid, please check it again."
+        }
+      ]
+  provision_ont_template_profile_data:
+    profiletype: 'ONTTemplateProfile'
+    profilename: '#RestApi_provision_temp_SFU'
+    post_profile_info: |
+      {
+        "templateprofile_encryption_algorithm": "aes128",
+        "templateprofile_encryption_scope_service": "1",
+        "templateprofile_encryption_scope_omci": "2",
+        "templateprofile_encryption_scope_iphost": "2",
+        "templateprofile_susbwprofile3": "#RestApi_1G",
+        "templateprofile_sdsbwprofile3": "#RestApi_1G",
+        "templateprofile_sharedpri1": "0",
+        "templateprofile_sdsbwprofile2": "#RestApi_1G",
+        "templateprofile_dsop": "ont",
+        "templateprofile_tdsbwprofile1": "#RestApi_1G",
+        "templateprofile_uniprof": "#RestApi_provision_SFU_7300",
+        "templateprofile_alarmprof": "",
+        "templateprofile_ontprof": "",
+        "templateprofile_sdsbwprofile1": "#RestApi_1G",
+        "templateprofile_secprof": "#RestApi_provision_security",
+        "templateprofile_dspir": "",
+        "templateprofile_tcontype1": "best-effort",
+        "templateprofile_sactive3": "true",
+        "templateprofile_tservicelist1": "1,2,3",
+        "templateprofile_sactive1": "true",
+        "templateprofile_sactive2": "true",
+        "templateprofile_sharedpri3": "2",
+        "templateprofile_sharedpri2": "1",
+        "templateprofile_serviceprof1": "#RestApi_XLanSFU_s169",
+        "templateprofile_tusbwprofile1": "#RestApi_1G",
+        "templateprofile_serviceprof2": "#RestApi_XLanSFU_s101",
+        "templateprofile_tactive1": "true",
+        "templateprofile_serviceprof3": "#RestApi_XLanSFU_s50",
+        "templateprofile_susbwprofile2": "#RestApi_1G",
+        "templateprofile_susbwprofile1": "#RestApi_1G"
+      }

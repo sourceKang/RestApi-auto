@@ -47,3 +47,13 @@ def test_format_value_summary_stays_compact_for_assertion_messages():
     rendered = format_value_summary({"status_code": 200, "body": {"retstatus": "Success"}})
 
     assert "\n" not in rendered
+
+
+def test_format_value_summary_redacts_sensitive_fields():
+    rendered = format_value_summary(
+        {"password": "secret-password", "nested": {"token": "secret-token"}}
+    )
+
+    assert "secret-password" not in rendered
+    assert "secret-token" not in rendered
+    assert rendered.count("***REDACTED***") == 2

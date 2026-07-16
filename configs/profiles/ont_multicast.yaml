@@ -1,0 +1,68 @@
+# REST API profile test data.
+profiles:
+  ont_multicast_profile_data:
+    profiletype: 'ONTMulticastProfile'
+    profilename: '#RestApi_OntMulticast'
+    post_profile_info: |
+      {
+        "multicastprofile_txtagvid": "101",
+        "multicastprofile_igmp": "IGMPv2",
+        "multicastprofile_txtagmode": "untag",
+        "multicastprofile_univid": "101",
+        "multicastprofile_maxgroup": "100",
+        "multicastprofile_maxmsg": "",
+        "multicastprofile_txtagpbit": "1",
+        "multicastprofile_groupprofile": "#RestApi_igmpgrouppriv",
+        "multicastprofile_vlan": ""
+      }
+    patch_profile_info: |
+      {
+        "multicastprofile_txtagvid": "4094",
+        "multicastprofile_igmp": "IGMPv3",
+        "multicastprofile_txtagmode": "replace",
+        "multicastprofile_univid": "4094",
+        "multicastprofile_maxgroup": "512",
+        "multicastprofile_maxmsg": "64",
+        "multicastprofile_txtagpbit": "7",
+        "multicastprofile_groupprofile": "#RestApi_igmpgrouppriv",
+        "multicastprofile_vlan": ""
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "multicastprofile_txtagvid": "-1",
+          "expected_error": "[Invalid parameter] Tx Tag VID: Range 1~4094"
+        },
+        {
+          "multicastprofile_igmp": "invalid",
+          "expected_error": "The key multicastprofile_igmp value is invalid, please check it again."
+        },
+        {
+          "multicastprofile_txtagmode": "invalid-mode",
+          "expected_error": "The key multicastprofile_txtagmode value is invalid, please check it again."
+        },
+        {
+          "multicastprofile_univid": "-5",
+          "expected_error": "[Invalid parameter] UNI VID: Range 1~4094"
+        },
+        {
+          "multicastprofile_maxgroup": "-1",
+          "expected_error": "[Invalid parameter] Max Group: Range 1~512"
+        },
+        {
+          "multicastprofile_maxmsg": "-1",
+          "expected_error": "[Invalid parameter] Max Message: Range 1~64"
+        },
+        {
+          "multicastprofile_txtagpbit": "-1",
+          "expected_error": "The key multicastprofile_txtagpbit value is invalid, please check it again."
+        },
+        {
+          "multicastprofile_groupprofile": "invalid_group",
+          "expected_error": "[Invalid parameter]  Profile \"invalid_group\" is not exists."
+        },
+        {
+          "multicastprofile_vlan": "invalid_vlan",
+          "expected_error": "[Invalid parameter] MVlan: Range 1~4094"
+        }
+      ]

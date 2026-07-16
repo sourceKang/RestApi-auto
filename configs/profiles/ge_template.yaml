@@ -1,0 +1,395 @@
+# REST API profile test data.
+profiles:
+  ge_template_profile_data:
+    profiletype: 'GETemplateProfile'
+    profilename: '#RestApi_getemp_ge1'
+    post_profile_info: |
+      {
+        "getmplateprofile_pvid": "1",
+        "getmplateprofile_autonegotiation_enable": "1",
+        "getmplateprofile_igmpgroupprivilege_enable": "2",
+        "getmplateprofile_portmtu": "512",
+        "getmplateprofile_qosratelimitprofile": "DEFVAL",
+        "getmplateprofile_outertpid_enable": "2",
+        "vtrunkunivlanarray": [],
+        "getmplateprofile_pbit": "0",
+        "getmplateprofile_qosalgorithm": "sp",
+        "getmplateprofile_portspeed": "1g-full",
+        "vlanvidarray": [
+          {
+            "mode": "Forbidden",
+            "vlanid": "101",
+            "vlanmode": "forbidden",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Fix",
+            "vlanid": "102",
+            "vlanmode": "fix",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Normal",
+            "vlanid": "103",
+            "vlanmode": "",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Fix",
+            "vlanid": "104",
+            "vlanmode": "fix",
+            "vlanuntag": "untagged"
+          }
+        ],
+        "vlantlsarray": [],
+        "vlantrunkunitagarray": [
+          {
+            "svid": "301",
+            "spbit": "7",
+            "cvlan": "31"
+          }
+        ],
+        "getmplateprofile_flowctrl_enable": "1",
+        "getmplateprofile_qosshapingprofile": "DEFVAL",
+        "getmplateprofile_igmpmaxmessage": "0",
+        "getmplateprofile_igmpmaxgroup": "0",
+        "getmplateprofile_copycustomerpbit_enable": "1",
+        "vlantrunkunitagetherarray": [
+          {
+            "svid": "401",
+            "spbit": "7",
+            "etype": "fff1"
+          },
+          {
+            "svid": "402",
+            "spbit": "6",
+            "etype": "fff2"
+          },
+          {
+            "svid": "403",
+            "spbit": "5",
+            "etype": "fff3"
+          }
+        ],
+        "getmplateprofile_qosweightprofile": "DEFVAL",
+        "translationarray": [
+          {
+            "cvid": "661",
+            "translationmode": "single-svlan",
+            "cvidEnable": "true",
+            "svid": "61",
+            "spbit": "8",
+            "transmode": "Single SVLAN",
+            "vtranssvid": "601"
+          },
+          {
+            "translationmode": "double-vlan outer-vlan",
+            "svid": "62",
+            "spbit": "7",
+            "transmode": "Double VLAN",
+            "vtranssvid": "602"
+          },
+          {
+            "cvid": "663",
+            "translationmode": "uni-vlan",
+            "cvidEnable": "true",
+            "svid": "63",
+            "spbit": "6",
+            "transmode": "UNI VLAN",
+            "vtranssvid": "603"
+          }
+        ],
+        "getmplateprofile_frametype": "all",
+        "getmplateprofile_groupprofileList": ""
+      }
+    patch_profile_info: |
+      {
+        "getmplateprofile_pvid": "4094",
+        "getmplateprofile_autonegotiation_enable": "1",
+        "getmplateprofile_igmpgroupprivilege_enable": "2",
+        "getmplateprofile_portmtu": "9200",
+        "getmplateprofile_qosratelimitprofile": "DEFVAL",
+        "getmplateprofile_outertpid_enable": "1",
+        "vtrunkunivlanarray": [],
+        "getmplateprofile_pbit": "7",
+        "getmplateprofile_qosalgorithm": "sp",
+        "getmplateprofile_portspeed": "1g-full",
+        "vlanvidarray": [
+          {
+            "mode": "Forbidden",
+            "vlanid": "101",
+            "vlanmode": "forbidden",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Fix",
+            "vlanid": "102",
+            "vlanmode": "fix",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Normal",
+            "vlanid": "103",
+            "vlanmode": "",
+            "vlanuntag": ""
+          },
+          {
+            "mode": "Fix",
+            "vlanid": "104",
+            "vlanmode": "fix",
+            "vlanuntag": "untagged"
+          },
+          {
+            "mode": "Fix",
+            "vlanid": "4000",
+            "vlanmode": "fix",
+            "vlanuntag": ""
+          }
+        ],
+        "vlantlsarray": [],
+        "vlantrunkunitagarray": [
+          {
+            "svid": "301",
+            "spbit": "7",
+            "cvlan": "31"
+          }
+        ],
+        "getmplateprofile_flowctrl_enable": "1",
+        "getmplateprofile_qosshapingprofile": "DEFVAL",
+        "getmplateprofile_igmpmaxmessage": "0",
+        "getmplateprofile_igmpmaxgroup": "0",
+        "getmplateprofile_copycustomerpbit_enable": "1",
+        "vlantrunkunitagetherarray": [
+          {
+            "svid": "401",
+            "spbit": "7",
+            "etype": "fff1"
+          },
+          {
+            "svid": "402",
+            "spbit": "6",
+            "etype": "fff2"
+          },
+          {
+            "svid": "403",
+            "spbit": "5",
+            "etype": "fff3"
+          },
+          {
+            "svid": "1",
+            "spbit": "0",
+            "etype": "0600"
+          }
+        ],
+        "getmplateprofile_qosweightprofile": "DEFVAL",
+        "translationarray": [
+          {
+            "cvid": "661",
+            "translationmode": "single-svlan",
+            "cvidEnable": "true",
+            "svid": "61",
+            "spbit": "8",
+            "transmode": "Single SVLAN",
+            "vtranssvid": "601"
+          },
+          {
+            "translationmode": "double-vlan outer-vlan",
+            "svid": "62",
+            "spbit": "7",
+            "transmode": "Double VLAN",
+            "vtranssvid": "602"
+          },
+          {
+            "cvid": "663",
+            "translationmode": "uni-vlan",
+            "cvidEnable": "true",
+            "svid": "63",
+            "spbit": "6",
+            "transmode": "UNI VLAN",
+            "vtranssvid": "603"
+          }
+        ],
+        "getmplateprofile_frametype": "all",
+        "getmplateprofile_groupprofileList": ""
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "getmplateprofile_pvid": "-1",
+          "expected_error": "[Invalid parameter] PVID: Range 1~4094"
+        },
+        {
+          "getmplateprofile_autonegotiation_enable": "3",
+          "expected_error": "The key getmplateprofile_autonegotiation_enable value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_igmpgroupprivilege_enable": "4",
+          "expected_error": "The key getmplateprofile_igmpgroupprivilege_enable value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_portmtu": "-10",
+          "expected_error": "[Invalid parameter] MTU: Range 512~9200"
+        },
+        {
+          "getmplateprofile_qosratelimitprofile": "INVALID",
+          "expected_error": "[Invalid parameter]  Profile \"INVALID\" is not exists."
+        },
+        {
+          "getmplateprofile_outertpid_enable": "invalid",
+          "expected_error": "The key getmplateprofile_outertpid_enable value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_pbit": "9",
+          "expected_error": "[Invalid parameter] Pbit: Range 0~7"
+        },
+        {
+          "getmplateprofile_qosalgorithm": "unknown",
+          "expected_error": "The key getmplateprofile_qosalgorithm value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_portspeed": "10g",
+          "expected_error": "The key getmplateprofile_portspeed value is invalid, please check it again."
+        },
+        {
+          "vlanvidarray": [
+            {
+              "vlanid": "-1",
+              "expected_error": "[Invalid parameter] VLAN ID: Range 1~4094"
+            },
+            {
+              "vlanmode": "invalid",
+              "expected_error": "The key vlanmode value is invalid, please check it again."
+            },
+            {
+              "vlanuntag": "invalid",
+              "expected_error": "The key vlanuntag value is invalid, please check it again."
+            }
+          ]
+        },
+        {
+          "getmplateprofile_flowctrl_enable": "invalid",
+          "expected_error": "The key getmplateprofile_flowctrl_enable value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_qosshapingprofile": "UNKNOWN",
+          "expected_error": "[Invalid parameter]  Profile \"UNKNOWN\" is not exists."
+        },
+        {
+          "getmplateprofile_igmpmaxmessage": "-5",
+          "expected_error": "[Invalid parameter] Max Message: Range 0~32"
+        },
+        {
+          "getmplateprofile_igmpmaxgroup": "1000",
+          "expected_error": "[Invalid parameter] Max Group: Range 0~16"
+        },
+        {
+          "getmplateprofile_copycustomerpbit_enable": "3",
+          "expected_error": "The key getmplateprofile_copycustomerpbit_enable value is invalid, please check it again."
+        },
+        {
+          "vlantrunkunitagetherarray": [
+            {
+              "svid": "abcd",
+              "expected_error": "[Invalid parameter] Service VID: Range 1~4094"
+            },
+            {
+              "spbit": "10",
+              "expected_error": "[Invalid parameter] Service P-bit: Range 0~7"
+            },
+            {
+              "etype": "invalid",
+              "expected_error": "[Invalid parameter] Ether Type : Invalid Ether Type."
+            }
+          ]
+        },
+        {
+          "translationarray": [
+            {
+              "cvid": "-1",
+              "expected_error": "[Invalid parameter] Customer VID: Range 1~4094"
+            },
+            {
+              "translationmode": "unknown-mode",
+              "expected_error": "The key translationmode value is invalid, please check it again."
+            },
+            {
+              "svid": "0",
+              "expected_error": "[Invalid parameter] Service VID: Range 1~4094"
+            },
+            {
+              "spbit": "9",
+              "expected_error": "The json format is error, please check it again."
+            },
+            {
+              "vtranssvid": "abc",
+              "expected_error": "The json format is error, please check it again."
+            }
+          ]
+        },
+        {
+          "getmplateprofile_frametype": "unknown",
+          "expected_error": "The key getmplateprofile_frametype value is invalid, please check it again."
+        },
+        {
+          "getmplateprofile_groupprofileList": "invalid",
+          "expected_error": "[Invalid parameter]  Profile \"invalid\" is not exists."
+        }
+      ]
+  ge_template_profile_data_1:
+    profiletype: 'GETemplateProfile'
+    profilename: '#RestApi_getemp_igmp'
+    post_profile_info: |
+      {
+        "getmplateprofile_pvid": "1",
+        "getmplateprofile_autonegotiation_enable": "1",
+        "getmplateprofile_igmpgroupprivilege_enable": "1",
+        "getmplateprofile_portmtu": "2112",
+        "getmplateprofile_qosratelimitprofile": "DEFVAL",
+        "getmplateprofile_outertpid_enable": "2",
+        "vtrunkunivlanarray": [],
+        "getmplateprofile_pbit": "0",
+        "getmplateprofile_qosalgorithm": "sp",
+        "getmplateprofile_portspeed": "1g-full",
+        "vlanvidarray": [],
+        "vlantlsarray": [],
+        "vlantrunkunitagarray": [],
+        "getmplateprofile_flowctrl_enable": "1",
+        "getmplateprofile_qosshapingprofile": "DEFVAL",
+        "getmplateprofile_igmpmaxmessage": "32",
+        "getmplateprofile_igmpmaxgroup": "16",
+        "getmplateprofile_copycustomerpbit_enable": "1",
+        "vlantrunkunitagetherarray": [],
+        "getmplateprofile_qosweightprofile": "DEFVAL",
+        "translationarray": [],
+        "getmplateprofile_frametype": "all",
+        "getmplateprofile_groupprofileList": "#RestApi_igmpgrouppriv"
+      }
+  ge_template_profile_data_2:
+    profiletype: 'GETemplateProfile'
+    profilename: '#RestApi_getemp_qos'
+    post_profile_info: |
+      {
+        "getmplateprofile_pvid": "1",
+        "getmplateprofile_autonegotiation_enable": "1",
+        "getmplateprofile_igmpgroupprivilege_enable": "2",
+        "getmplateprofile_portmtu": "2112",
+        "getmplateprofile_qosratelimitprofile": "#RestApi_ratelimit_1",
+        "getmplateprofile_outertpid_enable": "2",
+        "vtrunkunivlanarray": [],
+        "getmplateprofile_pbit": "0",
+        "getmplateprofile_qosalgorithm": "sp",
+        "getmplateprofile_portspeed": "1g-full",
+        "vlanvidarray": [],
+        "vlantlsarray": [],
+        "vlantrunkunitagarray": [],
+        "getmplateprofile_flowctrl_enable": "1",
+        "getmplateprofile_qosshapingprofile": "#RestApi_shaping_1",
+        "getmplateprofile_igmpmaxmessage": "0",
+        "getmplateprofile_igmpmaxgroup": "0",
+        "getmplateprofile_copycustomerpbit_enable": "1",
+        "vlantrunkunitagetherarray": [],
+        "getmplateprofile_qosweightprofile": "#RestApi_weight_1",
+        "translationarray": [],
+        "getmplateprofile_frametype": "all",
+        "getmplateprofile_groupprofileList": ""
+      }

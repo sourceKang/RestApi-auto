@@ -43,6 +43,7 @@ DIRECT_CASES: tuple[TestCaseRecord, ...] = (
     TestCaseRecord("EMS1-6659", "test_delete_active_alarm_by_id", "alarm", markers=("alarm", "mutating")),
     TestCaseRecord("EMS1-6670", "test_get_history_alarm_by_id", "alarm", markers=("alarm",)),
     TestCaseRecord("EMS1-6674", "test_delete_history_alarm_by_id", "alarm", markers=("alarm", "alarm_delete", "destructive")),
+    TestCaseRecord("EMS1-6668", "test_patch_ont_service_by_sn", "provision", markers=("provision", "mutating")),
     TestCaseRecord("EMS1-7022", "test_post_remote_console_invalid_param_should_return_error", "remote", markers=("remoteconsole", "noaccess")),
     TestCaseRecord("EMS1-7023", "test_ont_service_post_various_invalid_parameters_should_return_error", "provision", markers=("provision", "mutating")),
     TestCaseRecord("EMS1-7024", "test_ge_service_post_various_invalid_parameters_should_return_error", "provision", markers=("provision", "mutating")),

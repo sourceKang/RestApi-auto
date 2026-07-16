@@ -13,6 +13,15 @@ from typing import Any
 from cases.registry import case_name_by_id, case_order, permission_summary_specs
 
 
+def _report_timestamp() -> str:
+    base = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    suffix = os.environ.get("EMS_REPORT_SUFFIX", "").strip()
+    return f"{base}_{_safe_env_suffix(suffix)}" if suffix else base
+
+
+def _safe_env_suffix(value: str) -> str:
+    return "".join(char if char.isalnum() or char in {"-", "_"} else "_" for char in value)
+
 @dataclass
 class CaseRegistration:
     case_id: str
@@ -30,7 +39,7 @@ class CaseResult:
 @dataclass
 class ReportState:
     started_at: float = field(default_factory=time.perf_counter)
-    timestamp: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    timestamp: str = field(default_factory=_report_timestamp)
     case_registry: dict[str, list[CaseRegistration]] = field(default_factory=dict)
     permission_roles: dict[str, str] = field(default_factory=dict)
     results: list[CaseResult] = field(default_factory=list)

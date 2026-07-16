@@ -25,7 +25,7 @@ D:\FW\NetAtlasEMS\03.00.11 (AAVV.221)\NetAtlasEMS_OpenAPI_20260605.yaml
 等同於：
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests\test_openapi_yaml.py -x --run-live-swagger-check --neox-swagger-api-docs-url "https://192.168.128.100:9116/netatlasemsapi/swagger-ui/index.html#/"
+.\.venv\Scripts\python.exe -m pytest tests\test_openapi_yaml.py -x --run-live-swagger-check --neox-swagger-api-docs-url "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
 ```
 
 只做 local OpenAPI YAML 與 baseline 檢查，不連 live Swagger：

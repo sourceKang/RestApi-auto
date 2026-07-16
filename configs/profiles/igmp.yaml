@@ -1,0 +1,618 @@
+# REST API profile test data.
+profiles:
+  igmp_group_privilege_profile_data:
+    profiletype: 'IGMPGroupPrivilegeProfile'
+    profilename: '#RestApi_igmpgrouppriv'
+    post_profile_info: |
+      {
+        "igmpgroupindex1": "1",
+        "ontigmpprofile_igmpactive1": "1",
+        "ontigmpprofile_grpbandwidth1": "100",
+        "ontigmpprofile_startip1": "225.2.1.1",
+        "ontigmpprofile_endip1": "225.2.1.20",
+        "ontigmpprofile_prvitype1": "preview",
+        "ontigmpprofile_previewlength1": "10",
+        "ontigmpprofile_previewinterval1": "10",
+        "ontigmpprofile_previewcount1": "1",
+        "ontigmpprofile_previewreset1": "30",
+        "igmpgroupindex2": "2",
+        "ontigmpprofile_igmpactive2": "1",
+        "ontigmpprofile_grpbandwidth2": "100",
+        "ontigmpprofile_startip2": "225.2.2.1",
+        "ontigmpprofile_endip2": "225.2.2.20",
+        "ontigmpprofile_prvitype2": "preview",
+        "ontigmpprofile_previewlength2": "300",
+        "ontigmpprofile_previewinterval2": "300",
+        "ontigmpprofile_previewcount2": "10",
+        "ontigmpprofile_previewreset2": "86400",
+        "igmpgroupindex3": "3",
+        "ontigmpprofile_igmpactive3": "1",
+        "ontigmpprofile_grpbandwidth3": "100",
+        "ontigmpprofile_startip3": "225.2.3.1",
+        "ontigmpprofile_endip3": "225.2.3.20",
+        "ontigmpprofile_prvitype3": "forbid",
+        "igmpgroupindex4": "4",
+        "ontigmpprofile_igmpactive4": "1",
+        "ontigmpprofile_grpbandwidth4": "100",
+        "ontigmpprofile_startip4": "225.2.4.1",
+        "ontigmpprofile_endip4": "225.2.4.20",
+        "ontigmpprofile_prvitype4": "permit",
+        "igmpgroupindex5": "5",
+        "ontigmpprofile_igmpactive5": "1",
+        "ontigmpprofile_grpbandwidth5": "100",
+        "ontigmpprofile_startip5": "225.2.5.1",
+        "ontigmpprofile_endip5": "225.2.5.20",
+        "ontigmpprofile_prvitype5": "permit",
+        "igmpgroupindex6": "6",
+        "ontigmpprofile_igmpactive6": "1",
+        "ontigmpprofile_grpbandwidth6": "100",
+        "ontigmpprofile_startip6": "225.2.6.1",
+        "ontigmpprofile_endip6": "225.2.6.20",
+        "ontigmpprofile_prvitype6": "permit",
+        "igmpgroupindex7": "7",
+        "ontigmpprofile_igmpactive7": "1",
+        "ontigmpprofile_grpbandwidth7": "100",
+        "ontigmpprofile_startip7": "225.2.7.1",
+        "ontigmpprofile_endip7": "225.2.7.20",
+        "ontigmpprofile_prvitype7": "permit",
+        "igmpgroupindex8": "8",
+        "ontigmpprofile_igmpactive8": "1",
+        "ontigmpprofile_grpbandwidth8": "100",
+        "ontigmpprofile_startip8": "225.2.8.1",
+        "ontigmpprofile_endip8": "225.2.8.20",
+        "ontigmpprofile_prvitype8": "permit",
+        "igmpgroupindex9": "9",
+        "ontigmpprofile_igmpactive9": "1",
+        "ontigmpprofile_grpbandwidth9": "100",
+        "ontigmpprofile_startip9": "225.2.9.1",
+        "ontigmpprofile_endip9": "225.2.9.20",
+        "ontigmpprofile_prvitype9": "permit",
+        "igmpgroupindex10": "10",
+        "ontigmpprofile_igmpactive10": "1",
+        "ontigmpprofile_grpbandwidth10": "100",
+        "ontigmpprofile_startip10": "225.2.10.1",
+        "ontigmpprofile_endip10": "225.2.10.20",
+        "ontigmpprofile_prvitype10": "permit",
+        "igmpgroupindex11": "11",
+        "ontigmpprofile_igmpactive11": "1",
+        "ontigmpprofile_grpbandwidth11": "100",
+        "ontigmpprofile_startip11": "225.2.11.1",
+        "ontigmpprofile_endip11": "225.2.11.20",
+        "ontigmpprofile_prvitype11": "permit",
+        "igmpgroupindex12": "12",
+        "ontigmpprofile_igmpactive12": "1",
+        "ontigmpprofile_grpbandwidth12": "100",
+        "ontigmpprofile_startip12": "225.2.12.1",
+        "ontigmpprofile_endip12": "225.2.12.20",
+        "ontigmpprofile_prvitype12": "permit",
+        "igmpgroupindex13": "13",
+        "ontigmpprofile_igmpactive13": "1",
+        "ontigmpprofile_grpbandwidth13": "100",
+        "ontigmpprofile_startip13": "225.2.13.1",
+        "ontigmpprofile_endip13": "225.2.13.20",
+        "ontigmpprofile_prvitype13": "permit",
+        "igmpgroupindex14": "14",
+        "ontigmpprofile_igmpactive14": "1",
+        "ontigmpprofile_grpbandwidth14": "100",
+        "ontigmpprofile_startip14": "225.2.14.1",
+        "ontigmpprofile_endip14": "225.2.14.20",
+        "ontigmpprofile_prvitype14": "permit",
+        "igmpgroupindex15": "15",
+        "ontigmpprofile_igmpactive15": "1",
+        "ontigmpprofile_grpbandwidth15": "100",
+        "ontigmpprofile_startip15": "225.2.15.1",
+        "ontigmpprofile_endip15": "225.2.15.20",
+        "ontigmpprofile_prvitype15": "permit",
+        "igmpgroupindex16": "16",
+        "ontigmpprofile_igmpactive16": "1",
+        "ontigmpprofile_grpbandwidth16": "100",
+        "ontigmpprofile_startip16": "225.2.16.1",
+        "ontigmpprofile_endip16": "225.2.16.20",
+        "ontigmpprofile_prvitype16": "preview",
+        "ontigmpprofile_previewlength16": "10",
+        "ontigmpprofile_previewinterval16": "10",
+        "ontigmpprofile_previewcount16": "1",
+        "ontigmpprofile_previewreset16": "30"
+      }
+    patch_profile_info: |
+      {
+        "igmpgroupindex1": "1",
+        "ontigmpprofile_igmpactive1": "1",
+        "ontigmpprofile_grpbandwidth1": "100",
+        "ontigmpprofile_startip1": "225.2.1.1",
+        "ontigmpprofile_endip1": "225.2.1.20",
+        "ontigmpprofile_prvitype1": "permit",
+        "igmpgroupindex2": "2",
+        "ontigmpprofile_igmpactive2": "1",
+        "ontigmpprofile_grpbandwidth2": "100",
+        "ontigmpprofile_startip2": "225.2.2.1",
+        "ontigmpprofile_endip2": "225.2.2.20",
+        "ontigmpprofile_prvitype2": "permit",
+        "igmpgroupindex3": "3",
+        "ontigmpprofile_igmpactive3": "1",
+        "ontigmpprofile_grpbandwidth3": "100",
+        "ontigmpprofile_startip3": "225.2.3.1",
+        "ontigmpprofile_endip3": "225.2.3.20",
+        "ontigmpprofile_prvitype3": "permit",
+        "igmpgroupindex4": "4",
+        "ontigmpprofile_igmpactive4": "1",
+        "ontigmpprofile_grpbandwidth4": "100",
+        "ontigmpprofile_startip4": "225.2.4.1",
+        "ontigmpprofile_endip4": "225.2.4.20",
+        "ontigmpprofile_prvitype4": "permit",
+        "igmpgroupindex5": "5",
+        "ontigmpprofile_igmpactive5": "1",
+        "ontigmpprofile_grpbandwidth5": "100",
+        "ontigmpprofile_startip5": "225.2.5.1",
+        "ontigmpprofile_endip5": "225.2.5.20",
+        "ontigmpprofile_prvitype5": "permit",
+        "igmpgroupindex6": "6",
+        "ontigmpprofile_igmpactive6": "1",
+        "ontigmpprofile_grpbandwidth6": "100",
+        "ontigmpprofile_startip6": "225.2.6.1",
+        "ontigmpprofile_endip6": "225.2.6.20",
+        "ontigmpprofile_prvitype6": "permit",
+        "igmpgroupindex7": "7",
+        "ontigmpprofile_igmpactive7": "1",
+        "ontigmpprofile_grpbandwidth7": "100",
+        "ontigmpprofile_startip7": "225.2.7.1",
+        "ontigmpprofile_endip7": "225.2.7.20",
+        "ontigmpprofile_prvitype7": "permit",
+        "igmpgroupindex8": "8",
+        "ontigmpprofile_igmpactive8": "1",
+        "ontigmpprofile_grpbandwidth8": "100",
+        "ontigmpprofile_startip8": "225.2.8.1",
+        "ontigmpprofile_endip8": "225.2.8.20",
+        "ontigmpprofile_prvitype8": "permit",
+        "igmpgroupindex9": "9",
+        "ontigmpprofile_igmpactive9": "1",
+        "ontigmpprofile_grpbandwidth9": "100",
+        "ontigmpprofile_startip9": "225.2.9.1",
+        "ontigmpprofile_endip9": "225.2.9.20",
+        "ontigmpprofile_prvitype9": "permit",
+        "igmpgroupindex10": "10",
+        "ontigmpprofile_igmpactive10": "1",
+        "ontigmpprofile_grpbandwidth10": "100",
+        "ontigmpprofile_startip10": "225.2.10.1",
+        "ontigmpprofile_endip10": "225.2.10.20",
+        "ontigmpprofile_prvitype10": "permit",
+        "igmpgroupindex11": "11",
+        "ontigmpprofile_igmpactive11": "1",
+        "ontigmpprofile_grpbandwidth11": "100",
+        "ontigmpprofile_startip11": "225.2.11.1",
+        "ontigmpprofile_endip11": "225.2.11.20",
+        "ontigmpprofile_prvitype11": "permit",
+        "igmpgroupindex12": "12",
+        "ontigmpprofile_igmpactive12": "1",
+        "ontigmpprofile_grpbandwidth12": "100",
+        "ontigmpprofile_startip12": "225.2.12.1",
+        "ontigmpprofile_endip12": "225.2.12.20",
+        "ontigmpprofile_prvitype12": "permit",
+        "igmpgroupindex13": "13",
+        "ontigmpprofile_igmpactive13": "1",
+        "ontigmpprofile_grpbandwidth13": "100",
+        "ontigmpprofile_startip13": "225.2.13.1",
+        "ontigmpprofile_endip13": "225.2.13.20",
+        "ontigmpprofile_prvitype13": "permit",
+        "igmpgroupindex14": "14",
+        "ontigmpprofile_igmpactive14": "1",
+        "ontigmpprofile_grpbandwidth14": "100",
+        "ontigmpprofile_startip14": "225.2.14.1",
+        "ontigmpprofile_endip14": "225.2.14.20",
+        "ontigmpprofile_prvitype14": "permit",
+        "igmpgroupindex15": "15",
+        "ontigmpprofile_igmpactive15": "1",
+        "ontigmpprofile_grpbandwidth15": "100",
+        "ontigmpprofile_startip15": "225.2.15.1",
+        "ontigmpprofile_endip15": "225.2.15.20",
+        "ontigmpprofile_prvitype15": "permit",
+        "igmpgroupindex16": "16",
+        "ontigmpprofile_igmpactive16": "1",
+        "ontigmpprofile_grpbandwidth16": "100",
+        "ontigmpprofile_startip16": "225.2.16.1",
+        "ontigmpprofile_endip16": "225.2.16.20",
+        "ontigmpprofile_prvitype16": "permit"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "igmpgroupindex1": "--",
+          "expected_error": "The key igmpgroupindex1 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive1": "3",
+          "expected_error": "The key ontigmpprofile_igmpactive1 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth1": "abc",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip1": "#00.300.300.300",
+          "expected_error": "[Invalid parameter] Index 1 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip1": "399.432.43.dd",
+          "expected_error": "[Invalid parameter] Index 1 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype1": "none",
+          "expected_error": "The key ontigmpprofile_prvitype1 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_previewlength1": "5",
+          "expected_error": "[Invalid parameter] Preview Length [10~300]: Range 10~300"
+        },
+        {
+          "ontigmpprofile_previewinterval1": "0",
+          "expected_error": "[Invalid parameter] Preview Interval [10~300]: Range 10~300"
+        },
+        {
+          "ontigmpprofile_previewcount1": "0",
+          "expected_error": "[Invalid parameter] Preview Count [1~10]: Range 1~10"
+        },
+        {
+          "ontigmpprofile_previewreset1": "10",
+          "expected_error": "[Invalid parameter] Preview Reset [30~86400]: Range 30~86400"
+        },
+        {
+          "igmpgroupindex2": "!@",
+          "expected_error": "The key igmpgroupindex2 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive2": "yes",
+          "expected_error": "The key ontigmpprofile_igmpactive2 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth2": "-50",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip2": "100.31.100.30",
+          "expected_error": "[Invalid parameter] Index 2 : Invalid multicast ip."
+        },
+        {
+          "ontigmpprofile_endip2": "399.432.43.dd",
+          "expected_error": "[Invalid parameter] Index 2 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype2": "restricted",
+          "expected_error": "The key ontigmpprofile_prvitype2 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex3": "xyz",
+          "expected_error": "The key igmpgroupindex3 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive3": "10",
+          "expected_error": "The key ontigmpprofile_igmpactive3 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth3": "",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip3": "225.2.1.1000",
+          "expected_error": "[Invalid parameter] Index 3 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip3": "225.2.1.2000",
+          "expected_error": "[Invalid parameter] Index 3 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype3": "unknown",
+          "expected_error": "The key ontigmpprofile_prvitype3 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex4": "4.5",
+          "expected_error": "The key igmpgroupindex4 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive4": "inactive",
+          "expected_error": "The key ontigmpprofile_igmpactive4 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth4": "-9999",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip4": "",
+          "expected_error": "[Invalid parameter] Index 4 : should set start IP address."
+        },
+        {
+          "ontigmpprofile_endip4": "",
+          "expected_error": "[Invalid parameter] Index 4 : should set end IP address."
+        },
+        {
+          "ontigmpprofile_prvitype4": "all",
+          "expected_error": "The key ontigmpprofile_prvitype4 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex5": "%",
+          "expected_error": "The key igmpgroupindex5 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive5": "T@rue",
+          "expected_error": "The key ontigmpprofile_igmpactive5 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth5": "-50",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip5": "192.0.0.1",
+          "expected_error": "[Invalid parameter] Index 5 : Invalid multicast ip."
+        },
+        {
+          "ontigmpprofile_endip5": "192.168.0.255",
+          "expected_error": "[Invalid parameter] Index 5 : Invalid multicast ip."
+        },
+        {
+          "ontigmpprofile_prvitype5": "previewer",
+          "expected_error": "The key ontigmpprofile_prvitype5 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex6": "@6",
+          "expected_error": "The key igmpgroupindex6 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive6": "off",
+          "expected_error": "The key ontigmpprofile_igmpactive6 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth6": "-1",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip6": "",
+          "expected_error": "[Invalid parameter] Index 6 : should set start IP address"
+        },
+        {
+          "ontigmpprofile_endip6": "badip",
+          "expected_error": "[Invalid parameter] Index 6 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype6": "test",
+          "expected_error": "The key ontigmpprofile_prvitype6 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex7": "??",
+          "expected_error": "The key igmpgroupindex7 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive7": "1.1",
+          "expected_error": "The key ontigmpprofile_igmpactive7 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth7": "abc7",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip7": "300.300.300.300",
+          "expected_error": "[Invalid parameter] Index 7 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip7": "",
+          "expected_error": "[Invalid parameter] Index 7 : should set end IP address"
+        },
+        {
+          "ontigmpprofile_prvitype7": "all",
+          "expected_error": "The key ontigmpprofile_prvitype7 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex8": "null",
+          "expected_error": "The key igmpgroupindex8 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive8": "not-set",
+          "expected_error": "The key ontigmpprofile_igmpactive8 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth8": "-888",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip8": "a.0.c.0",
+          "expected_error": "[Invalid parameter] Index 8 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip8": "2001::1",
+          "expected_error": "[Invalid parameter] Index 8 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype8": "deny",
+          "expected_error": "The key ontigmpprofile_prvitype8 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex9": "-1",
+          "expected_error": "The key igmpgroupindex9 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive9": "maybe",
+          "expected_error": "The key ontigmpprofile_igmpactive9 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth9": "123abc",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip9": "255.255.255.255",
+          "expected_error": "[Invalid parameter] Index 9 : Invalid multicast ip."
+        },
+        {
+          "ontigmpprofile_endip9": "",
+          "expected_error": "[Invalid parameter] Index 9 : should set end IP address"
+        },
+        {
+          "ontigmpprofile_prvitype9": "invalid",
+          "expected_error": "The key ontigmpprofile_prvitype9 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex10": "100.100",
+          "expected_error": "The key igmpgroupindex10 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive10": "",
+          "expected_error": "The key ontigmpprofile_igmpactive10 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth10": "-999",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip10": "",
+          "expected_error": "[Invalid parameter] Index 10 : should set start IP address"
+        },
+        {
+          "ontigmpprofile_endip10": "abc",
+          "expected_error": "[Invalid parameter] Index 10 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype10": "123",
+          "expected_error": "The key ontigmpprofile_prvitype10 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex11": "invalid",
+          "expected_error": "The key igmpgroupindex11 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive11": "False",
+          "expected_error": "The key ontigmpprofile_igmpactive11 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth11": "101",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip11": "-.-.-.-",
+          "expected_error": "[Invalid parameter] Index 11 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip11": "::",
+          "expected_error": "[Invalid parameter] Index 11 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype11": "unknown",
+          "expected_error": "The key ontigmpprofile_prvitype11 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex12": "None",
+          "expected_error": "The key igmpgroupindex12 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive12": "enabled",
+          "expected_error": "The key ontigmpprofile_igmpactive12 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth12": "NaN",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip12": "",
+          "expected_error": "[Invalid parameter] Index 12 : should set start IP address"
+        },
+        {
+          "ontigmpprofile_endip12": "300.300.300.300",
+          "expected_error": "[Invalid parameter] Index 12 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype12": "block",
+          "expected_error": "The key ontigmpprofile_prvitype12 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex13": "13.5",
+          "expected_error": "The key igmpgroupindex13 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive13": "enabled",
+          "expected_error": "The key ontigmpprofile_igmpactive13 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth13": "-15",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip13": "",
+          "expected_error": "[Invalid parameter] Index 13 : should set start IP address"
+        },
+        {
+          "ontigmpprofile_endip13": "",
+          "expected_error": "[Invalid parameter] Index 13 : should set end IP address"
+        },
+        {
+          "ontigmpprofile_prvitype13": "random",
+          "expected_error": "The key ontigmpprofile_prvitype13 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex14": "?",
+          "expected_error": "The key igmpgroupindex14 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive14": "Active",
+          "expected_error": "The key ontigmpprofile_igmpactive14 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth14": "bad",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip14": "bad-ip",
+          "expected_error": "[Invalid parameter] Index 14 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip14": "2001::bad",
+          "expected_error": "[Invalid parameter] Index 14 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype14": "undefined",
+          "expected_error": "The key ontigmpprofile_prvitype14 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex15": "",
+          "expected_error": "The key igmpgroupindex15 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive15": "null",
+          "expected_error": "The key ontigmpprofile_igmpactive15 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth15": "",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip15": "123.456.789.0",
+          "expected_error": "[Invalid parameter] Index 15 : Invalid start ip address."
+        },
+        {
+          "ontigmpprofile_endip15": "456.789.123.0",
+          "expected_error": "[Invalid parameter] Index 15 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype15": "INVALID",
+          "expected_error": "The key ontigmpprofile_prvitype15 value is invalid, please check it again."
+        },
+        {
+          "igmpgroupindex16": "invalid",
+          "expected_error": "The key igmpgroupindex16 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_igmpactive16": "maybe",
+          "expected_error": "The key ontigmpprofile_igmpactive16 value is invalid, please check it again."
+        },
+        {
+          "ontigmpprofile_grpbandwidth16": "abc123",
+          "expected_error": "[Invalid parameter] Bandwidth [0~100]: Range 0~100"
+        },
+        {
+          "ontigmpprofile_startip16": "1.1.1.1",
+          "expected_error": "[Invalid parameter] Index 16 : Invalid multicast ip."
+        },
+        {
+          "ontigmpprofile_endip16": "::1",
+          "expected_error": "[Invalid parameter] Index 16 : Invalid end ip address."
+        },
+        {
+          "ontigmpprofile_prvitype16": "all-permit",
+          "expected_error": "The key ontigmpprofile_prvitype16 value is invalid, please check it again."
+        }
+      ]

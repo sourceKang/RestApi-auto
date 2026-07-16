@@ -4,6 +4,8 @@ import os
 
 import pytest
 
+from config_loader.auth import AuthConfigError, load_auth_config
+
 
 FULL_TESTCASE_INCLUDED_OPTIONS = {
     "--auth-matrix",
@@ -46,6 +48,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
     parser.addoption(
+        "--keep-ont-service-for-manual-check",
+        action="store_true",
+        default=False,
+        help="Keep the temporary ONT service/profile graph after the run for explicit manual inspection.",
+    )
+    parser.addoption(
         "--run-neox-config",
         action="store_true",
         default=False,
@@ -74,7 +82,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store",
         default=os.environ.get(
             "NEOX_SWAGGER_API_DOCS_URL",
-            "https://192.168.128.100:9116/netatlasemsapi/v3/api-docs",
+            "https://192.168.128.8:9116/netatlasemsapi/v3/api-docs",
         ),
         help="Live NeoX Swagger /v3/api-docs URL used with --run-live-swagger-check.",
     )
@@ -166,14 +174,56 @@ def neox_parallel_auth_profile_for_worker(
     if not worker_id.startswith("gw") or not worker_id[2:].isdigit():
         return selected_auth_profile
     worker_index = int(worker_id[2:])
-    if len(profiles) == 1:
-        return profiles[0]
+
     if worker_index >= len(profiles):
         raise ValueError(
             f"--neox-parallel-auth-profiles defines {len(profiles)} profile(s), "
             f"but xdist worker {worker_id} needs index {worker_index}."
         )
     return profiles[worker_index]
+
+
+def validate_neox_parallel_settings(
+    worker_count: int,
+    parallel_mode: str,
+    dist_mode: str,
+    auth_profiles: str,
+) -> None:
+    if worker_count <= 1:
+        return
+    if parallel_mode == "off":
+        raise ValueError("xdist workers require --neox-parallel-mode conservative or resource.")
+    if dist_mode != "loadgroup":
+        raise ValueError("NeoX xdist requires --dist loadgroup so resource groups stay serial.")
+
+    profiles = [profile.strip() for profile in auth_profiles.split(",") if profile.strip()]
+    if len(profiles) < worker_count:
+        raise ValueError(
+            f"xdist requests {worker_count} workers but --neox-parallel-auth-profiles defines "
+            f"only {len(profiles)} profile(s)."
+        )
+    if len(set(profiles)) != len(profiles):
+        raise ValueError("--neox-parallel-auth-profiles must not contain duplicate profile names.")
+
+    try:
+        auth = load_auth_config()
+        signatures = {
+            profile: tuple(auth.resolve_profile(profile)[role].username for role in ("readwrite", "readonly", "noaccess"))
+            for profile in profiles[:worker_count]
+        }
+    except AuthConfigError as error:
+        raise ValueError(f"Cannot validate NeoX parallel auth profiles: {error}") from error
+    if len(set(signatures.values())) != worker_count:
+        raise ValueError("NeoX parallel auth profiles must resolve to distinct role usernames per worker.")
+
+
+def xdist_worker_count(value) -> int:
+    if value in {None, 0, "0", "no"}:
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError("NeoX parallel safety requires an explicit integer xdist worker count.") from error
 
 
 def option_or_env(config: pytest.Config, option_name: str, env_name: str) -> bool:

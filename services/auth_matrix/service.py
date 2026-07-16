@@ -72,7 +72,14 @@ class AuthMatrixService:
         finally:
             self.delete_profile_if_present(session_id, definition)
 
-    def verify_rad_readonly_summary(self, env_config, session_id: str, observer_session_id: str) -> None:
+    def verify_rad_readonly_summary(
+        self,
+        env_config,
+        session_id: str,
+        observer_session_id: str,
+        ont_template: str | None = None,
+        ge_template: str | None = None,
+    ) -> None:
         attach_case_id("EMS1-7107", "rad_external_readonly_summary", summary_group="RAD-RO")
 
         with allure_step("Verify RAD readonly account can read allowed inventory, provision and alarm endpoints"):
@@ -113,7 +120,7 @@ class AuthMatrixService:
                 "POST",
                 f"/ontservice/{env_config.dut.ont_sn}",
                 session=session_id,
-                json=ont_service_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ont_service_payload(env_config, "RAD_AUTH_MATRIX", ont_template=ont_template),
             )
             assert_api_failure(ontservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -121,7 +128,7 @@ class AuthMatrixService:
                 "PUT",
                 f"/ontservice/{env_config.dut.ont_sn}",
                 session=session_id,
-                json=ont_service_modified_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ont_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ont_template=ont_template),
             )
             assert_api_failure(ontservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -132,7 +139,7 @@ class AuthMatrixService:
                 "POST",
                 ge_service_port_path(env_config),
                 session=session_id,
-                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
             )
             assert_api_failure(geservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -140,7 +147,7 @@ class AuthMatrixService:
                 "PUT",
                 ge_mutation_path,
                 session=session_id,
-                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
             )
             assert_api_failure(geservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -176,7 +183,14 @@ class AuthMatrixService:
         finally:
             self.delete_profile_if_present(observer_session_id, protected_definition)
 
-    def verify_rad_noaccess_summary(self, env_config, session_id: str, observer_session_id: str) -> None:
+    def verify_rad_noaccess_summary(
+        self,
+        env_config,
+        session_id: str,
+        observer_session_id: str,
+        ont_template: str | None = None,
+        ge_template: str | None = None,
+    ) -> None:
         attach_case_id("EMS1-7108", "rad_external_noaccess_summary", summary_group="RAD-NA")
 
         definition = ephemeral_igmp_profile_definition()
@@ -225,7 +239,7 @@ class AuthMatrixService:
                 "POST",
                 f"/ontservice/{env_config.dut.ont_sn}",
                 session=session_id,
-                json=ont_service_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ont_service_payload(env_config, "RAD_AUTH_MATRIX", ont_template=ont_template),
             )
             assert_api_failure(ontservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -233,7 +247,7 @@ class AuthMatrixService:
                 "PUT",
                 f"/ontservice/{env_config.dut.ont_sn}",
                 session=session_id,
-                json=ont_service_modified_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ont_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ont_template=ont_template),
             )
             assert_api_failure(ontservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -244,7 +258,7 @@ class AuthMatrixService:
                 "POST",
                 ge_service_port_path(env_config),
                 session=session_id,
-                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
             )
             assert_api_failure(geservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
 
@@ -252,7 +266,7 @@ class AuthMatrixService:
                 "PUT",
                 ge_mutation_path,
                 session=session_id,
-                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX"),
+                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
             )
             assert_api_failure(geservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
 

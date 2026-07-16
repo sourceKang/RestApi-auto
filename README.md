@@ -17,8 +17,21 @@ configs\ems.yaml
 configs\auth_accounts.yaml
 configs\hardware_matrix.yaml
 configs\test_targets.yaml
-configs\profiles.yaml
+configs\profiles\manifest.yaml
 ```
+Before running against a real EMS, review the checked-in YAML files and adjust
+them for your lab:
+
+- `configs/ems.yaml`: EMS URL, EMS version, TLS verification and timeout.
+- `configs/hardware_matrix.yaml`: supported chassis/card firmware metadata.
+- `configs/test_targets.yaml`: per-node slots, ports, ONT target and report targets.
+- `configs/auth_accounts.yaml`: auth profiles and role-based accounts.
+
+Do not commit real passwords, tokens, devKeys or private lab credentials.
+Keep local-only credential changes out of commits, or replace them with
+placeholder/example values before sharing a branch. The NeoX test data under
+`configs/neox_config/` is part of the runnable test dataset and should be kept
+with the code that consumes it.
 
 ## Project Layout
 
@@ -60,7 +73,7 @@ New framework hardware rules and per-node test targets are kept in YAML:
 - `configs/hardware_matrix.yaml`: chassis/card capability rules.
 - `configs/test_targets.yaml`: NODE-specific report cards, card inventory, ONT target and GE service target.
 - `configs/auth_accounts.yaml`: auth profiles and reusable role-based account pools.
-- `configs/profiles.yaml`: profile API test definitions referenced by case catalog metadata.
+- `configs/profiles/manifest.yaml`: ordered profile data files referenced by case catalog metadata.
 
 By default the suite runs the main/local account set selected by
 `--auth-profile` (or the default profile when omitted). If you also want the
@@ -105,6 +118,16 @@ pytest -m remoteconsole --run-remote
 pytest -m alarm_delete --run-alarm-delete
 pytest --ems-node NODE3 --run-full-testcases
 ```
+
+Run multiple nodes sequentially with per-node logs and a summary:
+
+```powershell
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3,NODE6 --run-full-testcases
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --run-full-testcases --dry-run
+```
+
+The multi-node runner still invokes pytest per node. NeoX-only config options
+are kept for NeoX chassis and omitted for non-NeoX chassis.
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.

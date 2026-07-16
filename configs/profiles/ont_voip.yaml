@@ -1,0 +1,344 @@
+# REST API profile test data.
+profiles:
+  ont_voip_dialplan_profile_data:
+    profiletype: 'ONTVoipDialPlanProfile'
+    profilename: '#RestApi_ontVoipDialPlan'
+    post_profile_info: |
+      {
+        "ontvoipdialplanprofile_criticaltimeout": "8000",
+        "ontvoipdialplanprofile_maxsize": "256",
+        "ontvoipdialplanprofile_partialtimeout": "32000",
+        "ontvoipdialplanprofile_identifier": "+88603(X.)",
+        "ontvoipdialplanprofile_format": "h248"
+      }
+    patch_profile_info: |
+      {
+        "ontvoipdialplanprofile_criticaltimeout": "7999",
+        "ontvoipdialplanprofile_maxsize": "255",
+        "ontvoipdialplanprofile_partialtimeout": "31999",
+        "ontvoipdialplanprofile_identifier": "+88603(Y.)",
+        "ontvoipdialplanprofile_format": "NSC"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ontvoipdialplanprofile_criticaltimeout": "-100",
+          "expected_error": "[Invalid parameter] Critical-Dial-Timeout: Range 0~8000"
+        },
+        {
+          "ontvoipdialplanprofile_maxsize": "3000",
+          "expected_error": "[Invalid parameter] Max Size: Range 1~256"
+        },
+        {
+          "ontvoipdialplanprofile_partialtimeout": "100000",
+          "expected_error": "[Invalid parameter] Partial-Dial-Timeout: Range 0~32000"
+        },
+        {
+          "ontvoipdialplanprofile_identifier": "++88603(X.)!!!!!!!123414123abdfsdfhwer!!!!fgfsdg!!!!!!!!!!!!!!0123456789/*57893520",
+          "expected_error": "[Invalid parameter]  Content-table token: Maximum length is 28"
+        },
+        {
+          "ontvoipdialplanprofile_format": "sip",
+          "expected_error": "The key ontvoipdialplanprofile_format value is invalid, please check it again."
+        }
+      ]
+  ont_voip_common_profile_data:
+    profiletype: 'ONTVoipCommonProfile'
+    profilename: '#RestApi_VoipCom'
+    post_profile_info: |
+      {
+        "ontvoipcommprofile_4silence": "1",
+        "ontvoipcommprofile_buf": "500",
+        "ontvoipcommprofile_2silence": "1",
+        "ontvoipcommprofile_1silence": "1",
+        "ontvoipcommprofile_3silence": "1",
+        "ontvoipcommprofile_echo": "1",
+        "ontvoipcommprofile_2codec": "DVI4-22050",
+        "ontvoipcommprofile_signal": "mul-par",
+        "ontvoipcommprofile_announce": "voi-ann",
+        "ontvoipcommprofile_target": "5000",
+        "ontvoipcommprofile_2packet": "15",
+        "ontvoipcommprofile_4codec": "G728",
+        "ontvoipcommprofile_fax": "T38",
+        "ontvoipcommprofile_1codec": "G729",
+        "ontvoipcommprofile_cas": "1",
+        "ontvoipcommprofile_piggyback": "1",
+        "ontvoipcommprofile_dscp": "63",
+        "ontvoipcommprofile_4packet": "30",
+        "ontvoipcommprofile_pstn": "999",
+        "ontvoipcommprofile_minport": "1",
+        "ontvoipcommprofile_1packet": "10",
+        "ontvoipcommprofile_3codec": "DVI4-11025",
+        "ontvoipcommprofile_tone": "1",
+        "ontvoipcommprofile_dtmf": "1",
+        "ontvoipcommprofile_3packet": "25",
+        "ontvoipcommprofile_oobdtmf": "1",
+        "ontvoipcommprofile_maxport": "65535"
+      }
+    patch_profile_info: |
+      {
+        "ontvoipcommprofile_4silence": "1",
+        "ontvoipcommprofile_buf": "499",
+        "ontvoipcommprofile_2silence": "1",
+        "ontvoipcommprofile_1silence": "1",
+        "ontvoipcommprofile_3silence": "1",
+        "ontvoipcommprofile_echo": "1",
+        "ontvoipcommprofile_2codec": "CN",
+        "ontvoipcommprofile_signal": "coi-fir",
+        "ontvoipcommprofile_announce": "fas-bus",
+        "ontvoipcommprofile_target": "4999",
+        "ontvoipcommprofile_2packet": "15",
+        "ontvoipcommprofile_4codec": "G728",
+        "ontvoipcommprofile_fax": "passthru",
+        "ontvoipcommprofile_1codec": "DVI4-16000",
+        "ontvoipcommprofile_cas": "2",
+        "ontvoipcommprofile_piggyback": "1",
+        "ontvoipcommprofile_dscp": "62",
+        "ontvoipcommprofile_4packet": "30",
+        "ontvoipcommprofile_pstn": "998",
+        "ontvoipcommprofile_minport": "2",
+        "ontvoipcommprofile_1packet": "10",
+        "ontvoipcommprofile_3codec": "G729",
+        "ontvoipcommprofile_tone": "2",
+        "ontvoipcommprofile_dtmf": "1",
+        "ontvoipcommprofile_3packet": "20",
+        "ontvoipcommprofile_oobdtmf": "1",
+        "ontvoipcommprofile_maxport": "65534"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ontvoipcommprofile_4silence": "-1",
+          "expected_error": "The key ontvoipcommprofile_4silence value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_buf": "abc",
+          "expected_error": "[Invalid parameter] Max Jitter Buffer: Range 0~500"
+        },
+        {
+          "ontvoipcommprofile_buf": "-100",
+          "expected_error": "[Invalid parameter] Max Jitter Buffer: Range 0~500"
+        },
+        {
+          "ontvoipcommprofile_2silence": "3",
+          "expected_error": "The key ontvoipcommprofile_2silence value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_1silence": "invalid",
+          "expected_error": "The key ontvoipcommprofile_1silence value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_echo": "10",
+          "expected_error": "The key ontvoipcommprofile_echo value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_2codec": "INVALID_CODEC",
+          "expected_error": "The key ontvoipcommprofile_2codec value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_signal": "invalid-signal",
+          "expected_error": "The key ontvoipcommprofile_signal value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_announce": "invalid-announce",
+          "expected_error": "The key ontvoipcommprofile_announce value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_target": "-1",
+          "expected_error": "[Invalid parameter] Jitter Target: Range 0~5000"
+        },
+        {
+          "ontvoipcommprofile_2packet": "999",
+          "expected_error": "[Invalid parameter] Second packet period: Range 10~30"
+        },
+        {
+          "ontvoipcommprofile_4codec": "INVALID_CODEC",
+          "expected_error": "The key ontvoipcommprofile_4codec value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_fax": "invalid-fax",
+          "expected_error": "The key ontvoipcommprofile_fax value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_1codec": "INVALID_CODEC",
+          "expected_error": "The key ontvoipcommprofile_1codec value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_cas": "3",
+          "expected_error": "The key ontvoipcommprofile_cas value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_piggyback": "-1",
+          "expected_error": "The key ontvoipcommprofile_piggyback value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_dscp": "64",
+          "expected_error": "[Invalid parameter] DSCP Mark: Range 0~63"
+        },
+        {
+          "ontvoipcommprofile_4packet": "999",
+          "expected_error": "[Invalid parameter] Fourth packet period: Range 10~30"
+        },
+        {
+          "ontvoipcommprofile_pstn": "1000",
+          "expected_error": "[Invalid parameter] PSTN Protocol: Range 0~999"
+        },
+        {
+          "ontvoipcommprofile_minport": "-1",
+          "expected_error": "[Invalid parameter] Min Local Port: Range 1~65535"
+        },
+        {
+          "ontvoipcommprofile_1packet": "9",
+          "expected_error": "[Invalid parameter] First packet period: Range 10~30"
+        },
+        {
+          "ontvoipcommprofile_3codec": "INVALID_CODEC",
+          "expected_error": "The key ontvoipcommprofile_3codec value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_tone": "3",
+          "expected_error": "The key ontvoipcommprofile_tone value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_dtmf": "abc",
+          "expected_error": "The key ontvoipcommprofile_dtmf value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_3packet": "31",
+          "expected_error": "[Invalid parameter] Third packet period: Range 10~30"
+        },
+        {
+          "ontvoipcommprofile_oobdtmf": "10",
+          "expected_error": "The key ontvoipcommprofile_oobdtmf value is invalid, please check it again."
+        },
+        {
+          "ontvoipcommprofile_maxport": "65536",
+          "expected_error": "[Invalid parameter] Max Local Port: Range 1~65535"
+        },
+        {
+          "ontvoipcommprofile_maxport": "0",
+          "expected_error": "[Invalid parameter] Max Local Port: Range 1~65535"
+        },
+        {
+          "ontvoipcommprofile_maxport": "@D",
+          "expected_error": "[Invalid parameter] Max Local Port: Range 1~65535"
+        }
+      ]
+  ont_voip_sip_profile_data:
+    profiletype: 'ONTVoipSipProfile'
+    profilename: '#RestApi_VoipSip'
+    post_profile_info: |
+      {
+        "ontvoipsipprofile_rereg": "720",
+        "ontvoipsipprofile_direct": "1,2",
+        "ontvoipsipprofile_callpresent": "1,2,3,4",
+        "ontvoipsipprofile_hosturi": "200.0.11.5",
+        "ontvoipsipprofile_pridns": "200.0.11.3",
+        "ontvoipsipprofile_callwait": "1,2",
+        "ontvoipsipprofile_directuri": "200.0.11.7",
+        "ontvoipsipprofile_secdns": "200.0.11.4",
+        "ontvoipsipprofile_regexptime": "25200",
+        "ontvoipsipprofile_proxyaddr": "200.0.11.1",
+        "ontvoipsipprofile_callprog": "11,12,13,14,15,16,17,18",
+        "ontvoipsipprofile_factory": "200.0.11.9",
+        "ontvoipsipprofile_softswitch": "ALU",
+        "ontvoipsipprofile_bridgeduri": "200.0.11.8",
+        "ontvoipsipprofile_registrar": "200.0.11.6",
+        "ontvoipsipprofile_outaddr": "200.0.11.2",
+        "ontvoipsipprofile_cid": "1,2,3,4,5,6"
+      }
+    patch_profile_info: |
+      {
+        "ontvoipsipprofile_rereg": "712",
+        "ontvoipsipprofile_direct": "1,2",
+        "ontvoipsipprofile_callpresent": "1,4",
+        "ontvoipsipprofile_hosturi": "133.0.11.5",
+        "ontvoipsipprofile_pridns": "133.0.11.3",
+        "ontvoipsipprofile_callwait": "1,2",
+        "ontvoipsipprofile_directuri": "133.0.11.7",
+        "ontvoipsipprofile_secdns": "133.0.11.4",
+        "ontvoipsipprofile_regexptime": "25200",
+        "ontvoipsipprofile_proxyaddr": "133.0.11.1",
+        "ontvoipsipprofile_callprog": "11,12,13,14,15,16,17,18",
+        "ontvoipsipprofile_factory": "133.0.11.9",
+        "ontvoipsipprofile_softswitch": "0abC",
+        "ontvoipsipprofile_bridgeduri": "133.0.11.8",
+        "ontvoipsipprofile_registrar": "133.0.11.6",
+        "ontvoipsipprofile_outaddr": "133.0.11.2",
+        "ontvoipsipprofile_cid": "1,2,3,4"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ontvoipsipprofile_rereg": "-1",
+          "expected_error": "[Invalid parameter] Re-registration Head Start Time: Range 0~720"
+        },
+        {
+          "ontvoipsipprofile_rereg": "abc",
+          "expected_error": "[Invalid parameter] Re-registration Head Start Time: Range 0~720"
+        },
+        {
+          "ontvoipsipprofile_direct": "1,abc",
+          "expected_error": "The key ontvoipsipprofile_direct value is invalid, please check it again."
+        },
+        {
+          "ontvoipsipprofile_callpresent": "1,2,abc",
+          "expected_error": "The key ontvoipsipprofile_callpresent value is invalid, please check it again."
+        },
+        {
+          "ontvoipsipprofile_hosturi": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  Host Part URI: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_pridns": "2560.00.0.1",
+          "expected_error": "[Invalid parameter] Primary DNS: Invalid IP address"
+        },
+        {
+          "ontvoipsipprofile_callwait": "abc",
+          "expected_error": "The key ontvoipsipprofile_callwait value is invalid, please check it again."
+        },
+        {
+          "ontvoipsipprofile_directuri": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  Direction Connect URI: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_secdns": "9256.0.0.2",
+          "expected_error": "[Invalid parameter] Secondary DNS: Invalid IP address"
+        },
+        {
+          "ontvoipsipprofile_regexptime": "-1",
+          "expected_error": "[Invalid parameter] Registration Expiration Time: Range 0~25200"
+        },
+        {
+          "ontvoipsipprofile_proxyaddr": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  Proxy Service Address: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_callprog": "1,2,abc",
+          "expected_error": "The key ontvoipsipprofile_callprog value is invalid, please check it again."
+        },
+        {
+          "ontvoipsipprofile_factory": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": ""
+        },
+        {
+          "ontvoipsipprofile_softswitch": "01234",
+          "expected_error": "[Invalid parameter]  Softswitch: Maximum length is 4"
+        },
+        {
+          "ontvoipsipprofile_bridgeduri": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  Bridged Line Agent URI: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_registrar": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  SIP Registrar: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_outaddr": "0123456789012345678901234567890123456789012345678901234567890123",
+          "expected_error": "[Invalid parameter]  Outbound Proxy Address: Maximum length is 63"
+        },
+        {
+          "ontvoipsipprofile_cid": "1,abc,3",
+          "expected_error": "The key ontvoipsipprofile_cid value is invalid, please check it again."
+        }
+      ]

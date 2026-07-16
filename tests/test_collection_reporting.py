@@ -5,7 +5,9 @@ from types import SimpleNamespace
 from tests.support.collection import (
     _register_neox_case,
     _register_parametrized_case,
+    _skip_neox_config_for_non_neox_chassis,
     _skip_neox_config_without_cli_dependency,
+    ont_workflow_phase_for_name,
 )
 from utils import reporting
 
@@ -105,3 +107,62 @@ def test_collection_allows_rest_only_neox_config_without_cli_dependency(monkeypa
     _skip_neox_config_without_cli_dependency(config, [item])
 
     assert item.markers == []
+
+
+def test_collection_skips_neox_config_for_non_neox_chassis():
+    config = SimpleNamespace(getoption=lambda name: "NODE1" if name == "--ems-node" else False)
+    item = SimpleNamespace(keywords={"neox_config"}, markers=[], add_marker=lambda marker: item.markers.append(marker))
+
+    skipped = _skip_neox_config_for_non_neox_chassis(config, [item])
+
+    assert skipped
+    assert len(item.markers) == 1
+    assert "selected NODE1 uses IES4204" in item.markers[0].mark.kwargs["reason"]
+
+
+def test_collection_allows_neox_config_for_neox_chassis():
+    config = SimpleNamespace(getoption=lambda name: "NODE3" if name == "--ems-node" else False)
+    item = SimpleNamespace(keywords={"neox_config"}, markers=[], add_marker=lambda marker: item.markers.append(marker))
+
+    skipped = _skip_neox_config_for_non_neox_chassis(config, [item])
+
+    assert not skipped
+    assert item.markers == []
+
+
+def test_ont_workflow_collection_phases_keep_shared_service_lifecycle_ordered():
+    phases = [
+        ont_workflow_phase_for_name("test_post_ont_service_by_sn", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_ont_inventory_ready_after_post", {"ont", "readwrite"}),
+        ont_workflow_phase_for_name("test_ont_read_endpoints_readwrite", {"ont", "readwrite"}),
+        ont_workflow_phase_for_name("test_ont_provision_read_endpoints_readonly", {"provision", "readonly"}),
+        ont_workflow_phase_for_name("test_rad_external_readwrite_summary", {"authmatrix"}),
+        ont_workflow_phase_for_name("test_put_ont_service_by_sn", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_patch_ont_service_by_sn", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_delete_ont_service_by_sn", {"provision", "mutating"}),
+        ont_workflow_phase_for_name(
+            "test_ont_service_post_various_invalid_parameters_should_return_error",
+            {"provision", "mutating"},
+        ),
+    ]
+
+    assert phases == sorted(phases)
+    assert len(set(phases)) == len(phases)
+
+def test_ge_workflow_collection_phases_keep_formal_service_lifecycle_ordered():
+    phases = [
+        ont_workflow_phase_for_name("test_post_ge_service_by_port", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_inventory_read_endpoints_readwrite", {"inventory", "readwrite"}),
+        ont_workflow_phase_for_name("test_ge_provision_read_endpoints_readonly", {"provision", "readonly"}),
+        ont_workflow_phase_for_name("test_rad_external_readwrite_summary", {"authmatrix"}),
+        ont_workflow_phase_for_name("test_put_ge_service_by_serviceid", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_patch_ge_service_by_serviceid", {"provision", "mutating"}),
+        ont_workflow_phase_for_name("test_delete_ge_service_by_serviceid", {"provision", "mutating"}),
+        ont_workflow_phase_for_name(
+            "test_ge_service_post_various_invalid_parameters_should_return_error",
+            {"provision", "mutating"},
+        ),
+    ]
+
+    assert phases == sorted(phases)
+    assert len(set(phases)) == len(phases)

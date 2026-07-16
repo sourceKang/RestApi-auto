@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from cases.case_catalog import profile_definition_by_name
+from services.profile import ProfileService
 from cases.payloads import ge_service_payload, ont_service_payload
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id
@@ -14,14 +14,16 @@ from utils.diagnostics import format_response_summary, format_value_summary
 
 
 class InvalidParamsService:
-    def __init__(self, api_client, env_config) -> None:
+    def __init__(self, api_client, env_config, profile_service=None) -> None:
         self.api_client = api_client
         self.env_config = env_config
+        self.profile_service = profile_service or ProfileService(api_client)
 
-    def verify_ont_service_post_invalid_parameters(self, session_id: str) -> None:
+    def verify_ont_service_post_invalid_parameters(self, session_id: str, ont_template: str | None = None) -> None:
         attach_case_id("EMS1-7023", "test_ont_service_post_various_invalid_parameters_should_return_error")
-        with allure_step("Ensure ONT template profile exists before invalid ONT service POST checks"):
-            self.ensure_profile_exists(session_id, self.env_config.dut.ont_template)
+        if ont_template is None:
+            with allure_step("Ensure ONT template profile exists before invalid ONT service POST checks"):
+                self.ensure_profile_exists(session_id, self.env_config.dut.ont_template)
 
         invalid_cases = [
             ("invalid_ont_template", {"ontservice": {"data": {"templateprof": "#invalid_profile"}}}, "ONT Template not found."),
@@ -38,18 +40,46 @@ class InvalidParamsService:
         for name, patch, expected in invalid_cases:
             with allure_step(f"Verify ONT service POST rejects {name}"):
                 self.delete_ont_service_if_exists(session_id)
-                payload = copy.deepcopy(ont_service_payload(self.env_config, "legacy_invalid_ont"))
+                payload = copy.deepcopy(ont_service_payload(self.env_config, "legacy_invalid_ont", ont_template=ont_template))
                 deep_merge(payload, patch)
-                response = self.api_client.request("POST", path, session=session_id, json=payload)
-                if response.retstatus == "Fail" and "already exists" in response.retresult:
-                    self.delete_ont_service_if_exists(session_id)
-                    response = self.api_client.request("POST", path, session=session_id, json=payload)
+                response = self.post_ont_invalid_after_sn_release(session_id, path, payload)
                 assert_failure_contains(response, expected)
 
-    def verify_ge_service_post_invalid_parameters(self, session_id: str) -> None:
+    def post_ont_invalid_after_sn_release(
+        self,
+        session_id: str,
+        path: str,
+        payload: dict,
+        *,
+        timeout: int = 180,
+        initial_interval: int = 5,
+        max_interval: int = 15,
+    ):
+        deadline = time.monotonic() + timeout
+        interval = initial_interval
+        response = self.api_client.request("POST", path, session=session_id, json=payload)
+        if not _ont_sn_already_exists(response):
+            return response
+
+        self.delete_ont_service_if_exists(session_id)
+        while time.monotonic() < deadline:
+            remaining = deadline - time.monotonic()
+            time.sleep(min(interval, max(remaining, 0)))
+            response = self.api_client.request("POST", path, session=session_id, json=payload)
+            if not _ont_sn_already_exists(response):
+                return response
+            interval = min(interval * 2, max_interval)
+
+        raise AssertionError(
+            "ONT SN remained reserved after the prior service was removed; "
+            f"invalid payload validation could not start. Last response: {format_response_summary(response)}"
+        )
+
+    def verify_ge_service_post_invalid_parameters(self, session_id: str, ge_template: str | None = None) -> None:
         attach_case_id("EMS1-7024", "test_ge_service_post_various_invalid_parameters_should_return_error")
-        with allure_step("Ensure GE template profile exists before invalid GE service POST checks"):
-            self.ensure_profile_exists(session_id, self.env_config.dut.ge_template)
+        if ge_template is None:
+            with allure_step("Ensure GE template profile exists before invalid GE service POST checks"):
+                self.ensure_profile_exists(session_id, self.env_config.dut.ge_template)
 
         dut = self.env_config.dut
         invalid_cases = [
@@ -79,7 +109,7 @@ class InvalidParamsService:
         for name, path, patch, expected in invalid_cases:
             with allure_step(f"Verify GE service POST rejects {name}"):
                 self.delete_ge_service_if_exists(session_id)
-                payload = copy.deepcopy(ge_service_payload(self.env_config, "legacy_invalid_ge"))
+                payload = copy.deepcopy(ge_service_payload(self.env_config, "legacy_invalid_ge", ge_template=ge_template))
                 deep_merge(payload, patch)
                 response = self.api_client.request("POST", path, session=session_id, json=payload)
                 assert_failure_contains(response, expected)
@@ -147,25 +177,7 @@ class InvalidParamsService:
                 assert_failure_contains(response, expected)
 
     def ensure_profile_exists(self, session_id: str, profilename: str, seen=None) -> None:
-        definition = profile_definition_by_name(profilename)
-        if definition is None:
-            pytest.skip(f"No converted profile data found for prerequisite profile {profilename}.")
-        seen = seen or set()
-        key = (definition["profiletype"], definition["profilename"])
-        if key in seen:
-            return
-        seen.add(key)
-
-        for dependency in profile_refs(definition.get("post_profile_info", {})):
-            self.ensure_profile_exists(session_id, dependency, seen)
-
-        path = f"/profile/{definition['profiletype']}/{definition['profilename']}"
-        existing = self.api_client.request("GET", path, session=session_id)
-        if existing.retstatus == "Success":
-            return
-        created = self.api_client.request("POST", path, session=session_id, json={"Content": definition.get("post_profile_info", {})})
-        if created.retstatus != "Success":
-            pytest.skip(f"Cannot create prerequisite profile {profilename}: {format_response_summary(created)}")
+        self.profile_service.ensure_prerequisite_profile(session_id, profilename, seen=seen)
 
     def delete_ont_service_if_exists(self, session_id: str) -> None:
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
@@ -188,15 +200,26 @@ class InvalidParamsService:
             time.sleep(interval)
         raise AssertionError(f"ONT service was not removed before invalid-param check. Last response: {format_response_summary(last)}")
 
-    def delete_ge_service_if_exists(self, session_id: str) -> None:
+    def delete_ge_service_if_exists(self, session_id: str, timeout: int = 120, interval: int = 5) -> None:
         dut = self.env_config.dut
         port_path = f"/geservice/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
         existing = self.api_client.request("GET", port_path, session=session_id)
         if existing.retstatus != "Success":
             return
         service_id = ge_service_id(existing.json)
-        if service_id:
-            self.api_client.request("DELETE", f"/geservice/{service_id}", session=session_id)
+        if not service_id:
+            return
+        self.api_client.request("DELETE", f"/geservice/{service_id}", session=session_id)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() <= deadline:
+            response = self.api_client.request("GET", port_path, session=session_id)
+            if response.retstatus == "Fail" and "No data found" in response.retresult:
+                return
+            time.sleep(interval)
+        raise AssertionError(
+            "GE service was not removed before invalid-param check. "
+            f"Last response: {format_response_summary(response)}"
+        )
 
 
 def assert_failure_contains(response, expected_text: str) -> None:
@@ -210,6 +233,10 @@ def assert_failure_contains(response, expected_text: str) -> None:
     )
 
 
+def _ont_sn_already_exists(response) -> bool:
+    return response.retstatus == "Fail" and "already exists" in response.retresult.lower()
+
+
 def deep_merge(target: dict, patch: dict) -> dict:
     for key, value in patch.items():
         if isinstance(value, dict) and isinstance(target.get(key), dict):
@@ -218,18 +245,6 @@ def deep_merge(target: dict, patch: dict) -> dict:
             target[key] = value
     return target
 
-
-def profile_refs(value):
-    refs = set()
-    if isinstance(value, dict):
-        for item in value.values():
-            refs.update(profile_refs(item))
-    elif isinstance(value, list):
-        for item in value:
-            refs.update(profile_refs(item))
-    elif isinstance(value, str) and value.startswith("#RestApi"):
-        refs.add(value)
-    return refs
 
 
 def ge_service_id(payload):

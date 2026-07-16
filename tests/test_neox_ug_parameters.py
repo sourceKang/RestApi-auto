@@ -14,10 +14,28 @@ from services.neox_config.service import (
     neox_profile_minmax_payload,
     nni_port_payload,
 )
-from services.neox_config.profiles import NEOX_PROFILE_NAMES
+from services.neox_config.profiles import NEOX_PROFILE_NAMES, NEOX_PROFILE_TYPES
 
 
 REFERENCE_FILE = NEOX_UG_PARAMETER_REFERENCE_FILE
+NEOX_PROFILE_OPENAPI_SCHEMAS = {
+    "IGMPGroupPrivilegeProfile": "IgmpGroupPrivilegeProfileForNeoX",
+    "ONTAclProfile": "OntACLProfileForNeoX",
+    "ONTAlarmProfile": "OntAlarmProfileForNeoX",
+    "ONTBandwidthProfile": "OntQosBandwidthProfileForNeoX",
+    "ONTMulticastProfile": "OntMulticastProfileForNeoX",
+    "ONTONTProfile": "OntONTProfileForNeoX",
+    "ONTSecurityProfile": "OntSecurityProfileForNeoX",
+    "ONTServiceProfile": "OntServiceProfileForNeoX",
+    "ONTTemplateProfile": "OntTemplateProfileForNeoX",
+    "ONTUNIProfile": "OntUNIProfileForNeoX",
+    "ONTVoipCommonProfile": "OntVoIPCommonProfileForNeoX",
+    "ONTVoipDialPlanProfile": "OntVoIPDialPlanProfileForNeoX",
+    "ONTVoipSipProfile": "OntVoIPSIPProfileForNeoX",
+    "RateLimitProfile": "RateLimitProfileForNeoX",
+    "ShapingProfile": "ShapingProfileForNeoX",
+    "WeightProfile": "WeightProfileForNeoX",
+}
 
 
 def test_neox_ug_reference_loads():
@@ -49,6 +67,28 @@ def test_ge_smoke_payload_fields_exist_in_openapi_schema():
     assert len(schema_content) >= len(smoke_content)
     assert set(smoke_content).issubset(schema_content)
     assert not uses_swagger_placeholder(smoke_content)
+
+
+def test_neox_profile_payload_keys_exist_in_openapi_schema():
+    schemas = load_baseline_contract()["schemas"]
+    failures = []
+
+    for profile_type in NEOX_PROFILE_TYPES:
+        schema_name = NEOX_PROFILE_OPENAPI_SCHEMAS[profile_type]
+        schema_content = schemas[schema_name]["properties"]["Content"]["properties"]
+        payloads = {
+            "override": {"Content": NEOX_CONTENT_OVERRIDES.get(profile_type, {})},
+            "min": neox_profile_minmax_payload(profile_type, "min"),
+            "max": neox_profile_minmax_payload(profile_type, "max"),
+        }
+
+        for label, payload in payloads.items():
+            content = payload.get("Content", {})
+            extra_keys = sorted(set(content) - set(schema_content))
+            if extra_keys:
+                failures.append(f"{profile_type}.{label}: {', '.join(extra_keys)} not in {schema_name}.Content")
+
+    assert not failures, "NeoX profile payload keys are not in OpenAPI schema:\n" + "\n".join(failures)
 
 
 def test_nni_smoke_payload_uses_documented_values():

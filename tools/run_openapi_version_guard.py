@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_SWAGGER_URL = "https://192.168.128.100:9116/netatlasemsapi/swagger-ui/index.html#/"
+DEFAULT_SWAGGER_URL = "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
 ROOT = Path(__file__).resolve().parents[1]
 
 

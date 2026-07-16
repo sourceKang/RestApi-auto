@@ -1,0 +1,418 @@
+# REST API profile test data.
+profiles:
+  ont_acl_profile_data:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:01",
+        "ontaclprofile_destport": "65535",
+        "ontaclprofile_destmask": "32",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "255",
+        "ontaclprofile_srcmask": "32",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:10:02",
+        "ontaclprofile_srcport": "65535",
+        "ontaclprofile_destip": "10.10.10.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.10.1"
+      }
+    patch_profile_info: |
+      {
+        "ontaclprofile_count_enable": "2",
+        "ontaclprofile_logging_enable": "2",
+        "ontaclprofile_srcmac": "10:10:10:10:10:03",
+        "ontaclprofile_destport": "1",
+        "ontaclprofile_destmask": "1",
+        "ontaclprofile_policy": "drop",
+        "ontaclprofile_protocol": "0",
+        "ontaclprofile_srcmask": "1",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:10:04",
+        "ontaclprofile_srcport": "1",
+        "ontaclprofile_destip": "10.10.10.4",
+        "ontaclprofile_interface": "lan",
+        "ontaclprofile_srcip": "10.10.10.3"
+      }
+    invalid_params_to_test: |
+      [
+        {
+          "ontaclprofile_count_enable": "#",
+          "expected_error": "The key ontaclprofile_count_enable value is invalid, please check it again."
+        },
+        {
+          "ontaclprofile_logging_enable": "12",
+          "expected_error": "The key ontaclprofile_logging_enable value is invalid, please check it again."
+        },
+        {
+          "ontaclprofile_srcmac": "1$0:1@0:10:10:10:01",
+          "expected_error": "[Invalid parameter]  Source MAC : MAC address format error."
+        },
+        {
+          "ontaclprofile_destport": "65!@535",
+          "expected_error": "[Invalid parameter] Destination Port: Range 1~65535"
+        },
+        {
+          "ontaclprofile_destmask": "3#!2",
+          "expected_error": "[Invalid parameter] Destination Mask: Range 1~32"
+        },
+        {
+          "ontaclprofile_policy": "*(A",
+          "expected_error": "The key ontaclprofile_policy value is invalid, please check it again."
+        },
+        {
+          "ontaclprofile_protocol": "2556",
+          "expected_error": "[Invalid parameter] Protocol: Range 0~255"
+        },
+        {
+          "ontaclprofile_srcmask": "99",
+          "expected_error": "[Invalid parameter] Source Mask: Range 1~32"
+        },
+        {
+          "ontaclprofile_enable": "df",
+          "expected_error": "The key ontaclprofile_enable value is invalid, please check it again."
+        },
+        {
+          "ontaclprofile_destmac": "10:10:10:10:FV:#2",
+          "expected_error": "[Invalid parameter]  Destination MAC : MAC address format error."
+        },
+        {
+          "ontaclprofile_srcport": "65535@",
+          "expected_error": "[Invalid parameter] Source Port: Range 1~65535"
+        },
+        {
+          "ontaclprofile_destip": "1000.10.10.2",
+          "expected_error": "[Invalid parameter] Destination IP: Invalid IP address"
+        },
+        {
+          "ontaclprofile_interface": "both@",
+          "expected_error": "The key ontaclprofile_interface value is invalid, please check it again."
+        },
+        {
+          "ontaclprofile_srcip": "10.1!.1!.1",
+          "expected_error": "[Invalid parameter] Source IP: Invalid IP address"
+        }
+      ]
+  ont_acl_profile_data_0:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_1'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:01",
+        "ontaclprofile_destport": "2001",
+        "ontaclprofile_destmask": "27",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "16",
+        "ontaclprofile_srcmask": "24",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:11",
+        "ontaclprofile_srcport": "1001",
+        "ontaclprofile_destip": "10.20.1.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.1.1"
+      }
+  ont_acl_profile_data_1:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_2'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:02",
+        "ontaclprofile_destport": "2002",
+        "ontaclprofile_destmask": "28",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "17",
+        "ontaclprofile_srcmask": "25",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:12",
+        "ontaclprofile_srcport": "1002",
+        "ontaclprofile_destip": "10.20.2.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.2.1"
+      }
+  ont_acl_profile_data_2:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_3'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:03",
+        "ontaclprofile_destport": "2003",
+        "ontaclprofile_destmask": "29",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "18",
+        "ontaclprofile_srcmask": "26",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:13",
+        "ontaclprofile_srcport": "1003",
+        "ontaclprofile_destip": "10.20.3.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.3.1"
+      }
+  ont_acl_profile_data_3:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_4'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:04",
+        "ontaclprofile_destport": "2004",
+        "ontaclprofile_destmask": "30",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "19",
+        "ontaclprofile_srcmask": "27",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:14",
+        "ontaclprofile_srcport": "1004",
+        "ontaclprofile_destip": "10.20.4.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.4.1"
+      }
+  ont_acl_profile_data_4:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_5'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:05",
+        "ontaclprofile_destport": "2005",
+        "ontaclprofile_destmask": "31",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "20",
+        "ontaclprofile_srcmask": "28",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:15",
+        "ontaclprofile_srcport": "1005",
+        "ontaclprofile_destip": "10.20.5.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.5.1"
+      }
+  ont_acl_profile_data_5:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_6'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:06",
+        "ontaclprofile_destport": "2006",
+        "ontaclprofile_destmask": "32",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "21",
+        "ontaclprofile_srcmask": "29",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:16",
+        "ontaclprofile_srcport": "1006",
+        "ontaclprofile_destip": "10.20.6.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.6.1"
+      }
+  ont_acl_profile_data_6:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_7'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:07",
+        "ontaclprofile_destport": "2007",
+        "ontaclprofile_destmask": "24",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "22",
+        "ontaclprofile_srcmask": "30",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:17",
+        "ontaclprofile_srcport": "1007",
+        "ontaclprofile_destip": "10.20.7.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.7.1"
+      }
+  ont_acl_profile_data_7:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_8'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:08",
+        "ontaclprofile_destport": "2008",
+        "ontaclprofile_destmask": "25",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "23",
+        "ontaclprofile_srcmask": "31",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:18",
+        "ontaclprofile_srcport": "1008",
+        "ontaclprofile_destip": "10.20.8.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.8.1"
+      }
+  ont_acl_profile_data_8:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_9'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:09",
+        "ontaclprofile_destport": "2009",
+        "ontaclprofile_destmask": "26",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "24",
+        "ontaclprofile_srcmask": "32",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:19",
+        "ontaclprofile_srcport": "1009",
+        "ontaclprofile_destip": "10.20.9.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.9.1"
+      }
+  ont_acl_profile_data_9:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_10'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0A",
+        "ontaclprofile_destport": "2010",
+        "ontaclprofile_destmask": "27",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "25",
+        "ontaclprofile_srcmask": "24",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1A",
+        "ontaclprofile_srcport": "1010",
+        "ontaclprofile_destip": "10.20.10.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.10.1"
+      }
+  ont_acl_profile_data_10:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_11'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0B",
+        "ontaclprofile_destport": "2011",
+        "ontaclprofile_destmask": "28",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "26",
+        "ontaclprofile_srcmask": "25",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1B",
+        "ontaclprofile_srcport": "1011",
+        "ontaclprofile_destip": "10.20.11.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.11.1"
+      }
+  ont_acl_profile_data_11:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_12'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0C",
+        "ontaclprofile_destport": "2012",
+        "ontaclprofile_destmask": "29",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "27",
+        "ontaclprofile_srcmask": "26",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1C",
+        "ontaclprofile_srcport": "1012",
+        "ontaclprofile_destip": "10.20.12.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.12.1"
+      }
+  ont_acl_profile_data_12:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_13'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0D",
+        "ontaclprofile_destport": "2013",
+        "ontaclprofile_destmask": "30",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "28",
+        "ontaclprofile_srcmask": "27",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1D",
+        "ontaclprofile_srcport": "1013",
+        "ontaclprofile_destip": "10.20.13.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.13.1"
+      }
+  ont_acl_profile_data_13:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_14'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0E",
+        "ontaclprofile_destport": "2014",
+        "ontaclprofile_destmask": "31",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "29",
+        "ontaclprofile_srcmask": "28",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1E",
+        "ontaclprofile_srcport": "1014",
+        "ontaclprofile_destip": "10.20.14.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.14.1"
+      }
+  ont_acl_profile_data_14:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_15'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:0F",
+        "ontaclprofile_destport": "2015",
+        "ontaclprofile_destmask": "32",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "30",
+        "ontaclprofile_srcmask": "29",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:1F",
+        "ontaclprofile_srcport": "1015",
+        "ontaclprofile_destip": "10.20.15.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.15.1"
+      }
+  ont_acl_profile_data_15:
+    profiletype: 'ONTAclProfile'
+    profilename: '#RestApi_ontAclProfile_16'
+    post_profile_info: |
+      {
+        "ontaclprofile_count_enable": "1",
+        "ontaclprofile_logging_enable": "1",
+        "ontaclprofile_srcmac": "10:10:10:10:10:10",
+        "ontaclprofile_destport": "2016",
+        "ontaclprofile_destmask": "24",
+        "ontaclprofile_policy": "trust",
+        "ontaclprofile_protocol": "31",
+        "ontaclprofile_srcmask": "30",
+        "ontaclprofile_enable": "1",
+        "ontaclprofile_destmac": "10:10:10:10:20:20",
+        "ontaclprofile_srcport": "1016",
+        "ontaclprofile_destip": "10.20.16.2",
+        "ontaclprofile_interface": "both",
+        "ontaclprofile_srcip": "10.10.16.1"
+      }

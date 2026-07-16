@@ -369,6 +369,47 @@ def neox_records() -> Iterable[TestLinkCaseBackfill]:
 
 
 def neox_config_backfill(case_id: str, name: str) -> TestLinkCaseBackfill:
+    if case_id == "EMS1-7223":
+        return TestLinkCaseBackfill(
+            external_id=case_id,
+            name=name,
+            summary="Verify applying the NeoX SFU provision template to an ONT through REST API.",
+            preconditions="Run with `--run-neox-config`; target node, ONT SN/id, REST readwrite account, and CLI credentials are configured. This testcase creates NeoX profile data and changes ONT configuration in a controlled test environment.",
+            steps=[
+                TestLinkStep(
+                    1,
+                    "Verify that the NeoX target data, ONT SN/id, REST session, and CLI connectivity are available.",
+                    "The target data is complete, the REST session is valid, and the node is reachable.",
+                ),
+                TestLinkStep(
+                    2,
+                    "Create or ensure the prerequisite NeoX profiles through REST API: bandwidth profile, security profile, service profiles, UNI profile, and template profile.",
+                    "Each profile REST request returns success, and the SFU template profile references the required prerequisite profiles.",
+                ),
+                TestLinkStep(
+                    3,
+                    "Apply `#RestApi_provision_temp_SFU` to the target ONT through `POST /configNeoXSeries/interface/remote/{device}/{slot}/{port}/{ont}`.",
+                    "The REST API returns success for the ONT configuration request.",
+                ),
+                TestLinkStep(
+                    4,
+                    "Poll `GET /ont/sn/{sn}` until the ONT description and template name are visible in the REST readback.",
+                    "The REST readback contains the target ONT id, SN, `REST_API_PROVISION_TEMPLATE_SFU`, and `#RestApi_provision_temp_SFU`.",
+                ),
+                TestLinkStep(
+                    5,
+                    "Verify the ONT configuration through NeoX CLI show commands.",
+                    "The CLI output contains the target remote XONT, SN, description, admin state, and template name.",
+                ),
+                TestLinkStep(
+                    6,
+                    "Clean up the temporary ONT configuration and restore the baseline ONT state through the automation cleanup flow.",
+                    "Cleanup completes successfully and the environment is stable for subsequent tests.",
+                ),
+            ],
+            source="cases.neox_case_ids",
+            markers=["neox_config", "mutating", "readwrite", "ont", "provision_template_sfu"],
+        )
     scenario = neox_scenario(name)
     feature = neox_feature(name)
     if scenario == "clear":

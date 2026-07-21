@@ -28,6 +28,8 @@ class InvalidParamsService:
         invalid_cases = [
             ("invalid_ont_template", {"ontservice": {"data": {"templateprof": "#invalid_profile"}}}, "ONT Template not found."),
             ("dspir_below_minimum", {"ontservice": {"data": {"dspir": "127"}}}, "dspir: Range 128~10000000"),
+            ("dspir_above_maximum", {"ontservice": {"data": {"dspir": "10000001"}}}, "dspir: Range 128~10000000"),
+            ("dspir_long_integer", {"ontservice": {"data": {"dspir": "9" * 66}}}, "dspir: Range 128~10000000"),
             ("wifi5inactive1_invalid_value", {"ontservice": {"data": {"wifi5inactive1": "123invalid"}}}, "inactive value is error"),
             (
                 "wifi5ssid1_too_long",

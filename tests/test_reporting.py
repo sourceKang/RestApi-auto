@@ -103,8 +103,8 @@ def test_txt_report_aggregates_permission_cases_and_suppresses_internal_tests(mo
 def test_permission_summary_treats_skip_as_non_blocking_when_other_cases_pass(monkeypatch):
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-04-29_12-00-00"))
 
-    reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[port_list]", "readonly")
-    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[port_list]", "skipped", 0.05)
+    reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[unsupported_case]", "readonly")
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[unsupported_case]", "skipped", 0.05)
 
     reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "readonly")
     reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "passed", 0.07)

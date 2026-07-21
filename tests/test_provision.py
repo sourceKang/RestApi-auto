@@ -4,6 +4,7 @@ import pytest
 
 from cases.endpoint_cases import MUTATING_ENDPOINTS, READ_ENDPOINTS
 from tests.support.ge_cli_config import (
+    capture_ge_service_timeout_cli_diagnostic,
     monitor_ge_patch_transition,
     running_config_from_result,
     wait_for_ge_cli_config,
@@ -246,6 +247,11 @@ def test_put_ge_service_by_serviceid(
             )
         )
     except Exception as error:
+        capture_ge_service_timeout_cli_diagnostic(
+            env_config,
+            error,
+            attachment_name="EMS1-6662 PUT timeout CLI diagnostic",
+        )
         ge_service_workflow_state.fail_put(error)
         raise
 

@@ -28,10 +28,11 @@ them for your lab:
 - `configs/auth_accounts.yaml`: auth profiles and role-based accounts.
 
 Do not commit real passwords, tokens, devKeys or private lab credentials.
-Keep local-only credential changes out of commits, or replace them with
-placeholder/example values before sharing a branch. The NeoX test data under
-`configs/neox_config/` is part of the runnable test dataset and should be kept
-with the code that consumes it.
+Keep the canonical YAML files shareable by storing local credentials in the
+ignored `.env` file. Values such as `${EMS_AUTH_READWRITE_DEFAULT_USERNAME:-example}`
+resolve from the process environment first, then `.env`, and finally the public
+fallback after `:-`. The NeoX test data under `configs/neox_config/` is part of
+the runnable test dataset and should be kept with the code that consumes it.
 
 ## Project Layout
 
@@ -124,10 +125,14 @@ Run multiple nodes sequentially with per-node logs and a summary:
 ```powershell
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3,NODE6 --run-full-testcases
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --run-full-testcases --dry-run
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --jobs 2 --auth-profiles default,ems_local_rw2 --run-full-testcases
 ```
 
 The multi-node runner still invokes pytest per node. NeoX-only config options
-are kept for NeoX chassis and omitted for non-NeoX chassis.
+are kept for NeoX chassis and omitted for non-NeoX chassis. Parallel node runs
+must assign a distinct auth profile to each node because logging in with the same
+EMS account can invalidate an active session. Keep `--jobs 1` when distinct
+accounts are unavailable.
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.

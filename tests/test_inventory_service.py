@@ -8,7 +8,7 @@ import pytest
 from models.api import ApiResponse
 from services.inventory.service import InventoryService, _assert_port_fields
 from tests.support.fixtures import prepare_ont_inventory_with_session_rotation
-from tests.support.ont_workflow import OntServiceWorkflowState
+from tests.support.ont_workflow import OntInventoryPreconditionError, OntServiceWorkflowState
 
 
 def test_port_inventory_accepts_operation_status_without_provisioning_status():
@@ -60,6 +60,7 @@ def test_port_inventory_accepts_operation_status_without_provisioning_status():
 
     _assert_port_fields(item, env_config)
 
+
 class FakeApiClient:
     def __init__(self, responses):
         self.responses = list(responses)
@@ -72,6 +73,75 @@ class FakeApiClient:
 
 def api_response(retstatus, retresult=""):
     return ApiResponse(200, {"retstatus": retstatus, "retresult": retresult}, "", 0, "id", "GET", "url")
+
+
+def ont_diagnostic_env():
+    return SimpleNamespace(
+        dut=SimpleNamespace(
+            node_key="NODE3",
+            device_name="Taiwan_NeoX-03_169.58",
+            slot_id="3",
+            port_id="16",
+            ont_id="1",
+            ont_sn="DYNAMIC_SN",
+            ont_description="dynamic_ont",
+        )
+    )
+
+
+def test_wait_for_ont_service_visibility_recovers_on_third_observation():
+    missing = api_response("Fail", "No data found")
+    visible = api_response("Success")
+    client = FakeApiClient([missing, visible])
+    service = InventoryService(client, ont_diagnostic_env())
+    sleeps = []
+
+    result = service.wait_for_ont_service_visibility(
+        "session",
+        missing,
+        attempts=3,
+        interval=5,
+        sleeper=sleeps.append,
+    )
+
+    assert result is visible
+    assert sleeps == [5, 5]
+    assert [method for method, _, _ in client.calls] == ["GET", "GET"]
+
+
+def test_collect_ont_consistency_diagnostic_classifies_partial_visibility_without_mutation():
+    visible = ApiResponse(
+        200,
+        {
+            "retstatus": "Success",
+            "retval": {"ontinfo": {"SN": "DYNAMIC_SN"}},
+        },
+        "",
+        0,
+        "id",
+        "GET",
+        "url",
+    )
+    client = FakeApiClient([visible] + [api_response("Fail", "No data found")] * 5)
+    service = InventoryService(client, ont_diagnostic_env())
+
+    evidence = service.collect_ont_consistency_diagnostic("session")
+
+    assert evidence["classification"] == "ontservice_missing_but_ont_inventory_visible"
+    assert evidence["visible_paths"] == ["ont_by_device"]
+    assert len(client.calls) == 6
+    assert {method for method, _, _ in client.calls} == {"GET"}
+
+
+def test_collect_ont_consistency_diagnostic_classifies_node_inventory_missing():
+    client = FakeApiClient([api_response("Fail", "No data found")] * 6)
+    service = InventoryService(client, ont_diagnostic_env())
+
+    evidence = service.collect_ont_consistency_diagnostic("session")
+
+    assert evidence["classification"] == "ems_node_inventory_not_visible"
+    assert evidence["visible_paths"] == []
+    assert {method for method, _, _ in client.calls} == {"GET"}
 
 
 def test_ont_service_poll_fails_immediately_when_session_loses_authorization():
@@ -166,6 +236,7 @@ def test_upsert_ont_service_reconciles_get_post_visibility_race():
         ("PUT", "/ontservice/DYNAMIC_SN"),
     ]
 
+
 class FakeSessionManager:
     def __init__(self):
         self.events = []
@@ -183,10 +254,22 @@ class FakeSessionManager:
 
 
 class FakeInventoryForPreparation:
-    def __init__(self, existing, *, template="#Formal", service_states=None):
+    def __init__(
+        self,
+        existing,
+        *,
+        template="#Formal",
+        service_states=None,
+        visibility_response=None,
+        diagnostic=None,
+    ):
         self.existing = existing
         self.template = template
         self.service_states = list(service_states or [{"state": "Success"}])
+        self.visibility_response = visibility_response or existing
+        self.diagnostic = diagnostic or {
+            "classification": "ems_node_inventory_not_visible"
+        }
         self.calls = []
 
     def get_ont_service(self, session_id):
@@ -199,6 +282,14 @@ class FakeInventoryForPreparation:
     def ont_service_template(self, response):
         self.calls.append(("service_template",))
         return self.template
+
+    def wait_for_ont_service_visibility(self, session_id, initial_response, **kwargs):
+        self.calls.append(("service_visibility", session_id, kwargs["attempts"], kwargs["interval"]))
+        return self.visibility_response
+
+    def collect_ont_consistency_diagnostic(self, session_id):
+        self.calls.append(("consistency_diagnostic", session_id))
+        return self.diagnostic
 
     def upsert_ont_service(self, session_id, ont_template):
         self.calls.append(("upsert", session_id, str(ont_template)))
@@ -285,6 +376,7 @@ def test_prepare_ont_inventory_waits_for_cli_is_then_rest_sync_after_workflow_po
     assert ("inventory", "session-2", "#Temporary", 240) in inventory.calls
     assert state.inventory_ready is True
 
+
 def test_prepare_ont_inventory_stops_when_existing_service_is_not_is():
     session_manager = FakeSessionManager()
     inventory = FakeInventoryForPreparation(api_response("Success"), template="#Formal")
@@ -304,12 +396,18 @@ def test_prepare_ont_inventory_stops_when_existing_service_is_not_is():
     assert not any(call[0] == "upsert" for call in inventory.calls)
 
 
-def test_prepare_ont_inventory_stops_when_service_is_missing_but_cli_is_is():
-    inventory = FakeInventoryForPreparation(api_response("Fail", "No data found"))
+def test_prepare_ont_inventory_blocks_cli_only_ont_as_precondition():
+    inventory = FakeInventoryForPreparation(
+        api_response("Fail", "No data found"),
+        diagnostic={
+            "classification": "ontservice_missing_but_ont_inventory_visible",
+            "visible_paths": ["ont_by_sn"],
+        },
+    )
     services = SimpleNamespace(inventory=inventory, provision=FakeProvisionForPreparation())
     template_factory_calls = []
 
-    with pytest.raises(AssertionError, match="refusing to create a duplicate"):
+    with pytest.raises(OntInventoryPreconditionError, match="CLI-only ONT is visible"):
         prepare_ont_inventory_with_session_rotation(
             services,
             FakeSessionManager(),
@@ -320,6 +418,48 @@ def test_prepare_ont_inventory_stops_when_service_is_missing_but_cli_is_is():
 
     assert template_factory_calls == []
     assert not any(call[0] == "upsert" for call in inventory.calls)
+    assert ("service_visibility", "session-2", 3, 5) in inventory.calls
+    assert ("consistency_diagnostic", "session-2") in inventory.calls
+
+
+def test_prepare_ont_inventory_fails_when_cli_is_but_node_inventory_is_missing():
+    inventory = FakeInventoryForPreparation(api_response("Fail", "No data found"))
+    services = SimpleNamespace(inventory=inventory, provision=FakeProvisionForPreparation())
+
+    with pytest.raises(AssertionError, match="classification=ems_node_inventory_not_visible") as raised:
+        prepare_ont_inventory_with_session_rotation(
+            services,
+            FakeSessionManager(),
+            SimpleNamespace(readwrite=object()),
+            lambda: "#Temporary",
+            cli_status_reader=lambda env: cli_status("IS"),
+        )
+
+    assert type(raised.value) is AssertionError
+    assert not any(call[0] == "upsert" for call in inventory.calls)
+
+
+def test_prepare_ont_inventory_continues_when_rest_visibility_recovers():
+    inventory = FakeInventoryForPreparation(
+        api_response("Fail", "No data found"),
+        visibility_response=api_response("Success"),
+        template="#Recovered",
+    )
+    services = SimpleNamespace(inventory=inventory, provision=FakeProvisionForPreparation())
+    template_factory_calls = []
+
+    result = prepare_ont_inventory_with_session_rotation(
+        services,
+        FakeSessionManager(),
+        SimpleNamespace(readwrite=object()),
+        lambda: template_factory_calls.append(True) or "#Temporary",
+        cli_status_reader=lambda env: cli_status("IS"),
+    )
+
+    assert result == "#Recovered"
+    assert template_factory_calls == []
+    assert not any(call[0] == "upsert" for call in inventory.calls)
+    assert not any(call[0] == "consistency_diagnostic" for call in inventory.calls)
 
 
 def test_prepare_ont_inventory_creates_only_when_service_missing_and_cli_unregistered():

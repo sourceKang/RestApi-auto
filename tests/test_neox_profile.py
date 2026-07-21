@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -11,18 +12,20 @@ from typing import Any
 
 import pytest
 
+from cases.boundary_cases import numeric_boundary_negative_cases
 from models.api import SessionRole
 from services.neox_config.cli_expectations import normalize_cli_output
 from services.neox_config.profile_expectations import neox_profile_cli_field_mismatches, neox_profile_expected_tokens
 from services.neox_config.service import (
     NEOX_PROFILE_READWRITE_TYPES,
+    neox_profile_accepted_cases_config,
     neox_profile_cli_verify_case,
     neox_profile_negative_cases_config,
 )
 from services.neox_config.profile_api import delete_profile_if_exists
 from tests.support.neox_cli_verification import neox_cli_credentials, run_neox_cli_commands, write_neox_cli_verify_report
 from tests.support.connectivity import assert_ping_reachable
-from utils.assertions import assert_api_success
+from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
 
 
@@ -50,22 +53,33 @@ def test_neox_profile_min_create_readwrite(
         neox_config_service.verify_node3_target()
         ssh_username, ssh_password = neox_cli_credentials(env_config, "PROFILE")
         path = neox_config_service.neox_profile_path(profile_type)
-        payload = neox_config_service.neox_profile_boundary_payload(profile_type, "min")
-        neox_config_service.ensure_neox_profile_dependencies(readwrite_session, cleanup_registry, profile_type, payload)
+        accepted_cases = [
+            {
+                "name": "min",
+                "payload": neox_config_service.neox_profile_boundary_payload(profile_type, "min"),
+            },
+            *neox_profile_accepted_cases_config(profile_type),
+        ]
         cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
-        delete_profile_if_exists(api_client, path, readwrite_session)
-        response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload, phase="min")
-        assert_api_success(response)
-        verify_neox_profile_cli(
-            neox_config_service,
-            env_config,
-            ssh_username,
-            ssh_password,
-            profile_type,
-            "min",
-            payload,
-            response,
-        )
+        for accepted_case in accepted_cases:
+            phase = str(accepted_case["name"])
+            payload = accepted_case["payload"]
+            neox_config_service.ensure_neox_profile_dependencies(
+                readwrite_session, cleanup_registry, profile_type, payload
+            )
+            delete_profile_if_exists(api_client, path, readwrite_session)
+            response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload, phase=phase)
+            assert_api_success(response)
+            verify_neox_profile_cli(
+                neox_config_service,
+                env_config,
+                ssh_username,
+                ssh_password,
+                profile_type,
+                "min",
+                payload,
+                response,
+            )
 
 
 @pytest.mark.mutating
@@ -162,8 +176,130 @@ def test_neox_profile_error_readwrite(
         )
 
 
-def neox_profile_negative_cases(profile_type: str) -> list[dict[str, Any]]:
-    cases = neox_profile_negative_cases_config(profile_type)
+@pytest.mark.mutating
+@pytest.mark.readwrite
+def test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected(
+    neox_config_service,
+    api_client,
+    env_config,
+    session_manager,
+    readwrite_session,
+    cleanup_registry,
+    request,
+):
+    profile_type = "IGMPGroupPrivilegeProfile"
+    case_name = "grpbandwidth1_below_minimum_cli_rest_cli"
+    with neox_profile_connectivity_guard(
+        env_config,
+        profile_type,
+        case_name,
+        neox_profile_delay_seconds(request),
+    ):
+        neox_config_service.verify_node3_target()
+        negative_case = next(
+            (
+                case
+                for case in neox_profile_negative_cases_config(profile_type)
+                if case.get("name") == case_name and case.get("standalone")
+            ),
+            None,
+        )
+        if negative_case is None:
+            pytest.fail(f"Missing standalone NeoX profile case: {case_name}")
+
+        profile_name = str(negative_case["profile_name"])
+        path = neox_config_service.neox_profile_path_for_name(profile_type, profile_name)
+        payload = negative_case["payload"]
+        ssh_username, ssh_password = neox_cli_credentials(env_config, "IGMP bandwidth below minimum")
+        credentials = (ssh_username, ssh_password)
+        show_command = f"show igmp-mld group-privilege-profile {profile_name}"
+        cli_cleanup_commands = [
+            "config",
+            f"no igmp-mld group-privilege-profile {profile_name}",
+            "exit",
+        ]
+        cli_baseline_commands = [
+            "config",
+            f"igmp-mld group-privilege-profile {profile_name} index 1",
+            "bandwidth -1",
+            "exit",
+            "exit",
+            show_command,
+        ]
+        cleanup_registry.add(
+            lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session)
+        )
+        cleanup_registry.add(lambda: run_neox_cli_commands(env_config, credentials, cli_cleanup_commands))
+
+        try:
+            run_neox_cli_commands(env_config, credentials, cli_cleanup_commands)
+            cli_baseline = run_neox_cli_commands(env_config, credentials, cli_baseline_commands)
+            assert "Invalid input detected" in cli_baseline["bandwidth -1"], cli_baseline["bandwidth -1"]
+            assert re.search(r"(?im)^bandwidth\s*:\s*0\s*$", cli_baseline[show_command]), cli_baseline[
+                show_command
+            ]
+
+            run_neox_cli_commands(env_config, credentials, cli_cleanup_commands)
+            cli_after_baseline_cleanup = run_neox_cli_commands(env_config, credentials, [show_command])[show_command]
+            assert re.search(r"no such data|not found", cli_after_baseline_cleanup, re.IGNORECASE), (
+                cli_after_baseline_cleanup
+            )
+
+            delete_profile_if_exists(api_client, path, readwrite_session)
+            response = post_neox_profile(
+                api_client,
+                profile_type,
+                path,
+                readwrite_session,
+                payload,
+                phase=case_name,
+            )
+            assert_invalid_profile_post_did_not_succeed(profile_type, negative_case, response)
+            assert_neox_profile_error_response(negative_case, response)
+
+            cli_after_rest = run_neox_cli_commands(env_config, credentials, [show_command])[show_command]
+            attach_json(
+                "IGMP bandwidth -1 CLI-REST-CLI evidence",
+                {
+                    "case": case_name,
+                    "path": path,
+                    "cli_baseline": cli_baseline,
+                    "rest_response": {
+                        "status_code": response.status_code,
+                        "retstatus": response.retstatus,
+                        "retresult": response.retresult,
+                    },
+                    "ground_truth": "CLI show after rejected REST POST must report no such data/not found.",
+                    "cli_after_rest": cli_after_rest,
+                },
+            )
+            assert re.search(r"no such data|not found", cli_after_rest, re.IGNORECASE), cli_after_rest
+            assert_neox_profile_node_reachable(env_config, profile_type, case_name, "after_cli_ground_truth")
+        finally:
+            try:
+                delete_profile_if_exists(api_client, path, readwrite_session)
+            finally:
+                run_neox_cli_commands(env_config, credentials, cli_cleanup_commands)
+
+
+def neox_profile_negative_cases(neox_config_service, profile_type: str) -> list[dict[str, Any]]:
+    configured_cases = neox_profile_negative_cases_config(profile_type)
+    standalone_boundary_keys = {
+        (str(case.get("field")), str((case.get("boundary") or {}).get("kind")))
+        for case in configured_cases
+        if case.get("standalone")
+    }
+    cases = [case for case in configured_cases if not case.get("standalone")]
+    generated_cases = numeric_boundary_negative_cases(
+        neox_config_service.neox_profile_boundary_payload(profile_type, "min"),
+        neox_config_service.neox_profile_boundary_payload(profile_type, "max"),
+    )
+    cases.extend(
+        case
+        for case in generated_cases
+        if (str(case.get("field")), str((case.get("boundary") or {}).get("kind")))
+        not in standalone_boundary_keys
+    )
     if not cases:
         pytest.fail(f"No NeoX profile negative cases configured for {profile_type}")
     return cases
@@ -182,11 +318,26 @@ def verify_neox_profile_error_cases(
     cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
     observations = []
     failures = []
-    for negative_case in neox_profile_negative_cases(profile_type):
+    for negative_case in neox_profile_negative_cases(neox_config_service, profile_type):
         payload = negative_case["payload"]
+        if negative_case.get("generated_from") == "declared_numeric_minmax":
+            neox_config_service.ensure_neox_profile_dependencies(
+                readwrite_session,
+                cleanup_registry,
+                profile_type,
+                payload,
+            )
         delete_profile_if_exists(api_client, path, readwrite_session)
-        response = post_neox_profile(api_client, profile_type, path, readwrite_session, payload, phase="error")
+        response = post_neox_profile(
+            api_client,
+            profile_type,
+            path,
+            readwrite_session,
+            payload,
+            phase=str(negative_case.get("name") or "error"),
+        )
         assert_invalid_profile_post_did_not_succeed(profile_type, negative_case, response)
+
         observation = {
             "case": negative_case.get("name"),
             "field": negative_case.get("field"),
@@ -209,7 +360,35 @@ def verify_neox_profile_error_cases(
         try:
             assert_neox_profile_error_response(negative_case, response)
         except AssertionError as error:
-            failures.append({"case": negative_case.get("name"), "error": str(error), "observation": observation})
+            failures.append(
+                {
+                    "case": negative_case.get("name"),
+                    "phase": "response_contract",
+                    "error": str(error),
+                    "observation": observation,
+                }
+            )
+
+        residual = api_client.request("GET", path, session=readwrite_session)
+        observation["residual"] = {
+            "status_code": residual.status_code,
+            "retstatus": residual.retstatus,
+            "retresult": residual.retresult,
+        }
+        try:
+            assert_api_failure(
+                residual,
+                accepted_messages=("no data", "not found", "does not exist", "invalid parameter"),
+            )
+        except AssertionError as error:
+            failures.append(
+                {
+                    "case": negative_case.get("name"),
+                    "phase": "residual_profile",
+                    "error": str(error),
+                    "observation": observation,
+                }
+            )
 
     report_path = write_neox_profile_error_report(
         neox_config_service,

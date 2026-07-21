@@ -31,7 +31,6 @@ READ_ENDPOINTS = [
     EndpointCase("slot_list", "GET", "inventory", "/slot", case_id="EMS1-6644"),
     EndpointCase("slot_by_device", "GET", "inventory", lambda env: f"/slot/{env.dut.device_name}", case_id="EMS1-6680"),
     EndpointCase("slot_by_id", "GET", "inventory", lambda env: f"/slot/{env.dut.device_name}/{env.dut.slot_id}", case_id="EMS1-6681"),
-    EndpointCase("port_list", "GET", "inventory", "/port"),
     EndpointCase("port_by_device", "GET", "inventory", lambda env: f"/port/{env.dut.device_name}", case_id="EMS1-6682"),
     EndpointCase("port_by_slot", "GET", "inventory", lambda env: f"/port/{env.dut.device_name}/{env.dut.ge_slot_id}", case_id="EMS1-6683"),
     EndpointCase("port_by_id", "GET", "inventory", lambda env: f"/port/{env.dut.device_name}/{env.dut.ge_slot_id}/{env.dut.ge_port_id}", case_id="EMS1-6684"),

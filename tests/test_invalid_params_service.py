@@ -85,3 +85,33 @@ def test_post_ont_invalid_fails_when_sn_reservation_never_clears(monkeypatch):
 
     assert cleanup_calls == ["session"]
     assert len(service.api_client.calls) == 4
+
+
+def test_ont_invalid_matrix_includes_below_above_and_long_integer(monkeypatch):
+    service = service_with([])
+    captured_payloads = []
+    combined_error = (
+        "ONT Template not found. dspir: Range 128~10000000 "
+        "inactive value is error maximum length is 31"
+    )
+
+    monkeypatch.setattr(service, "delete_ont_service_if_exists", lambda _session_id: None)
+    monkeypatch.setattr(
+        "services.invalid_params.service.ont_service_payload",
+        lambda env, name, ont_template=None: {"ontservice": {"data": {}}},
+    )
+
+    def reject(_session_id, _path, payload, **_kwargs):
+        captured_payloads.append(payload)
+        return response(combined_error)
+
+    monkeypatch.setattr(service, "post_ont_invalid_after_sn_release", reject)
+
+    service.verify_ont_service_post_invalid_parameters("session", ont_template="#Temporary")
+
+    dspir_values = [
+        payload["ontservice"]["data"]["dspir"]
+        for payload in captured_payloads
+        if "dspir" in payload["ontservice"]["data"]
+    ]
+    assert dspir_values == ["127", "10000001", "9" * 66]

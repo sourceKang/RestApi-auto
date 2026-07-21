@@ -28,6 +28,7 @@ NEOX_CONFIG_DIR = CONFIGS_DIR / "neox_config"
 NEOX_GE_CONFIG_DIR = NEOX_CONFIG_DIR / "ge"
 NEOX_NNI_CONFIG_DIR = NEOX_CONFIG_DIR / "nni"
 NEOX_VLAN_CONFIG_DIR = NEOX_CONFIG_DIR / "vlan"
+NEOX_VLAN_API_PATH_PREFIX = "/configNeoXSeries/vlan"
 NEOX_ONT_CONFIG_DIR = NEOX_CONFIG_DIR / "ont"
 NEOX_PROFILE_CONFIG_DIR = NEOX_CONFIG_DIR / "profiles"
 NEOX_REFERENCE_CONFIG_DIR = NEOX_CONFIG_DIR / "reference"
@@ -326,11 +327,11 @@ class NeoXConfigService:
 
     def vlan_path(self) -> str:
         target = self.target()
-        return f"/configNeoxSeries/vlan/{target.device_name}/{target.vlan_id}"
+        return f"{NEOX_VLAN_API_PATH_PREFIX}/{target.device_name}/{target.vlan_id}"
 
     def vlan_path_for_vid(self, vid: str) -> str:
         target = self.target()
-        return f"/configNeoxSeries/vlan/{target.device_name}/{vid}"
+        return f"{NEOX_VLAN_API_PATH_PREFIX}/{target.device_name}/{vid}"
 
     def neox_profile_path(self, profile_type: str) -> str:
         target = self.target()
@@ -629,6 +630,10 @@ def neox_profile_config(profile_type: str) -> dict[str, Any]:
 
 def neox_profile_minmax_payload(profile_type: str, boundary: str) -> dict[str, Any]:
     return copy.deepcopy(neox_profile_config(profile_type)[boundary])
+
+
+def neox_profile_accepted_cases_config(profile_type: str) -> list[dict[str, Any]]:
+    return copy.deepcopy(neox_profile_config(profile_type).get("accepted_cases", []))
 
 
 def neox_profile_cli_verify_case(profile_type: str, boundary: str) -> dict[str, Any]:

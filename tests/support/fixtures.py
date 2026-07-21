@@ -12,7 +12,7 @@ from tests.support.options import neox_parallel_worker_auth_profile
 from tests.support.ge_cli_config import wait_for_ge_cli_config
 from tests.support.ge_workflow import GeServiceWorkflowState
 from tests.support.ont_cli_status import read_ont_cli_status, wait_for_ont_cli_is
-from tests.support.ont_workflow import OntServiceWorkflowState
+from tests.support.ont_workflow import OntInventoryPreconditionError, OntServiceWorkflowState
 from clients import EmsApiClient
 from config_loader import load_environment
 from models.api import SessionRole
@@ -204,6 +204,23 @@ def prepare_ont_inventory_with_session_rotation(
         existing = services.inventory.get_ont_service(session_id)
 
     cli_status = cli_status_reader(env_config)
+    if (
+        existing.retstatus != "Success"
+        and services.inventory.ont_service_is_missing(existing)
+        and cli_status.state == "IS"
+    ):
+        with session_manager.credentials_session(env_config.readwrite) as session_id:
+            existing = services.inventory.wait_for_ont_service_visibility(
+                session_id,
+                existing,
+                attempts=3,
+                interval=5,
+            )
+            if services.inventory.ont_service_is_missing(existing):
+                diagnostic = services.inventory.collect_ont_consistency_diagnostic(session_id)
+            else:
+                diagnostic = None
+
     if existing.retstatus == "Success":
         existing_template = services.inventory.ont_service_template(existing)
         if workflow_state is not None and workflow_state.post_succeeded:
@@ -236,8 +253,15 @@ def prepare_ont_inventory_with_session_rotation(
                 f"{existing.retstatus} {existing.retresult}"
             )
         if cli_status.state == "IS":
+            if diagnostic["classification"] == "ontservice_missing_but_ont_inventory_visible":
+                raise OntInventoryPreconditionError(
+                    "CLI-only ONT is visible in inventory but has no EMS ONT service record; "
+                    "run EMS1-6666 POST first or use a dedicated disposable ONT."
+                )
             raise AssertionError(
-                "CLI reports IS but GET ONT service returned no data; refusing to create a duplicate service."
+                "CLI reports IS but GET ONT service remained unavailable after bounded retries; "
+                "refusing to create a duplicate service. "
+                f"classification={diagnostic['classification']}"
             )
         if cli_status.state != "UnReg":
             raise AssertionError(
@@ -302,6 +326,11 @@ def prepared_ont_inventory(services, session_manager, env_config, request, ont_s
             "Blocked because EMS1-6666 POST failed: "
             f"{ont_service_workflow_state.post_failure}"
         )
+    if ont_service_workflow_state.readiness_precondition:
+        pytest.skip(
+            "Blocked because ONT inventory precondition was not met: "
+            f"{ont_service_workflow_state.readiness_precondition}"
+        )
     if ont_service_workflow_state.readiness_failure:
         pytest.skip(
             "Blocked because ONT workflow readiness failed: "
@@ -317,6 +346,9 @@ def prepared_ont_inventory(services, session_manager, env_config, request, ont_s
             lambda: request.getfixturevalue("temporary_ont_template"),
             workflow_state=ont_service_workflow_state,
         )
+    except OntInventoryPreconditionError as error:
+        ont_service_workflow_state.block_readiness_precondition(error)
+        pytest.skip(f"ONT inventory precondition not met: {error}")
     except AssertionError as error:
         ont_service_workflow_state.fail_readiness(error)
         pytest.fail(f"ONT inventory setup failed: {error}")

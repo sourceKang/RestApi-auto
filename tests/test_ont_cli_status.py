@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from tests.support import ont_cli_status
-from tests.support.ont_cli_status import OntCliStatus, parse_ont_cli_status, wait_for_ont_cli_is
+from tests.support.ont_cli_status import OntCliStatus, parse_ont_cli_status, wait_for_ont_cli_is, wait_for_ont_cli_state
 
 
 def test_parse_ont_cli_status_reads_is_from_remote_xont_status():
@@ -38,6 +38,7 @@ def test_parse_ont_cli_status_reads_status_delayed_into_second_command_output():
 
     assert status.state == "IS"
     assert status.source == "remote-xont-status"
+
 
 def test_parse_ont_cli_status_reads_specific_yaml_sn_from_unregistered_table():
     status = parse_ont_cli_status(
@@ -76,6 +77,26 @@ def test_wait_for_ont_cli_is_accepts_transition_from_unregistered_to_is():
     )
 
     assert result.state == "IS"
+
+
+def test_wait_for_ont_cli_state_accepts_transition_from_is_to_unregistered():
+    statuses = iter(
+        [
+            OntCliStatus("IS", "remote-xont-status", {}),
+            OntCliStatus("UnReg", "xpon-unreg", {}),
+        ]
+    )
+
+    result = wait_for_ont_cli_state(
+        SimpleNamespace(),
+        "UnReg",
+        status_reader=lambda env: next(statuses),
+        timeout=1,
+        interval=0,
+    )
+
+    assert result.state == "UnReg"
+
 
 def test_ssh_credentials_prefer_explicit_dut_environment(monkeypatch):
     monkeypatch.setenv("DUT_SSH_USERNAME", "cli-user")

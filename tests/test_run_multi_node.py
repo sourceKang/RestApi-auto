@@ -224,6 +224,23 @@ def test_auth_profile_for_node_round_robins_profiles():
     assert run_multi_node.auth_profile_for_node(profiles, 2) == "default"
 
 
+def test_parallel_node_plans_reject_shared_auth_profile(tmp_path):
+    plans = [
+        run_multi_node.NodePlan(
+            node=node,
+            chassis="NeoX-03",
+            is_neox=True,
+            command=["python", "-m", "pytest"],
+            omitted_options=[],
+            auth_profile="default",
+        )
+        for node in ("NODE1", "NODE3")
+    ]
+
+    with pytest.raises(ValueError, match="distinct auth profile"):
+        run_multi_node.run_node_plans(plans, tmp_path, jobs=2)
+
+
 def test_run_node_plans_parallel_preserves_plan_order(monkeypatch, tmp_path):
     plans = [
         run_multi_node.NodePlan(
@@ -232,6 +249,7 @@ def test_run_node_plans_parallel_preserves_plan_order(monkeypatch, tmp_path):
             is_neox=False,
             command=["python", "-m", "pytest"],
             omitted_options=[],
+            auth_profile="default",
         ),
         run_multi_node.NodePlan(
             node="NODE3",
@@ -239,6 +257,7 @@ def test_run_node_plans_parallel_preserves_plan_order(monkeypatch, tmp_path):
             is_neox=True,
             command=["python", "-m", "pytest"],
             omitted_options=[],
+            auth_profile="ems_local_rw2",
         ),
     ]
     calls = []
@@ -264,6 +283,7 @@ def test_run_node_plans_parallel_preserves_plan_order(monkeypatch, tmp_path):
 
     assert [result.node for result in results] == ["NODE1", "NODE3"]
     assert sorted(calls) == [("NODE1", True), ("NODE3", True)]
+
 
 def test_run_node_plan_prints_preflight_progress(monkeypatch, tmp_path, capsys):
     plan = run_multi_node.NodePlan(

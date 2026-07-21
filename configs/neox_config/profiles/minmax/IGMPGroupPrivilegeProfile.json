@@ -3,13 +3,14 @@
                    "derived_from":  "configs/neox_config/profiles/minmax/",
                    "purpose":  "NeoX IGMPGroupPrivilegeProfile official min/max payload, CLI verification, and active negative cases for readwrite verification.",
                    "field_notes":  {
-                                       "igmpactive":  "Swagger/OpenAPI 20260614 uses enable/disable. NODE3 b7 clean CLI-first -\u003e REST igmpactive1..16=enable -\u003e CLI-after verification passed on 2026-06-29 (reports/device-verification/neox_profile_igmpactive_1_16_cli_first_rest_probe_20260629_175602.json). Official success max includes igmpactive*=enable; legacy value active is covered by the negative matrix."
+                                       "igmpactive":  "Swagger/OpenAPI 20260614 uses enable/disable. NODE3 b7 clean CLI-first -\u003e REST igmpactive1..16=enable -\u003e CLI-after verification passed on 2026-06-29 (reports/device-verification/neox_profile_igmpactive_1_16_cli_first_rest_probe_20260629_175602.json). Official success max includes igmpactive*=enable; legacy value active is covered by the negative matrix.",
+                                       "grpbandwidth":  "NeoX UG page 538 defines 0-100 Mbps. NODE3 CLI baseline on 2026-07-17 accepted 0, 19, and 100; rejected -1 and 101."
                                    }
                },
     "min":  {
                 "Content":  {
                                 "igmpactive1":  "enable",
-                                "grpbandwidth1":  "20",
+                                "grpbandwidth1":  "0",
                                 "startip1":  "224.0.1.1",
                                 "endip1":  "224.0.1.10",
                                 "prvitype1":  "permit",
@@ -18,7 +19,7 @@
                                 "previewcount1":  "",
                                 "previewreset1":  "",
                                 "igmpactive10":  "enable",
-                                "grpbandwidth10":  "20",
+                                "grpbandwidth10":  "0",
                                 "startip10":  "226.0.1.1",
                                 "endip10":  "226.0.1.10",
                                 "prvitype10":  "forbid",
@@ -181,13 +182,27 @@
                                 "previewreset16":  "86400"
                             }
             },
+    "accepted_cases":  [
+                            {
+                                "name":  "grpbandwidth1_normal_19",
+                                "payload":  {
+                                                "Content":  {
+                                                                "igmpactive1":  "enable",
+                                                                "grpbandwidth1":  "19",
+                                                                "startip1":  "224.0.1.1",
+                                                                "endip1":  "224.0.1.10",
+                                                                "prvitype1":  "permit"
+                                                            }
+                                            }
+                            }
+                        ],
     "cli_verify":  {
                        "min":  {
                                    "show_command":  "show igmp-mld group-privilege-profile {profile_name}",
                                    "expected_tokens":  [
                                                            "{profile_name}",
-                                                           "225.1.1.1",
-                                                           "1"
+                                                           "224.0.1.1",
+                                                           "0"
                                                        ]
                                },
                        "max":  {
@@ -202,6 +217,29 @@
                                }
                    },
     "negative_cases":  [
+                           {
+                               "name":  "grpbandwidth1_below_minimum_cli_rest_cli",
+                               "standalone":  true,
+                               "profile_name":  "RestApi_IGMP_BW_N1",
+                               "field":  "Content.grpbandwidth1",
+                               "error_layer":  "device_cli",
+                               "payload":  {
+                                               "Content":  {
+                                                               "igmpactive1":  "enable",
+                                                               "grpbandwidth1":  "-1",
+                                                               "startip1":  "224.0.1.1",
+                                                               "endip1":  "224.0.1.10",
+                                                               "prvitype1":  "permit"
+                                                           }
+                                           },
+                               "expected_retstatus":  "Fail",
+                               "boundary":  {
+                                                "kind":  "below_minimum",
+                                                "declared_minimum":  "0",
+                                                "declared_maximum":  "100"
+                                            },
+                               "observed_reason":  "NeoX UG page 538 defines 0-100 Mbps. NODE3 CLI baseline on 2026-07-17 rejected bandwidth -1 with Invalid input and retained the index default bandwidth 0."
+                           },
                            {
                                "name":  "invalid_field_rejected",
                                "field":  "__invalid_field__",

@@ -1,18 +1,21 @@
 {
     "source":  {
                    "derived_from":  "configs/neox_config/profiles/minmax/",
-                   "purpose":  "NeoX WeightProfile official min/max payload, CLI verification, and active negative cases for readwrite verification."
+                   "purpose":  "NeoX WeightProfile CLI-ground-truth min/max payload, CLI verification, and active negative cases for readwrite verification.",
+                   "field_notes":  {
+                                       "weight":  "Active test range follows NODE3 CLI ground truth 0-50. CLI baselines on 2026-07-17 accepted 0, 1, and 50; rejected -1 and 51. NeoX UG page 520 documents 1-50 and is retained as a known specification discrepancy."
+                                   }
                },
     "min":  {
                 "Content":  {
-                                "weight0":  "1",
-                                "weight1":  "1",
-                                "weight2":  "1",
-                                "weight3":  "1",
-                                "weight4":  "1",
-                                "weight5":  "1",
-                                "weight6":  "1",
-                                "weight7":  "1"
+                                "weight0":  "0",
+                                "weight1":  "0",
+                                "weight2":  "0",
+                                "weight3":  "0",
+                                "weight4":  "0",
+                                "weight5":  "0",
+                                "weight6":  "0",
+                                "weight7":  "0"
                             }
             },
     "max":  {
@@ -32,7 +35,7 @@
                                    "show_command":  "show qos weight-profile {profile_name}",
                                    "expected_tokens":  [
                                                            "{profile_name}",
-                                                           "1"
+                                                           "0"
                                                        ]
                                },
                        "max":  {

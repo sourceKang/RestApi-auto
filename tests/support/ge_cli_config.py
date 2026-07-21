@@ -28,8 +28,61 @@ class GePatchTransitionResult:
     timeline: tuple[dict, ...]
 
 
+GE_SERVICE_STATE_TIMEOUT_TEXT = "GE service did not reach states"
+
+
 def ge_running_config_command(slot_id: str, port_id: str) -> str:
     return f"show running-config interface ge {slot_id}-{port_id}"
+
+
+def capture_ge_service_timeout_cli_diagnostic(
+    env_config,
+    error: Exception,
+    *,
+    attachment_name: str = "GE service timeout CLI diagnostic",
+) -> bool:
+    if GE_SERVICE_STATE_TIMEOUT_TEXT.lower() not in str(error).lower():
+        return False
+
+    dut = env_config.dut
+    command = ge_running_config_command(dut.ge_slot_id, dut.ge_port_id)
+    payload = {
+        "node": dut.node_key,
+        "device": dut.device_name,
+        "port": f"{dut.ge_slot_id}-{dut.ge_port_id}",
+        "trigger": str(error),
+        "command": command,
+        "captured": False,
+    }
+    session = None
+    try:
+        username, password = ssh_credentials(env_config)
+        session = SshCliSession(dut.device_ip, username, password, timeout=5)
+        session.connect()
+        output, elapsed, confirmed = session.run_command(
+            command,
+            first_wait=0.5,
+            idle_wait=0.3,
+            max_wait=5,
+        )
+        payload.update(
+            {
+                "captured": True,
+                "elapsed_seconds": round(elapsed, 3),
+                "confirmation_prompt_seen": confirmed,
+                "output": output,
+            }
+        )
+    except Exception as diagnostic_error:
+        payload["diagnostic_error"] = f"{type(diagnostic_error).__name__}: {diagnostic_error}"
+    finally:
+        if session is not None:
+            try:
+                session.close(logout=True)
+            except Exception as close_error:
+                payload["close_error"] = f"{type(close_error).__name__}: {close_error}"
+        attach_json(attachment_name, payload)
+    return True
 
 
 def ge_cli_commands(slot_id: str, port_id: str) -> list[str]:

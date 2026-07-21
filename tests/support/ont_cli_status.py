@@ -81,8 +81,9 @@ def parse_ont_cli_status(status_output: str, unreg_output: str, ont_sn: str) -> 
     return OntCliStatus("Unknown", "no-matching-cli-entry", {})
 
 
-def wait_for_ont_cli_is(
+def wait_for_ont_cli_state(
     env_config,
+    expected_state: str,
     *,
     status_reader: Callable = read_ont_cli_status,
     timeout: int = 120,
@@ -92,15 +93,31 @@ def wait_for_ont_cli_is(
     last = None
     while True:
         last = status_reader(env_config)
-        if last.state == "IS":
+        if last.state == expected_state:
             return last
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             break
         time.sleep(min(interval, remaining))
     raise AssertionError(
-        "ONT did not become IS according to CLI. "
+        f"ONT did not become {expected_state} according to CLI. "
         f"Last state={last.state if last else 'Unknown'}, source={last.source if last else 'none'}"
+    )
+
+
+def wait_for_ont_cli_is(
+    env_config,
+    *,
+    status_reader: Callable = read_ont_cli_status,
+    timeout: int = 120,
+    interval: int = 15,
+) -> OntCliStatus:
+    return wait_for_ont_cli_state(
+        env_config,
+        "IS",
+        status_reader=status_reader,
+        timeout=timeout,
+        interval=interval,
     )
 
 
@@ -119,6 +136,7 @@ def _serial_candidates(ont_sn: str) -> set[str]:
 
 def _normalized_cli_text(value: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value).upper())
+
 
 def ssh_credentials(env_config) -> tuple[str, str]:
     username = os.environ.get("DUT_SSH_USERNAME") or os.environ.get("NEOX_SSH_USERNAME")

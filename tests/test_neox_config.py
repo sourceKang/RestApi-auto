@@ -47,6 +47,7 @@ from tests.support.neox_cli_verification import (
     write_neox_cli_verify_report,
 )
 from tests.support.connectivity import assert_ping_reachable
+from tests.support.ont_cli_status import wait_for_ont_cli_is, wait_for_ont_cli_state
 from tests.support.options import option_or_full_testcases
 from utils.assertions import assert_api_success
 from utils.allure_helpers import attach_json
@@ -59,6 +60,7 @@ pytestmark = [
 ]
 
 GE_MAX_VARIANT_GROUPS = tuple(ge_max_variants_config()["variant_order"])
+
 
 @pytest.mark.mutating
 @pytest.mark.readwrite
@@ -420,6 +422,7 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
     api_client,
     env_config,
     neox_config_service,
+    services,
     readwrite_session,
     cleanup_registry,
     request,
@@ -433,8 +436,39 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
         path = neox_config_service.ont_path()
         restore_payload = ont_config_payload(target)
         payload = ont_provision_template_sfu_payload(target)
-        cleanup_registry.add(lambda: api_client.request("POST", path, session=readwrite_session, json=restore_payload))
-        cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
+        cli_verify = not skip_neox_cli_verify(request)
+        cleanup_state = {"complete": False}
+
+        def cleanup_scenario():
+            if cleanup_state["complete"]:
+                return
+            services.provision.delete_ont_service_if_uses_template(
+                readwrite_session,
+                PROVISION_TEMPLATE_SFU_NAME,
+                timeout=180,
+                interval=15,
+            )
+            wait_for_ont_cli_state(env_config, "UnReg", timeout=180, interval=15)
+            restore_ont_config_baseline(
+                api_client,
+                env_config,
+                path,
+                readwrite_session,
+                restore_payload,
+                verify_cli=cli_verify,
+            )
+            cleanup_state["complete"] = True
+
+        cleanup_registry.add_final(cleanup_scenario)
+
+        services.inventory.upsert_ont_service(readwrite_session, PROVISION_TEMPLATE_SFU_NAME)
+        services.inventory.wait_for_ont_service_state(
+            readwrite_session,
+            {"Success"},
+            timeout=180,
+            interval=15,
+            initial_delay=30,
+        )
 
         api_client.request("DELETE", path, session=readwrite_session)
         response = api_client.request("POST", path, session=readwrite_session, json=payload)
@@ -475,7 +509,7 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
             ),
         )
 
-        if skip_neox_cli_verify(request):
+        if not cli_verify:
             return
 
         credentials = neox_cli_credentials(env_config, "ONT provision template SFU")
@@ -522,6 +556,7 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
 
         missing = {command: tokens for command, tokens in missing_by_command.items() if tokens}
         assert not missing, f"Missing ONT provision template CLI tokens for {remote_xont}: {missing}. Report: {report_path}"
+        cleanup_scenario()
 
 
 @pytest.mark.mutating
@@ -636,6 +671,7 @@ def materialize_ge_variant_payload(
     content.update(copy.deepcopy(group.get("payload_patch", {})))
     return sanitize_ge_payload(payload)
 
+
 def materialize_ge_variant_base_config(config: dict[str, Any], group: dict[str, Any]) -> dict[str, Any]:
     variant_config = copy.deepcopy(config)
     excluded_setup = set(group.get("exclude_setup_global_commands", []))
@@ -671,6 +707,7 @@ def run_ge_interface_config_commands(env_config, target, commands: list[str]) ->
 
 def expected_ge_variant_tokens(group: dict[str, Any]) -> list[str]:
     return [token for token in group.get("expected_tokens", []) if token]
+
 
 def ensure_ge_profile_dependencies(
     neox_config_service,
@@ -721,6 +758,7 @@ def ge_acl_profile_mode_cleanup_plan(commands: list[str]) -> tuple[list[str], bo
     if len(commands) >= 2 and commands[0] == "acl-profile mode port" and commands[1] == "y":
         return [*commands[2:], *commands[:2]], True
     return commands, False
+
 
 def prepare_ge_acl_profile_mode_switch(env_config, setup_commands: list[str]) -> None:
     if "acl-profile mode profile" not in setup_commands:
@@ -874,6 +912,7 @@ def ge_cli_command_failed(output: str) -> bool:
     )
     normalized = output.casefold()
     return any(fragment in normalized for fragment in failure_fragments)
+
 
 def post_neox_config_payload(
     api_client,
@@ -1179,17 +1218,30 @@ def verify_vlan_config_create_cli_verified(
     neox_config_service.verify_required_target_data()
     vid, payload = vlan_case(case_name)
     path = neox_config_service.vlan_path_for_vid(vid)
+    cli_verify = not skip_neox_cli_verify(request)
+    command = f"show vlan {vid}"
+    credentials = None
+    if cli_verify:
+        credentials = neox_cli_credentials(env_config, "VLAN")
+        baseline_output_by_command = run_neox_cli_commands(env_config, credentials, [command])
+        assert_neox_config_node_reachable(env_config, "vlan", case_name, "before_rest_cli_baseline")
+        attach_json(
+            f"NeoX VLAN {case_name} pre-REST CLI baseline",
+            {
+                "command": command,
+                "output": redact(baseline_output_by_command),
+            },
+        )
 
     cleanup_registry.add(lambda: api_client.request("DELETE", path, session=readwrite_session))
     api_client.request("DELETE", path, session=readwrite_session)
     response = api_client.request("POST", path, session=readwrite_session, json=payload)
     write_neox_rest_response_report(neox_config_service, "vlan", case_name, "post", "POST", path, payload, response)
     assert_api_success(response)
-    if skip_neox_cli_verify(request):
+    if not cli_verify:
         return
 
-    credentials = neox_cli_credentials(env_config, "VLAN")
-    command = f"show vlan {vid}"
+    assert credentials is not None
     output_by_command = run_neox_cli_commands(env_config, credentials, [command])
     assert_neox_config_node_reachable(env_config, "vlan", case_name, "after_cli_verify")
     expectation = vlan_cli_expectation(vid, payload, output_by_command[command])
@@ -1590,17 +1642,20 @@ def ensure_ont_bandwidth_profile_supports_service_tcont(
     assert_api_success(response)
 
 
-def wait_for_rest_success(api_client, path: str, session_id: str, *, timeout: float = 90, interval: float = 5):
-    deadline = time.monotonic() + timeout
-    last_response = None
-    while time.monotonic() <= deadline:
-        last_response = api_client.request("GET", path, session=session_id)
-        if last_response.retstatus == "Success":
-            return last_response
-        time.sleep(interval)
-    assert last_response is not None
-    assert_api_success(last_response)
-    return last_response
+def restore_ont_config_baseline(
+    api_client,
+    env_config,
+    path: str,
+    session_id: str,
+    payload: dict[str, Any],
+    *,
+    verify_cli: bool,
+):
+    response = api_client.request("POST", path, session=session_id, json=payload)
+    assert_api_success(response)
+    if verify_cli:
+        wait_for_ont_cli_is(env_config, timeout=180, interval=15)
+    return response
 
 
 def wait_for_rest_tokens(
@@ -1611,18 +1666,32 @@ def wait_for_rest_tokens(
     *,
     timeout: float = 300,
     interval: float = 10,
+    max_interval: float = 30,
+    sleeper=time.sleep,
+    clock=time.monotonic,
 ):
-    deadline = time.monotonic() + timeout
+    deadline = clock() + timeout
     last_response = None
     last_missing = expected_tokens
-    while time.monotonic() <= deadline:
-        last_response = wait_for_rest_success(api_client, path, session_id, timeout=interval, interval=interval)
-        body = json.dumps(last_response.json, ensure_ascii=False)
-        last_missing = [token for token in expected_tokens if token not in body]
-        if not last_missing:
-            return last_response
-        time.sleep(interval)
+    delay = max(0.0, interval)
+    while clock() <= deadline:
+        last_response = api_client.request("GET", path, session=session_id)
+        if last_response.retstatus == "Success":
+            body = json.dumps(last_response.json, ensure_ascii=False)
+            last_missing = [token for token in expected_tokens if token not in body]
+            if not last_missing:
+                return last_response
+
+        remaining = deadline - clock()
+        if remaining <= 0:
+            break
+        sleep_for = min(delay, remaining)
+        sleeper(sleep_for)
+        delay = min(max_interval, max(delay * 2, 1.0))
+
     assert last_response is not None
+    if last_response.retstatus != "Success":
+        assert_api_success(last_response)
     body = json.dumps(last_response.json, ensure_ascii=False)
     assert not last_missing, f"Missing expected REST response tokens {last_missing}: {body}"
     return last_response
@@ -1633,6 +1702,7 @@ def assert_response_contains_tokens(response, expected_tokens: list[str]) -> Non
     body = json.dumps(response.json, ensure_ascii=False)
     missing = [token for token in expected_tokens if token not in body]
     assert not missing, f"Missing expected REST response tokens {missing}: {body}"
+
 
 def verify_clear_restores_cli_output(
     api_client,

@@ -14,6 +14,10 @@ def test_automated_registry_contains_all_endpoint_case_ids():
     assert endpoint_ids <= cases.automated_case_ids()
 
 
+def test_read_endpoint_registry_excludes_unsupported_port_list():
+    assert all(case.name != "port_list" for case in READ_ENDPOINTS)
+
+
 def test_report_order_and_names_match_case_catalog():
     names = cases.case_name_by_id()
     order = cases.case_order()

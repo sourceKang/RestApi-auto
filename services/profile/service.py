@@ -149,6 +149,7 @@ class ProfileWorkspace:
         if errors:
             raise AssertionError("Profile workspace cleanup failed: " + "; ".join(errors))
 
+
 class ProfileService:
     def __init__(self, api_client) -> None:
         self.api_client = api_client
@@ -234,6 +235,11 @@ class ProfileService:
             workspace.discard(definition)
             get_response = self.get_profile(session_id, definition)
             assert_api_failure(get_response, accepted_messages=("does not exist", "no data", "not found", "invalid parameter"))
+            delete_missing = self.delete_profile(definition, session_id)
+            assert_api_failure(
+                delete_missing,
+                accepted_messages=("does not exist", "no data", "not found", "invalid parameter"),
+            )
 
     def verify_post_invalid_param_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
@@ -860,6 +866,7 @@ def replace_profile_refs(value, replacements: dict[str, str]):
     if isinstance(value, str):
         return replacements.get(value, value)
     return value
+
 
 def profile_response_is_missing(response) -> bool:
     if response.retstatus != "Fail":

@@ -9,7 +9,7 @@ from services.endpoint_case import assert_permission_rejected, request_endpoint_
 from services.profile import ProfileService
 from cases.payloads import ont_service_payload
 from models.api import EndpointCase
-from utils.allure_helpers import allure_step
+from utils.allure_helpers import allure_step, attach_json
 from utils.assertions import assert_api_success
 from utils.diagnostics import format_response_summary, format_value_summary
 
@@ -41,8 +41,6 @@ class InventoryService:
             case,
             step=f"GET {case.name} as {role_name}",
         )
-        if case.name == "port_list" and response.status_code == 404:
-            pytest.skip("/port list endpoint is not supported by this EMS build.")
         if case.domain == "ont" and _is_no_data(response):
             if _is_known_chinese_devicename_ont_issue(self.env_config, case):
                 pytest.fail(
@@ -72,6 +70,97 @@ class InventoryService:
     def get_ont_service(self, session_id: str):
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         return self.api_client.request("GET", path, session=session_id)
+
+    def wait_for_ont_service_visibility(
+        self,
+        session_id: str,
+        initial_response,
+        *,
+        attempts: int = 3,
+        interval: float = 5,
+        sleeper=time.sleep,
+    ):
+        """Boundedly recheck an ONT service that CLI already reports as IS.
+
+        ``attempts`` includes the initial response so the default performs at
+        most two additional GETs. A non-``No data found`` response is returned
+        immediately for the caller to classify; this helper never provisions.
+        """
+        if attempts < 1:
+            raise ValueError("attempts must be at least 1")
+
+        observations = [_ont_response_observation(1, initial_response)]
+        last = initial_response
+        for attempt in range(2, attempts + 1):
+            if last.retstatus == "Success" or not self.ont_service_is_missing(last):
+                break
+            sleeper(interval)
+            last = self.get_ont_service(session_id)
+            observations.append(_ont_response_observation(attempt, last))
+
+        attach_json(
+            "ONT service REST visibility retry",
+            {
+                "node": self.env_config.dut.node_key,
+                "sn": self.env_config.dut.ont_sn,
+                "attempts": observations,
+            },
+        )
+        return last
+
+    def collect_ont_consistency_diagnostic(self, session_id: str) -> dict:
+        """Collect read-only REST evidence after CLI/ONT-service disagreement."""
+        dut = self.env_config.dut
+        paths = {
+            "ont_by_device": f"/ont/{dut.device_name}",
+            "ont_by_slot": f"/ont/{dut.device_name}/{dut.slot_id}",
+            "ont_by_port": f"/ont/{dut.device_name}/{dut.slot_id}/{dut.port_id}",
+            "ont_by_id": f"/ont/{dut.device_name}/{dut.slot_id}/{dut.port_id}/{dut.ont_id}",
+            "ont_by_sn": f"/ont/sn/{dut.ont_sn}",
+            "ont_by_description": f"/ont/description/{dut.ont_description}",
+        }
+        responses: dict[str, dict] = {}
+        visible_paths: list[str] = []
+        for case_name, path in paths.items():
+            response = self.api_client.request("GET", path, session=session_id)
+            if _is_no_data(response):
+                outcome = "no_data"
+                mismatch = ""
+            elif response.retstatus != "Success":
+                outcome = "api_error"
+                mismatch = ""
+            else:
+                try:
+                    find_ont_item(response.json, self.env_config, case_name)
+                except AssertionError as error:
+                    outcome = "target_not_visible"
+                    mismatch = str(error)
+                else:
+                    outcome = "target_visible"
+                    mismatch = ""
+                    visible_paths.append(case_name)
+            responses[case_name] = {
+                "path": path,
+                "outcome": outcome,
+                "mismatch": mismatch,
+                "response": format_response_summary(response),
+            }
+
+        classification = (
+            "ontservice_missing_but_ont_inventory_visible"
+            if visible_paths
+            else "ems_node_inventory_not_visible"
+        )
+        evidence = {
+            "classification": classification,
+            "node": dut.node_key,
+            "device": dut.device_name,
+            "sn": dut.ont_sn,
+            "visible_paths": visible_paths,
+            "responses": responses,
+        }
+        attach_json("ONT CLI/REST consistency diagnostic", evidence)
+        return evidence
 
     @staticmethod
     def ont_service_is_missing(response) -> bool:
@@ -299,6 +388,15 @@ class InventoryService:
 
 def _is_no_data(response) -> bool:
     return response.retstatus == "Fail" and "No data found" in response.retresult
+
+
+def _ont_response_observation(attempt: int, response) -> dict:
+    return {
+        "attempt": attempt,
+        "retstatus": response.retstatus,
+        "retresult": response.retresult,
+        "status_code": response.status_code,
+    }
 
 
 def _is_known_chinese_devicename_ont_issue(env_config, case: EndpointCase) -> bool:

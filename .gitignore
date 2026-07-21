@@ -35,9 +35,6 @@ allure-report/
 Thumbs.db
 Desktop.ini
 
-# Local lab configuration with private credentials and target secrets
-configs/auth_accounts.local.yaml
-configs/test_targets.local.yaml
 
 # Local analysis scratch files
 tmp/

@@ -107,6 +107,7 @@ def test_temporary_ge_cleanup_ignores_service_using_another_template():
         ("GET", "/geservice/device/1/39")
     ]
 
+
 def test_patch_uses_transition_monitor_and_requires_final_success():
     modified = ge_service(
         "#Temporary",
@@ -140,3 +141,88 @@ def test_patch_uses_transition_monitor_and_requires_final_success():
         ("PATCH", "/geservice/88"),
         ("GET", "/geservice/device/1/39"),
     ]
+
+
+def test_patch_transition_reader_tolerates_transient_missing_service():
+    modified = ge_service(
+        "#Temporary",
+        telephone="011+886+7+27370123",
+        port_name="modify_1g_Hsinchu",
+    )
+    client = FakeApiClient(
+        [
+            response("Success", service=modified),
+            response("Success"),
+            response("Fail", retresult="Slot or Port not found."),
+            response("Success", service=modified),
+        ]
+    )
+    observed_states = []
+
+    def transition_monitor(patch_action, state_reader):
+        patch_action()
+        observed_states.append(state_reader()["state"])
+        restored = state_reader()
+        observed_states.append(restored["state"])
+        return restored
+
+    ProvisionService(client, env_config()).verify_ge_service_patch(
+        "session",
+        ge_template="#Temporary",
+        transition_monitor=transition_monitor,
+    )
+
+    assert observed_states == ["Missing", "Success"]
+
+
+def test_delete_ge_service_verifies_repeated_delete_missing_response(monkeypatch):
+    client = FakeApiClient(
+        [
+            response("Success", service=ge_service("#Temporary")),
+            response("Success"),
+            response("Fail", retresult="No data found in the database."),
+            response("Fail", retresult="The GE service does not exist."),
+            response("Fail", retresult="No data found in the database."),
+        ]
+    )
+    service = ProvisionService(client, env_config())
+    monkeypatch.setattr(service, "wait_for_ge_service_removed", lambda *args, **kwargs: None)
+
+    service.verify_ge_service_delete("session", ge_template="#Temporary")
+
+    assert [(method, path) for method, path, _ in client.calls] == [
+        ("GET", "/geservice/device/1/39"),
+        ("DELETE", "/geservice/88"),
+        ("GET", "/geservice/device/1/39"),
+        ("DELETE", "/geservice/88"),
+        ("GET", "/geservice/device/1/39"),
+    ]
+
+
+def test_delete_ge_service_accepts_idempotent_success_if_resource_remains_absent(monkeypatch):
+    client = FakeApiClient(
+        [
+            response("Success", service=ge_service("#Temporary")),
+            response("Success"),
+            response("Fail", retresult="No data found in the database."),
+            response("Success"),
+            response("Fail", retresult="No data found in the database."),
+        ]
+    )
+    service = ProvisionService(client, env_config())
+    monkeypatch.setattr(service, "wait_for_ge_service_removed", lambda *args, **kwargs: None)
+
+    service.verify_ge_service_delete("session", ge_template="#Temporary")
+
+    assert [(method, path) for method, path, _ in client.calls][-2:] == [
+        ("DELETE", "/geservice/88"),
+        ("GET", "/geservice/device/1/39"),
+    ]
+
+
+def test_existing_ge_post_payload_uses_maximum_port_name_length():
+    from cases.payloads import ge_service_payload
+
+    payload = ge_service_payload(env_config(), "X" * 80, ge_template="#Temporary")
+
+    assert payload["geservice"]["PortName"] == "X" * 31

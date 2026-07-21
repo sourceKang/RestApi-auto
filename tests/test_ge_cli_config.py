@@ -5,11 +5,66 @@ import pytest
 from tests.support.ge_cli_config import (
     GeCliConfigResult,
     canonical_running_config,
+    capture_ge_service_timeout_cli_diagnostic,
     compare_ge_cli_config,
     ge_cli_commands,
     monitor_ge_patch_transition,
     wait_for_ge_cli_config,
 )
+
+
+def test_timeout_cli_diagnostic_does_not_run_for_unrelated_failure(monkeypatch):
+    monkeypatch.setattr(
+        "tests.support.ge_cli_config.SshCliSession",
+        lambda *_args, **_kwargs: pytest.fail("SSH must not run for a non-timeout failure"),
+    )
+
+    captured = capture_ge_service_timeout_cli_diagnostic(_env_config(), AssertionError("different failure"))
+
+    assert captured is False
+
+
+def test_timeout_cli_diagnostic_runs_one_read_only_command_and_attaches(monkeypatch):
+    calls = []
+    attachments = []
+
+    class DiagnosticSession:
+        def __init__(self, host, username, password, *, timeout):
+            calls.append(("init", host, username, password, timeout))
+
+        def connect(self):
+            calls.append(("connect",))
+
+        def run_command(self, command, **kwargs):
+            calls.append(("run", command, kwargs))
+            return "interface ge 1-39", 0.25, False
+
+        def close(self, *, logout=True):
+            calls.append(("close", logout))
+            return 0.1
+
+    monkeypatch.setattr("tests.support.ge_cli_config.SshCliSession", DiagnosticSession)
+    monkeypatch.setattr("tests.support.ge_cli_config.ssh_credentials", lambda _env: ("user", "pass"))
+    monkeypatch.setattr(
+        "tests.support.ge_cli_config.attach_json",
+        lambda name, payload: attachments.append((name, payload)),
+    )
+
+    captured = capture_ge_service_timeout_cli_diagnostic(
+        _env_config(),
+        AssertionError("GE service did not reach states Success within 120 seconds"),
+    )
+
+    assert captured is True
+    assert calls[0] == ("init", "192.0.2.10", "user", "pass", 5)
+    assert calls[2] == (
+        "run",
+        "show running-config interface ge 1-39",
+        {"first_wait": 0.5, "idle_wait": 0.3, "max_wait": 5},
+    )
+    assert calls[-1] == ("close", True)
+    assert attachments[0][1]["captured"] is True
+    assert attachments[0][1]["output"] == "interface ge 1-39"
 
 
 def test_ge_cli_commands_follow_ies4204_user_guide_forms():

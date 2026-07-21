@@ -124,10 +124,14 @@ Run multiple nodes sequentially with per-node logs and a summary:
 ```powershell
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3,NODE6 --run-full-testcases
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --run-full-testcases --dry-run
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --jobs 2 --auth-profiles default,ems_local_rw2 --run-full-testcases
 ```
 
 The multi-node runner still invokes pytest per node. NeoX-only config options
-are kept for NeoX chassis and omitted for non-NeoX chassis.
+are kept for NeoX chassis and omitted for non-NeoX chassis. Parallel node runs
+must assign a distinct auth profile to each node because logging in with the same
+EMS account can invalidate an active session. Keep `--jobs 1` when distinct
+accounts are unavailable.
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.

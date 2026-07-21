@@ -18,6 +18,7 @@
         "tests/test_neox_profile.py::test_neox_profile_min_create_readwrite",
         "tests/test_neox_profile.py::test_neox_profile_max_create_readwrite",
         "tests/test_neox_profile.py::test_neox_profile_error_readwrite",
+        "tests/test_neox_profile.py::test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected",
         "tests/test_boundary_cases.py"
       ],
       "next_actions": []
@@ -95,7 +96,10 @@
       "risk": "rejected_mutation",
       "evidence": [
         "services/invalid_params/service.py::InvalidParamsService.verify_history_alarm_invalid_parameters",
-        "tests/test_zz_invalid_params.py::test_history_alarm_various_invalid_parameters_should_return_error"
+        "tests/test_zz_invalid_params.py::test_history_alarm_various_invalid_parameters_should_return_error",
+        "services/profile/service.py::ProfileService.verify_delete_case",
+        "services/provision/service.py::ProvisionService.verify_ont_service_delete",
+        "services/provision/service.py::ProvisionService.verify_ge_service_delete"
       ],
       "next_actions": []
     },

@@ -1,6 +1,6 @@
 # Read-only snapshot from Swagger/OpenAPI.
 # Source: https://192.168.128.8:9116/netatlasemsapi/v3/api-docs
-# Captured: 2026-06-23
+# Captured: 2026-07-17 (EMS b10 live Swagger)
 #
 # This file records schema data exposed by Swagger. Most schemas define field
 # names/types only, without examples/defaults, so runnable values still need to
@@ -9,7 +9,7 @@
 source:
   swagger_ui: "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
   openapi_json: "https://192.168.128.8:9116/netatlasemsapi/v3/api-docs"
-  openapi_yaml: "NetAtlasEMS_OpenAPI_20260614.yaml"
+  openapi_yaml: "NetAtlasEMS_OpenAPI_20260716.yaml"
   raw_snapshot: "reports/swagger-readonly/v3_api-docs.txt"
 
 endpoints:
@@ -30,7 +30,7 @@ endpoints:
     content_schema: "NniPortInfoContent"
 
   vlan:
-    path: "/configNeoxSeries/vlan/{devicename}/{vid}"
+    path: "/configNeoXSeries/vlan/{devicename}/{vid}"
     operations:
       post: "createvlan"
       delete: "deletevlan"

@@ -147,6 +147,7 @@ def test_missing_profile_definition_and_create_failure_are_errors(monkeypatch):
     with pytest.raises(AssertionError, match="Cannot create prerequisite profile"):
         ProfileService(client).ensure_prerequisite_profile("session", "#RestApi_Root")
 
+
 def test_workspace_cleanup_deletes_only_planned_and_created_profiles():
     calls = []
 
@@ -457,15 +458,15 @@ def test_invalid_patch_restores_changed_content_before_failing(monkeypatch):
 
 
 def test_temporary_ont_template_name_is_versioned_and_readable():
-    name = temporary_ont_template_name("03.00.11 (AAVV.221) b9", "NODE1", run_token="7F")
+    name = temporary_ont_template_name("03.00.11 (AAVV.221) b10", "NODE1", run_token="7F")
 
-    assert name == "#RestApi_ONT_SFU_3011b9_N1_R7F"
+    assert name == "#RestApi_ONT_SFU_3011b10_N1_R7F"
     assert len(name) <= 31
 
 
 def test_temporary_profile_create_and_delete_preserve_expected_payload(monkeypatch):
     source_name = "#RestApi_Source"
-    temporary_name = "#RestApi_ONT_SFU_3011b9_N1_R7F"
+    temporary_name = "#RestApi_ONT_SFU_3011b10_N1_R7F"
     content = {
         "templateprofile_encryption_algorithm": "aes128",
         "templateprofile_encryption_scope_service": "1",
@@ -533,8 +534,8 @@ def test_temporary_profile_graph_clones_dependency_and_rewrites_reference(monkey
         },
     }
     install_definitions(monkeypatch, definitions)
-    temporary_security = "#RestApi_SEC_3011b9_N1_R7F"
-    temporary_template = "#RestApi_ONT_SFU_3011b9_N1_R7F"
+    temporary_security = "#RestApi_SEC_3011b10_N1_R7F"
+    temporary_template = "#RestApi_ONT_SFU_3011b10_N1_R7F"
     client = FakeApiClient(
         [
             api_response("Fail", retresult="No data found"),
@@ -553,7 +554,7 @@ def test_temporary_profile_graph_clones_dependency_and_rewrites_reference(monkey
     graph = ProfileService(client).create_temporary_profile_graph(
         "session",
         source_name,
-        "03.00.11 (AAVV.221) b9",
+        "03.00.11 (AAVV.221) b10",
         "NODE1",
         run_token="7F",
         timeout=1,
@@ -593,15 +594,16 @@ def test_temporary_profile_graph_rejects_formal_profile_name_collision(monkeypat
         ProfileService(client).create_temporary_profile_graph(
             "session",
             source_name,
-            "03.00.11 (AAVV.221) b9",
+            "03.00.11 (AAVV.221) b10",
             "NODE1",
             run_token="7F",
         )
 
     assert client.calls == []
 
+
 def test_temporary_profile_cleanup_retries_until_reference_is_released():
-    temporary_name = "#RestApi_ONT_SFU_3011b9_N1_R7F"
+    temporary_name = "#RestApi_ONT_SFU_3011b10_N1_R7F"
     definition = {
         "profiletype": "ONTTemplateProfile",
         "profilename": temporary_name,
@@ -620,6 +622,7 @@ def test_temporary_profile_cleanup_retries_until_reference_is_released():
 
     assert [call[0] for call in client.calls] == ["GET", "DELETE", "DELETE", "GET"]
 
+
 def test_recorded_ont_service_payload_uses_same_run_template_and_bandwidth():
     env = SimpleNamespace(
         dut=SimpleNamespace(
@@ -628,8 +631,8 @@ def test_recorded_ont_service_payload_uses_same_run_template_and_bandwidth():
             ont_description="temporary_ont_test",
         )
     )
-    template_name = "#RestApi_ONT_SFU_3011b9_N1_R7F"
-    bandwidth_name = "#RestApi_BW_3011b9_N1_R7F"
+    template_name = "#RestApi_ONT_SFU_3011b10_N1_R7F"
+    bandwidth_name = "#RestApi_BW_3011b10_N1_R7F"
     graph = profile_module.TemporaryProfileGraph(
         root_name=template_name,
         definitions=(),
@@ -647,6 +650,7 @@ def test_recorded_ont_service_payload_uses_same_run_template_and_bandwidth():
     ]
 
     assert copy.deepcopy(payload) == payload
+
 
 def ont_service_response(template_name: str):
     return ApiResponse(
@@ -668,13 +672,13 @@ def test_temporary_profile_cleanup_only_deletes_service_using_exact_template():
     other_client = FakeApiClient([ont_service_response("#RestApi_Other")])
     ProvisionService(other_client, env).delete_ont_service_if_uses_template(
         "session",
-        "#RestApi_ONT_SFU_3011b9_N1_R7F",
+        "#RestApi_ONT_SFU_3011b10_N1_R7F",
         timeout=1,
         interval=0,
     )
     assert [call[0] for call in other_client.calls] == ["GET"]
 
-    temporary_name = "#RestApi_ONT_SFU_3011b9_N1_R7F"
+    temporary_name = "#RestApi_ONT_SFU_3011b10_N1_R7F"
     matching_client = FakeApiClient(
         [
             ont_service_response(temporary_name),
@@ -690,14 +694,50 @@ def test_temporary_profile_cleanup_only_deletes_service_using_exact_template():
     )
     assert [call[0] for call in matching_client.calls] == ["GET", "DELETE", "GET"]
 
+
 def test_temporary_ge_profile_name_is_versioned_and_separate_from_formal_case():
     definition = {
         "profiletype": "GETemplateProfile",
         "profilename": "#RestApi_getemp_ge1",
     }
 
-    name = profile_module.temporary_profile_name(definition, "03.00.11 (AAVV.221) b9", "NODE1", "7F")
+    name = profile_module.temporary_profile_name(definition, "03.00.11 (AAVV.221) b10", "NODE1", "7F")
 
-    assert name == "#RestApi_GE_3011b9_N1_R7F"
+    assert name == "#RestApi_GE_3011b10_N1_R7F"
     assert name != definition["profilename"]
     assert len(name) <= profile_module.TEMPORARY_PROFILE_NAME_MAX_LENGTH
+
+
+def test_profile_delete_case_verifies_repeated_delete_is_rejected(monkeypatch):
+    definition = {
+        "_config_ref": "delete_profile_data",
+        "profiletype": "RateLimitProfile",
+        "profilename": "#RestApi_Delete",
+        "post_profile_info": {},
+    }
+    monkeypatch.setattr(profile_module, "profile_definitions_for", lambda case: [definition])
+    monkeypatch.setattr(profile_module, "isolated_profile_definitions", lambda definitions: definitions)
+    monkeypatch.setattr(profile_module, "definitions_delete_order", lambda definitions: definitions)
+
+    service = ProfileService(FakeApiClient([]))
+    delete_calls = []
+    discarded = []
+    monkeypatch.setattr(service, "ensure_profile_exists_or_skip", lambda *args, **kwargs: None)
+    monkeypatch.setattr(service, "ensure_profile_deleted", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        service,
+        "get_profile",
+        lambda *args, **kwargs: api_response("Fail", retresult="No data found"),
+    )
+
+    def delete_missing(item, session_id):
+        delete_calls.append((item["profilename"], session_id))
+        return api_response("Fail", retresult="The profile does not exist")
+
+    monkeypatch.setattr(service, "delete_profile", delete_missing)
+    workspace = SimpleNamespace(discard=lambda item: discarded.append(item["profilename"]))
+
+    service.verify_delete_case("session", workspace, {"name": "delete profile", "case_ids": []})
+
+    assert delete_calls == [("#RestApi_Delete", "session")]
+    assert discarded == ["#RestApi_Delete"]

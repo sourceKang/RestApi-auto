@@ -95,6 +95,14 @@ def main(argv: list[str] | None = None) -> int:
         for index, node in enumerate(nodes)
     ]
 
+    try:
+        validate_parallel_node_auth_profiles(
+            plans,
+            1 if args.stop_on_failure else args.jobs,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+
     if args.dry_run:
         for plan in plans:
             print(render_plan_line(plan), flush=True)
@@ -191,6 +199,34 @@ def auth_profile_for_node(auth_profiles: list[str], index: int) -> str | None:
     if not auth_profiles:
         return None
     return auth_profiles[index % len(auth_profiles)]
+
+
+def validate_parallel_node_auth_profiles(plans: list[NodePlan], jobs: int) -> None:
+    if max(1, jobs) <= 1 or len(plans) <= 1:
+        return
+
+    nodes_by_profile: dict[str, list[str]] = {}
+    for plan in plans:
+        profile = plan.auth_profile or "default"
+        nodes_by_profile.setdefault(profile, []).append(plan.node)
+    duplicates = {
+        profile: nodes
+        for profile, nodes in nodes_by_profile.items()
+        if len(nodes) > 1
+    }
+    if not duplicates:
+        return
+
+    conflicts = "; ".join(
+        f"{profile}={','.join(nodes)}"
+        for profile, nodes in sorted(duplicates.items())
+    )
+    raise ValueError(
+        "Parallel node runs require a distinct auth profile per node because EMS logins "
+        "using the same account can invalidate active sessions. "
+        f"Conflicts: {conflicts}. Use --auth-profiles default,ems_local_rw2 "
+        "or run with --jobs 1."
+    )
 
 
 def default_report_dir() -> Path:
@@ -312,8 +348,10 @@ def run_node_plans(
     jobs: int = 1,
     stop_on_failure: bool = False,
 ) -> list[NodeResult]:
-    max_workers = max(1, jobs)
-    if max_workers == 1 or stop_on_failure:
+    effective_jobs = 1 if stop_on_failure else jobs
+    validate_parallel_node_auth_profiles(plans, effective_jobs)
+    max_workers = max(1, effective_jobs)
+    if max_workers == 1:
         results: list[NodeResult] = []
         for plan in plans:
             result = run_node_plan(plan, report_dir, preflight=preflight)
@@ -357,6 +395,7 @@ def print_node_result(result: NodeResult) -> None:
         f"[{result.node}] finished with exit code {result.returncode} in {format_duration(result.duration_seconds)}",
         flush=True,
     )
+
 
 def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -> NodeResult:
     log_path = report_dir / f"{safe_name(plan.node)}.log"
@@ -437,16 +476,19 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
 def format_auth_profile_for_status(auth_profile: str | None) -> str:
     return f" (auth_profile={auth_profile})" if auth_profile else ""
 
+
 def command_with_parallel_report_dir(command: list[str], report_dir: Path, node: str) -> list[str]:
     if "--alluredir" in command or any(part.startswith("--alluredir=") for part in command):
         return list(command)
     alluredir = report_dir / f"{safe_name(node)}_allure-current"
     return [*command, "--alluredir", str(alluredir)]
 
+
 def command_with_runner_preflight_skip(command: list[str]) -> list[str]:
     if "--skip-dut-preflight" in command:
         return list(command)
     return [*command, "--skip-dut-preflight"]
+
 
 def parse_pytest_summary_line(lines: Iterable[str]) -> str:
     for line in reversed(list(lines)):

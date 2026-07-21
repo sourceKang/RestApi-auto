@@ -32,13 +32,14 @@ features:
     status: "NNI official min/max payloads are consolidated in one NNI payload config file and confirmed on NODE3 NNI slot 4 with CLI verification."
 
   vlan_config:
-    endpoint: "/configNeoxSeries/vlan/{devicename}/{vid}"
+    endpoint: "/configNeoXSeries/vlan/{devicename}/{vid}"
     normal_data:
       - "configs/neox_config/vlan/neox_vlan_minmax_payloads.json"
     abnormal_data:
       - "configs/neox_config/vlan/neox_vlan_minmax_payloads.json#negative_cases"
-    cli_reference: []
-    status: "VLAN official min/max payloads and negative cases are consolidated in one VLAN payload config file."
+    cli_reference:
+      - "NeoX Series UG V1.02 Ed1, pages 546-547: show vlan {vid}"
+    status: "EMS b10 VLAN path is synchronized with live Swagger. Create cases capture a read-only pre-REST CLI baseline and verify post-REST CLI ground truth."
 
   ont_config:
     endpoint: "/configNeoXSeries/interface/remote/{devicename}/{slotid}/{portid}/{ontid}"

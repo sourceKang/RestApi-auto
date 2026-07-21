@@ -31,6 +31,9 @@ DIRECT_NEOX_READWRITE_CASES: dict[str, NeoXCase] = {
     "test_ont_config_apply_provision_template_sfu_readwrite": NeoXCase(
         "EMS1-7223", "test_ont_config_apply_provision_template_sfu_readwrite"
     ),
+    "test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected": NeoXCase(
+        "EMS1-7137", "test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected"
+    ),
 }
 
 

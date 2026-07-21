@@ -190,6 +190,11 @@ class ProvisionService:
             self.wait_for_ont_service_removed(session_id)
             removed = self.api_client.request("GET", path, session=session_id)
             assert_api_failure(removed, accepted_messages=("No data found", "serial number does not exist"))
+            delete_missing = self.api_client.request("DELETE", path, session=session_id)
+            assert_api_failure(
+                delete_missing,
+                accepted_messages=("No data found", "serial number does not exist", "does not exist"),
+            )
 
     def _assert_ont_service_uses_template(self, response, expected_template: str) -> None:
         service = ont_service_info(response.json)
@@ -259,6 +264,8 @@ class ProvisionService:
 
         def state_reader() -> dict:
             response = self.api_client.request("GET", port_path, session=session_id)
+            if response.retstatus == "Fail" and "slot or port not found" in response.retresult.lower():
+                return {"state": "Missing"}
             assert_api_success(response)
             return ge_service_info(response.json)
 
@@ -284,6 +291,11 @@ class ProvisionService:
             self.wait_for_ge_service_removed(session_id)
             removed = self.api_client.request("GET", port_path, session=session_id)
             assert_api_failure(removed, accepted_messages=("No data found", "does not exist"))
+            delete_missing = self.api_client.request("DELETE", f"/geservice/{service_id}", session=session_id)
+            if delete_missing.retstatus != "Success":
+                assert_api_failure(delete_missing, accepted_messages=("No data found", "does not exist"))
+            still_removed = self.api_client.request("GET", port_path, session=session_id)
+            assert_api_failure(still_removed, accepted_messages=("No data found", "does not exist"))
 
     def _ge_service_id_for_mutation(self, session_id: str, ge_template: str | None = None) -> str:
         dut = self.env_config.dut

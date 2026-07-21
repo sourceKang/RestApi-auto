@@ -10,7 +10,10 @@ import pytest
 from services.neox_config.service import (
     NEOX_CONFIG_DATA_FILES,
     NEOX_CONFIG_DIR,
+    NEOX_FEATURE_TEST_DATA_FILE,
     NEOX_PROFILE_TYPES,
+    NEOX_SWAGGER_DATA_FILE,
+    NEOX_VLAN_API_PATH_PREFIX,
     PROFILE_MINMAX_PAYLOAD_DIR,
     ge_full_accepted_config,
     ge_max_variants_config,
@@ -60,6 +63,7 @@ def test_neox_parallel_auth_profile_mapping_assigns_xdist_workers():
     assert neox_parallel_auth_profile_for_worker(None, "resource", "default,ems_local_rw2", "gw1") == "ems_local_rw2"
     with pytest.raises(ValueError, match="defines 1 profile"):
         neox_parallel_auth_profile_for_worker(None, "resource", "default", "gw1")
+
 
 def test_neox_parallel_grouping_defaults_to_off():
     assert neox_parallel_group_for_name("test_ge_config_min_create_readwrite", {"neox_config"}, "off") is None
@@ -176,6 +180,7 @@ def test_neox_parallel_scoped_cases_are_identified():
         == "node3_node_config"
     )
 
+
 def test_cleanup_registry_add_final_runs_after_lifo_callbacks():
     events = []
     registry = CleanupRegistry()
@@ -206,9 +211,18 @@ def test_ge_acl_profile_mode_cleanup_plan_restores_port_last():
         "y",
     ]
 
+
 def test_neox_config_data_files_exist():
     missing = [str(path) for path in NEOX_CONFIG_DATA_FILES if not path.exists()]
     assert not missing
+
+
+def test_vlan_api_path_matches_latest_openapi_and_b10_live_swagger():
+    assert NEOX_VLAN_API_PATH_PREFIX == "/configNeoXSeries/vlan"
+    for reference_path in (NEOX_SWAGGER_DATA_FILE, NEOX_FEATURE_TEST_DATA_FILE):
+        reference = reference_path.read_text(encoding="utf-8")
+        assert "/configNeoXSeries/vlan/{devicename}/{vid}" in reference
+        assert "/configNeoxSeries/vlan" not in reference
 
 
 def test_neox_profile_split_minmax_files_exist():

@@ -28,10 +28,11 @@ them for your lab:
 - `configs/auth_accounts.yaml`: auth profiles and role-based accounts.
 
 Do not commit real passwords, tokens, devKeys or private lab credentials.
-Keep local-only credential changes out of commits, or replace them with
-placeholder/example values before sharing a branch. The NeoX test data under
-`configs/neox_config/` is part of the runnable test dataset and should be kept
-with the code that consumes it.
+Keep the canonical YAML files shareable by storing local credentials in the
+ignored `.env` file. Values such as `${EMS_AUTH_READWRITE_DEFAULT_USERNAME:-example}`
+resolve from the process environment first, then `.env`, and finally the public
+fallback after `:-`. The NeoX test data under `configs/neox_config/` is part of
+the runnable test dataset and should be kept with the code that consumes it.
 
 ## Project Layout
 

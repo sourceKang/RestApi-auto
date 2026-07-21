@@ -83,14 +83,14 @@ pytest --ems-node NODE1 --auth-matrix
 `--auth-matrix` keeps the main run on the selected/default profile and adds
 RAD external summary checks in the same report.
 
-## Local Private Overrides
+## Local Private Values
 
-The tracked YAML files contain shareable placeholder credentials. Keep real lab
-values in the ignored files below:
+The tracked `auth_accounts.yaml` and `test_targets.yaml` files are the single
+canonical configuration sources. Their sensitive fields use
+`${VARIABLE:-public_fallback}` references. Put real lab values in the ignored
+project-root `.env` file; process environment variables take precedence over
+`.env`, and the public fallback is used only when neither is set.
 
-- `configs/auth_accounts.local.yaml`
-- `configs/test_targets.local.yaml`
-
-The loaders prefer these local files when present. Set
-`EMS_AUTH_ACCOUNTS_FILE` or `EMS_TEST_TARGETS_FILE` to select another private
-file explicitly. Never commit the local override files.
+`EMS_ENV_FILE` may select a different local environment file. The existing
+`EMS_AUTH_ACCOUNTS_FILE` and `EMS_TEST_TARGETS_FILE` variables may still select
+an entirely different canonical YAML file when required. Never commit `.env`.

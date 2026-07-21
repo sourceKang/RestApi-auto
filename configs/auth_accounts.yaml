@@ -20,41 +20,41 @@ accounts:
   readwrite:
     default:
       source: "ems_local"
-      username: "example_readwrite_default"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READWRITE_DEFAULT_USERNAME:-example_readwrite_default}"
+      password: "${EMS_AUTH_READWRITE_DEFAULT_PASSWORD:-CHANGE_ME}"
     readwrite1:
-      username: "example_readwrite_readwrite1"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READWRITE_READWRITE1_USERNAME:-example_readwrite_readwrite1}"
+      password: "${EMS_AUTH_READWRITE_READWRITE1_PASSWORD:-CHANGE_ME}"
       source: "rad_external"
 
     readwrite2:
       source: "ems_local"
-      username: "example_readwrite_readwrite2"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READWRITE_READWRITE2_USERNAME:-example_readwrite_readwrite2}"
+      password: "${EMS_AUTH_READWRITE_READWRITE2_PASSWORD:-CHANGE_ME}"
   readonly:
     default:
       source: "ems_local"
-      username: "example_readonly_default"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READONLY_DEFAULT_USERNAME:-example_readonly_default}"
+      password: "${EMS_AUTH_READONLY_DEFAULT_PASSWORD:-CHANGE_ME}"
     readonly1:
-      username: "example_readonly_readonly1"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READONLY_READONLY1_USERNAME:-example_readonly_readonly1}"
+      password: "${EMS_AUTH_READONLY_READONLY1_PASSWORD:-CHANGE_ME}"
       source: "rad_external"
     readonly2:
       source: "ems_local"
-      username: "example_readonly_readonly2"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_READONLY_READONLY2_USERNAME:-example_readonly_readonly2}"
+      password: "${EMS_AUTH_READONLY_READONLY2_PASSWORD:-CHANGE_ME}"
 
   noaccess:
     default:
       source: "ems_local"
-      username: "example_noaccess_default"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_NOACCESS_DEFAULT_USERNAME:-example_noaccess_default}"
+      password: "${EMS_AUTH_NOACCESS_DEFAULT_PASSWORD:-CHANGE_ME}"
     noaccess1:
-      username: "example_noaccess_noaccess1"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_NOACCESS_NOACCESS1_USERNAME:-example_noaccess_noaccess1}"
+      password: "${EMS_AUTH_NOACCESS_NOACCESS1_PASSWORD:-CHANGE_ME}"
       source: "rad_external"
     noaccess2:
       source: "ems_local"
-      username: "example_noaccess_noaccess2"
-      password: "CHANGE_ME"
+      username: "${EMS_AUTH_NOACCESS_NOACCESS2_USERNAME:-example_noaccess_noaccess2}"
+      password: "${EMS_AUTH_NOACCESS_NOACCESS2_PASSWORD:-CHANGE_ME}"

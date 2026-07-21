@@ -10,7 +10,6 @@ from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_AUTH_ACCOUNTS_FILE = CONFIG_DIR / "auth_accounts.yaml"
-LOCAL_AUTH_ACCOUNTS_FILE = CONFIG_DIR / "auth_accounts.local.yaml"
 ROLE_NAMES = ("readwrite", "readonly", "noaccess")
 
 
@@ -75,8 +74,6 @@ def _default_auth_accounts_file() -> Path:
     override = os.environ.get("EMS_AUTH_ACCOUNTS_FILE")
     if override:
         return Path(override)
-    if LOCAL_AUTH_ACCOUNTS_FILE.exists():
-        return LOCAL_AUTH_ACCOUNTS_FILE
     return DEFAULT_AUTH_ACCOUNTS_FILE
 
 

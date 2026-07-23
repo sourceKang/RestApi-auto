@@ -1,6 +1,24 @@
 from __future__ import annotations
 
 from cases.boundary_cases import numeric_boundary_negative_cases
+from services.neox_config.cli_expectations import profile_cli_reports_absent
+
+
+def test_profile_cli_absence_accepts_node3_device_message_variants():
+    outputs = (
+        "Error: no such data",
+        "profile not found",
+        "bwprof RestApi_NeoX_ONTBandwidth cannot find",
+        "ont-profile name:RestApi_NeoX_ONT is not exist",
+        "uni profile name:RestUNI does not exist",
+    )
+
+    assert all(profile_cli_reports_absent(output) for output in outputs)
+
+
+def test_profile_cli_absence_rejects_empty_or_existing_profile_output():
+    assert not profile_cli_reports_absent("")
+    assert not profile_cli_reports_absent("profile name: RestApi_NeoX_ONT bandwidth: 1000000")
 
 
 def test_numeric_boundary_cases_generate_below_and_above_for_declared_ranges():
@@ -182,7 +200,7 @@ def test_neox_profile_error_matrix_confirms_rejected_post_leaves_no_residual(mon
     class FakeService:
         @staticmethod
         def neox_profile_path(profile_type):
-            return f"/profile/{profile_type}/Test"
+            return f"/configNeoXSeries/profile/NODE3/{profile_type}/Test"
 
         @staticmethod
         def neox_profile_name(profile_type):
@@ -195,6 +213,7 @@ def test_neox_profile_error_matrix_confirms_rejected_post_leaves_no_residual(mon
 
     api_client = FakeApiClient()
     attachments = []
+    cli_calls = []
     rejected = FakeResponse("Fail", "Invalid parameter.")
     monkeypatch.setattr(
         neox_profile_module,
@@ -204,8 +223,15 @@ def test_neox_profile_error_matrix_confirms_rejected_post_leaves_no_residual(mon
     monkeypatch.setattr(neox_profile_module, "delete_profile_if_exists", lambda *args: None)
     monkeypatch.setattr(neox_profile_module, "post_neox_profile", lambda *args, **kwargs: rejected)
     monkeypatch.setattr(neox_profile_module, "assert_neox_profile_error_response", lambda *args: None)
-    monkeypatch.setattr(neox_profile_module, "write_neox_profile_error_report", lambda *args: "report.json")
+    monkeypatch.setattr(neox_profile_module, "write_neox_profile_error_report", lambda *args, **kwargs: "report.json")
     monkeypatch.setattr(neox_profile_module, "attach_json", lambda name, payload: attachments.append((name, payload)))
+    monkeypatch.setattr(neox_profile_module, "neox_cli_credentials", lambda *args: ("user", "password"))
+    monkeypatch.setattr(
+        neox_profile_module,
+        "run_neox_profile_cli_command",
+        lambda *args: cli_calls.append(args) or "Error: no such data",
+    )
+    monkeypatch.setattr(neox_profile_module, "assert_neox_profile_node_reachable", lambda *args: None)
 
     neox_profile_module.verify_neox_profile_error_cases(
         FakeService(),
@@ -214,7 +240,9 @@ def test_neox_profile_error_matrix_confirms_rejected_post_leaves_no_residual(mon
         "session",
         CleanupRegistry(),
         "RateLimitProfile",
+        env_config=object(),
     )
 
     assert api_client.calls == [("GET", "/profile/RateLimitProfile/Test", "session")]
+    assert len(cli_calls) == 1
     assert attachments[0][1]["observations"][0]["residual"]["retstatus"] == "Fail"

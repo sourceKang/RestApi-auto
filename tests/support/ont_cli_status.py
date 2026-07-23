@@ -65,6 +65,129 @@ def read_ont_cli_status(env_config) -> OntCliStatus:
     return OntCliStatus(status.state, status.source, output_by_command)
 
 
+def read_ont_cli_running_config(env_config) -> str:
+    dut = env_config.dut
+    pon = f"{dut.slot_id}-{dut.port_id}"
+    command = f"show running-config interface xpon {pon}"
+    ssh_username, ssh_password = ssh_credentials(env_config)
+    client = SshCliClient(
+        dut.device_ip,
+        ssh_username,
+        ssh_password,
+        timeout=15,
+    )
+    result = client.run_commands([command])[0]
+    return result.output.replace(dut.ont_password, "<redacted>")
+
+
+def wait_for_ont_cli_config_absent(
+    env_config,
+    remote_xont: str,
+    *,
+    config_reader: Callable = read_ont_cli_running_config,
+    timeout: int = 300,
+    interval: int = 15,
+) -> str:
+    expected_absent = f"interface remote xont {remote_xont}"
+    deadline = time.monotonic() + timeout
+    last_output = ""
+    while True:
+        last_output = config_reader(env_config)
+        if expected_absent.casefold() not in last_output.casefold():
+            attach_json(
+                "ONT CLI config cleanup ground truth",
+                {
+                    "node": env_config.dut.node_key,
+                    "device": env_config.dut.device_name,
+                    "expected_absent": expected_absent,
+                    "output": last_output,
+                },
+            )
+            return last_output
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+    attach_json(
+        "ONT CLI config cleanup timeout",
+        {
+            "node": env_config.dut.node_key,
+            "device": env_config.dut.device_name,
+            "expected_absent": expected_absent,
+            "output": last_output,
+        },
+    )
+    raise AssertionError(
+        f"ONT CLI config was not cleared within {timeout}s; still found {expected_absent!r}"
+    )
+
+
+def wait_for_ont_cli_config_tokens(
+    env_config,
+    *,
+    expected_tokens: tuple[str, ...] = (),
+    absent_tokens: tuple[str, ...] = (),
+    consecutive_successes: int = 1,
+    config_reader: Callable = read_ont_cli_running_config,
+    timeout: int = 180,
+    interval: int = 15,
+) -> str:
+    if consecutive_successes < 1:
+        raise ValueError("consecutive_successes must be at least 1")
+
+    deadline = time.monotonic() + timeout
+    stable_hits = 0
+    last_output = ""
+    last_missing: list[str] = []
+    last_present: list[str] = []
+
+    while True:
+        last_output = config_reader(env_config)
+        normalized = last_output.casefold()
+        last_missing = [token for token in expected_tokens if str(token).casefold() not in normalized]
+        last_present = [token for token in absent_tokens if str(token).casefold() in normalized]
+        if not last_missing and not last_present:
+            stable_hits += 1
+            if stable_hits >= consecutive_successes:
+                attach_json(
+                    "ONT CLI config stable ground truth",
+                    {
+                        "node": env_config.dut.node_key,
+                        "device": env_config.dut.device_name,
+                        "expected_tokens": expected_tokens,
+                        "absent_tokens": absent_tokens,
+                        "consecutive_successes": consecutive_successes,
+                        "output": last_output,
+                    },
+                )
+                return last_output
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+
+    attach_json(
+        "ONT CLI config stable timeout",
+        {
+            "node": env_config.dut.node_key,
+            "device": env_config.dut.device_name,
+            "missing_tokens": last_missing,
+            "unexpected_tokens": last_present,
+            "consecutive_successes": consecutive_successes,
+            "stable_hits": stable_hits,
+            "output": last_output,
+        },
+    )
+    raise AssertionError(
+        "ONT CLI config did not become stable within "
+        f"{timeout}s; missing={last_missing!r}, unexpected={last_present!r}, "
+        f"stable_hits={stable_hits}/{consecutive_successes}"
+    )
+
+
 def parse_ont_cli_status(status_output: str, unreg_output: str, ont_sn: str) -> OntCliStatus:
     combined_output = f"{status_output}\n{unreg_output}"
     for line in combined_output.splitlines():

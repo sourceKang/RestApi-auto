@@ -3,7 +3,14 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from tests.support import ont_cli_status
-from tests.support.ont_cli_status import OntCliStatus, parse_ont_cli_status, wait_for_ont_cli_is, wait_for_ont_cli_state
+from tests.support.ont_cli_status import (
+    OntCliStatus,
+    parse_ont_cli_status,
+    wait_for_ont_cli_config_absent,
+    wait_for_ont_cli_config_tokens,
+    wait_for_ont_cli_is,
+    wait_for_ont_cli_state,
+)
 
 
 def test_parse_ont_cli_status_reads_is_from_remote_xont_status():
@@ -96,6 +103,90 @@ def test_wait_for_ont_cli_state_accepts_transition_from_is_to_unregistered():
     )
 
     assert result.state == "UnReg"
+
+
+def test_wait_for_ont_cli_config_absent_accepts_transition_after_remote_xont_is_removed():
+    outputs = iter(
+        [
+            "interface remote xont 3-16-1; description TEST",
+            "interface xpon 3-16; no inactive",
+        ]
+    )
+    env = SimpleNamespace(dut=SimpleNamespace(node_key="NODE3", device_name="NeoX-03"))
+
+    result = wait_for_ont_cli_config_absent(
+        env,
+        "3-16-1",
+        config_reader=lambda _: next(outputs),
+        timeout=1,
+        interval=0,
+    )
+
+    assert "interface remote xont 3-16-1" not in result
+
+
+def test_wait_for_ont_cli_config_absent_rejects_persistent_remote_xont_config():
+    env = SimpleNamespace(dut=SimpleNamespace(node_key="NODE3", device_name="NeoX-03"))
+
+    try:
+        wait_for_ont_cli_config_absent(
+            env,
+            "3-16-1",
+            config_reader=lambda _: "interface remote xont 3-16-1",
+            timeout=0,
+            interval=0,
+        )
+    except AssertionError as error:
+        assert "was not cleared" in str(error)
+    else:
+        raise AssertionError("Persistent remote xont config must fail the clear barrier")
+
+
+def test_wait_for_ont_cli_config_tokens_requires_consecutive_exact_baseline_samples(monkeypatch):
+    outputs = iter(
+        [
+            "description REST_API_NEOX_ONT\ntemplate #RestApi_provision_temp_SFU",
+            "description REST_API_NEOX_ONT",
+            "description CHANGED",
+            "description REST_API_NEOX_ONT",
+            "description REST_API_NEOX_ONT",
+        ]
+    )
+    env = SimpleNamespace(dut=SimpleNamespace(node_key="NODE3", device_name="NeoX-03"))
+    monkeypatch.setattr(ont_cli_status.time, "sleep", lambda _: None)
+
+    result = wait_for_ont_cli_config_tokens(
+        env,
+        expected_tokens=("description REST_API_NEOX_ONT",),
+        absent_tokens=("template #RestApi_provision_temp_SFU",),
+        consecutive_successes=2,
+        config_reader=lambda _: next(outputs),
+        timeout=1,
+        interval=0,
+    )
+
+    assert "REST_API_NEOX_ONT" in result
+
+
+def test_wait_for_ont_cli_config_tokens_rejects_persistent_template_residual():
+    env = SimpleNamespace(dut=SimpleNamespace(node_key="NODE3", device_name="NeoX-03"))
+
+    try:
+        wait_for_ont_cli_config_tokens(
+            env,
+            expected_tokens=("description REST_API_NEOX_ONT",),
+            absent_tokens=("template #RestApi_provision_temp_SFU",),
+            config_reader=lambda _: (
+                "description REST_API_NEOX_ONT\n"
+                "template #RestApi_provision_temp_SFU"
+            ),
+            timeout=0,
+            interval=0,
+        )
+    except AssertionError as error:
+        assert "unexpected" in str(error)
+    else:
+        raise AssertionError("Persistent template residual must fail the stable baseline barrier")
 
 
 def test_ssh_credentials_prefer_explicit_dut_environment(monkeypatch):

@@ -5,6 +5,12 @@ from dataclasses import dataclass
 from typing import Any
 
 
+PROFILE_CLI_ABSENT_PATTERN = re.compile(
+    r"\b(?:no such data|not found|cannot find|does not exist|not exist)\b",
+    re.IGNORECASE,
+)
+
+
 @dataclass(frozen=True)
 class VlanCliExpectation:
     expected_checks: list[str]
@@ -18,6 +24,10 @@ def normalize_cli_output(output: str, ignored_line_prefixes: tuple[str, ...] = (
         for line in lines
         if line.strip() and not _is_ignored_cli_line(line, ignored_line_prefixes) and not _is_prompt_line(line)
     )
+
+
+def profile_cli_reports_absent(output: str) -> bool:
+    return bool(PROFILE_CLI_ABSENT_PATTERN.search(output))
 
 
 def clear_ignored_line_prefixes(feature: str) -> tuple[str, ...]:

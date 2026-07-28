@@ -8,7 +8,7 @@ from tests.support.collection import RAD_AUTH_MATRIX_CASES
 from clients.runtime import build_run_context
 from clients.session import SessionManager
 from tests.support.service_bundle import ServiceBundle, build_service_bundle
-from tests.support.options import neox_parallel_worker_auth_profile
+from tests.support.options import neox_parallel_worker_auth_profile, session_cache_enabled
 from tests.support.ge_cli_config import wait_for_ge_cli_config
 from tests.support.ge_workflow import GeServiceWorkflowState
 from tests.support.ont_cli_status import read_ont_cli_status, wait_for_ont_cli_is
@@ -20,7 +20,7 @@ from services.profile import TemporaryGeTemplate, TemporaryOntTemplate
 from utils.cleanup import CleanupRegistry
 from utils.allure_helpers import attach_json
 from utils.case_metadata import format_case_title
-from utils.reporting import REPORT_STATE
+from utils.reporting import REPORT_STATE, set_session_metrics
 
 
 @pytest.fixture(autouse=True)
@@ -112,8 +112,21 @@ def api_client(env_config):
 
 
 @pytest.fixture(scope="session")
-def session_manager(api_client, env_config):
-    return SessionManager(api_client, env_config)
+def session_manager(api_client, env_config, request):
+    manager = SessionManager(
+        api_client,
+        env_config,
+        cache_enabled=session_cache_enabled(request.config),
+    )
+    try:
+        yield manager
+    finally:
+        try:
+            manager.close()
+        finally:
+            metrics = manager.metrics_snapshot()
+            set_session_metrics(metrics)
+            attach_json("session cache metrics", metrics)
 
 
 @pytest.fixture(scope="session")
@@ -442,19 +455,19 @@ def cleanup_registry():
 
 @pytest.fixture
 def readwrite_session(session_manager):
-    with session_manager.role_session(SessionRole.READWRITE) as session_id:
+    with session_manager.shared_role_session(SessionRole.READWRITE) as session_id:
         yield session_id
 
 
 @pytest.fixture
 def readonly_session(session_manager):
-    with session_manager.role_session(SessionRole.READONLY) as session_id:
+    with session_manager.shared_role_session(SessionRole.READONLY) as session_id:
         yield session_id
 
 
 @pytest.fixture
 def noaccess_session(session_manager):
-    with session_manager.role_session(SessionRole.NOACCESS) as session_id:
+    with session_manager.shared_role_session(SessionRole.NOACCESS) as session_id:
         yield session_id
 
 

@@ -180,6 +180,31 @@ def test_html_report_escapes_metadata_and_case_names(monkeypatch):
     assert "<script>alert(1)</script>" not in rendered
 
 
+def test_session_metrics_are_allowlisted_and_rendered_without_sensitive_values(monkeypatch):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-02_13-00-00"))
+    reporting.set_session_metrics(
+        {
+            "mode": "on",
+            "login_requests": 2,
+            "logout_requests": 1,
+            "cache_hits": 7,
+            "cache_misses": 1,
+            "session_generations": {"readwrite": 1},
+            "session_id": "must-not-appear",
+            "token": "must-not-appear-either",
+        }
+    )
+
+    txt = reporting._render_txt_report(_fake_env())
+    html = reporting._render_html_report(_fake_env())
+
+    assert "Session Cache Mode: on" in txt
+    assert "Session Cache Hits: 7" in txt
+    assert "Session Generations: readwrite=1" in txt
+    assert "Session Cache Mode" in html
+    assert "must-not-appear" not in txt + html
+
+
 def test_write_reports_generates_integrated_evidence_report_by_default(monkeypatch, tmp_path):
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-03_12-00-00"))
     reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [

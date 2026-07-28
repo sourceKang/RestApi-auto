@@ -16,6 +16,8 @@ FULL_TESTCASE_INCLUDED_OPTIONS = {
     "--run-live-swagger-check",
 }
 
+SESSION_CACHE_MODES = ("off", "on")
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
@@ -29,6 +31,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store",
         default=None,
         help="Select auth profile from configs/auth_accounts.yaml, for example default or ems_local_rw2.",
+    )
+    parser.addoption(
+        "--session-cache-mode",
+        action="store",
+        choices=SESSION_CACHE_MODES,
+        default=os.environ.get("EMS_SESSION_CACHE_MODE", "on").strip().lower(),
+        help=(
+            "Control process-local role session reuse. off preserves per-test login/logout; "
+            "on reuses sessions and proactively refreshes them before the 600-second lifetime."
+        ),
     )
     parser.addoption(
         "--auth-matrix",
@@ -158,6 +170,10 @@ def neox_parallel_worker_auth_profile(config: pytest.Config) -> str | None:
         auth_profiles=str(config.getoption("--neox-parallel-auth-profiles") or ""),
         worker_id=os.environ.get("PYTEST_XDIST_WORKER"),
     )
+
+
+def session_cache_enabled(config: pytest.Config) -> bool:
+    return str(config.getoption("--session-cache-mode") or "on").strip().lower() == "on"
 
 
 def neox_parallel_auth_profile_for_worker(

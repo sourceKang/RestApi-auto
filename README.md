@@ -66,6 +66,21 @@ pytest --ems-node NODE1 --auth-matrix
 `--ems-node` overrides `EMS_NODE` for that pytest run.
 `--auth-profile` overrides `EMS_AUTH_PROFILE` for that pytest run.
 
+Session reuse is enabled by default after the NODE3 rollout validation. The
+explicit equivalent is:
+
+```powershell
+pytest --session-cache-mode on
+```
+
+`EMS_SESSION_CACHE_MODE=on` provides the equivalent environment setting. Role
+sessions are reused within one pytest process, refreshed at
+540 seconds before the confirmed 600-second absolute lifetime, and refreshed
+after exact `Fail / Not authorized.` responses. Only GET/HEAD requests are
+retried once; mutating requests are never replayed automatically.
+Use `--session-cache-mode off` or `EMS_SESSION_CACHE_MODE=off` for immediate
+rollback to per-test login/logout.
+
 ## Hardware Targets
 
 New framework hardware rules and per-node test targets are kept in YAML:
@@ -112,6 +127,8 @@ Details: `docs/openapi_version_guard.md`
 
 ```powershell
 pytest -m session
+pytest -m session_lifetime
+pytest -m "session and not session_lifetime"
 pytest -m inventory
 pytest -m "provision and mutating"
 pytest -m "not destructive"
@@ -119,6 +136,12 @@ pytest -m remoteconsole --run-remote
 pytest -m alarm_delete --run-alarm-delete
 pytest --ems-node NODE3 --run-full-testcases
 ```
+
+EMS1-6640 is marked `session_lifetime` because its readwrite path validates the
+600-second absolute lifetime and adds about 10 minutes. It remains part of the
+full and `session` suites, but is intentionally excluded from the fast `smoke`
+selection. The same testcase still covers all three roles; only readwrite runs
+the lifetime boundary checks.
 
 Run multiple nodes sequentially with per-node logs and a summary:
 

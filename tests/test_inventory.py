@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from cases import READ_ENDPOINTS
+from models.api import SessionRole
 
 from tests.support.fixtures import prepare_ont_inventory_with_session_rotation
 from tests.support.ont_workflow import OntInventoryPreconditionError
@@ -20,8 +21,8 @@ def ont_inventory_seed_data(prepared_ont_inventory):
 
 
 @pytest.fixture
-def ont_readwrite_session(session_manager, env_config, ont_inventory_seed_data):
-    with session_manager.credentials_session(env_config.readwrite) as session_id:
+def ont_readwrite_session(session_manager, ont_inventory_seed_data):
+    with session_manager.shared_role_session(SessionRole.READWRITE) as session_id:
         yield session_id
 
 
@@ -57,9 +58,9 @@ def ge_inventory_seed_data(request, services, session_manager, env_config, prepa
 
 
 @pytest.fixture
-def inventory_readwrite_session(session_manager, env_config, ge_inventory_seed_data):
+def inventory_readwrite_session(session_manager, ge_inventory_seed_data):
     assert_ge_inventory_seed_ready(ge_inventory_seed_data)
-    with session_manager.credentials_session(env_config.readwrite) as session_id:
+    with session_manager.shared_role_session(SessionRole.READWRITE) as session_id:
         yield session_id
 
 

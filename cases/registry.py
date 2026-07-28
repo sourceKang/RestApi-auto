@@ -34,7 +34,7 @@ def _endpoint_records() -> tuple[TestCaseRecord, ...]:
 
 
 DIRECT_CASES: tuple[TestCaseRecord, ...] = (
-    TestCaseRecord("EMS1-6640", "test_get_sessionid", "session", markers=("session", "smoke")),
+    TestCaseRecord("EMS1-6640", "test_get_sessionid", "session", markers=("session", "session_lifetime")),
     TestCaseRecord("EMS1-6651", "test_delete_sessionid", "session", markers=("session",)),
     TestCaseRecord("EMS1-7020", "test_usersession_post_invalid_param_should_return_error", "session", markers=("session",)),
     TestCaseRecord("EMS1-7021", "test_usersession_delete_invalid_param_should_return_error", "session", markers=("session",)),

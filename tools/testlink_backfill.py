@@ -165,7 +165,9 @@ def session_backfill(record: TestCaseRecord) -> TestLinkCaseBackfill:
     if record.case_id == "EMS1-6640":
         steps = [
             TestLinkStep(1, "Call `POST /usersession` with readwrite, readonly, and noaccess role credentials.", "The API returns success and the response contains a session id."),
-            TestLinkStep(2, "Call the logout API with the returned session id.", "The logout API returns success."),
+            TestLinkStep(2, "For the readwrite session only, call `GET /device` every 60 seconds through minute 10.", "Minutes 1 through 9 return success. At minute 10, the response is exactly `Fail` / `Not authorized.`"),
+            TestLinkStep(3, "Log in again with readwrite credentials and call `GET /device` with the new session id.", "The new login succeeds, and `GET /device` returns success."),
+            TestLinkStep(4, "Call the logout API for each role's active session; for readwrite, use the renewed session id.", "The logout API returns success."),
         ]
     elif record.case_id == "EMS1-6651":
         steps = [

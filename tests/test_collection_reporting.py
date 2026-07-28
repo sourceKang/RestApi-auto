@@ -3,6 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from tests.support.collection import (
+    _apply_node_capability_skips,
+    _deselect_internal_tests_from_full_suite,
     _register_neox_case,
     _register_parametrized_case,
     _skip_neox_config_for_non_neox_chassis,
@@ -10,6 +12,61 @@ from tests.support.collection import (
     ont_workflow_phase_for_name,
 )
 from utils import reporting
+
+
+def test_full_suite_deselects_internal_tests_and_keeps_formal_cases():
+    deselected = []
+
+    class Hook:
+        @staticmethod
+        def pytest_deselected(items):
+            deselected.extend(items)
+
+    config = SimpleNamespace(
+        getoption=lambda name: name == "--run-full-testcases",
+        hook=Hook(),
+    )
+    internal = SimpleNamespace(keywords={})
+    inventory = SimpleNamespace(keywords={"inventory", "readwrite"})
+    openapi = SimpleNamespace(keywords={"openapi"})
+    items = [internal, inventory, openapi]
+
+    _deselect_internal_tests_from_full_suite(config, items)
+
+    assert items == [inventory, openapi]
+    assert deselected == [internal]
+
+
+def test_regular_collection_keeps_internal_tests():
+    config = SimpleNamespace(getoption=lambda name: False)
+    internal = SimpleNamespace(keywords={})
+    items = [internal]
+
+    _deselect_internal_tests_from_full_suite(config, items)
+
+    assert items == [internal]
+
+
+def test_formal_only_collection_deselects_internal_tests_without_enabling_full_suite():
+    deselected = []
+
+    class Hook:
+        @staticmethod
+        def pytest_deselected(items):
+            deselected.extend(items)
+
+    config = SimpleNamespace(
+        getoption=lambda name: name == "--formal-testcases-only",
+        hook=Hook(),
+    )
+    internal = SimpleNamespace(keywords={})
+    inventory = SimpleNamespace(keywords={"inventory", "readwrite"})
+    items = [internal, inventory]
+
+    _deselect_internal_tests_from_full_suite(config, items)
+
+    assert items == [inventory]
+    assert deselected == [internal]
 
 
 def test_collection_registers_parametrized_endpoint_case_for_txt_report(monkeypatch):
@@ -129,6 +186,26 @@ def test_collection_allows_neox_config_for_neox_chassis():
     assert not skipped
     assert item.markers == []
 
+
+def test_collection_applies_node_capability_skip(monkeypatch):
+    env_config = SimpleNamespace(
+        dut=SimpleNamespace(node_key="NODE2", chassis="OLT1408A-C", ge_slot_id=None, ge_port_id=None),
+        hardware=SimpleNamespace(supports_slot_inventory=lambda chassis: False),
+    )
+    monkeypatch.setattr("tests.support.collection.load_environment", lambda **kwargs: env_config)
+    config = SimpleNamespace(getoption=lambda name: "NODE2" if name == "--ems-node" else False)
+    item = SimpleNamespace(
+        name="test_slot_api_invalid_param_should_return_error",
+        originalname="test_slot_api_invalid_param_should_return_error",
+        callspec=SimpleNamespace(params={}),
+        markers=[],
+        add_marker=lambda marker: item.markers.append(marker),
+    )
+
+    _apply_node_capability_skips(config, [item])
+
+    assert len(item.markers) == 1
+    assert "Slot inventory is not supported by OLT1408A-C" in item.markers[0].mark.kwargs["reason"]
 
 def test_ont_workflow_collection_phases_keep_shared_service_lifecycle_ordered():
     phases = [

@@ -6,11 +6,13 @@ import re
 
 import pytest
 
+from config_loader import load_environment
 from config_loader.hardware import HardwareConfigError, load_hardware_config
 from cases.neox_case_ids import neox_case_for_item
 from cases.registry import RAD_SUMMARY_CASES
+from tests.support.capabilities import capability_skip_reason
 from tests.support.options import option_or_full_testcases, validate_neox_parallel_settings, xdist_worker_count
-from tests.support.preflight import skip_unready_dut_items
+from tests.support.preflight import is_dut_dependent, skip_unready_dut_items
 from utils.reporting import register_node_case, register_permission_role
 
 
@@ -44,9 +46,11 @@ ONT_WORKFLOW_DEFAULT_PHASE = 9
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    _deselect_internal_tests_from_full_suite(config, items)
     _validate_neox_parallel_collection(config, items)
     run_auth_matrix = option_or_full_testcases(config, "--auth-matrix")
     skip_unready_dut_items(config, items)
+    _apply_node_capability_skips(config, items)
     if not option_or_full_testcases(config, "--run-remote"):
         skip_remote = pytest.mark.skip(reason="remote console tests require --run-remote")
         for item in items:
@@ -92,6 +96,27 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         _register_neox_case(item)
         register_permission_role(item.nodeid, role)
     _apply_ont_workflow_order(items)
+
+
+def _deselect_internal_tests_from_full_suite(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if not (
+        config.getoption("--run-full-testcases")
+        or config.getoption("--formal-testcases-only")
+    ):
+        return
+
+    formal_markers = {"openapi", "live_swagger"}
+    deselected = [
+        item
+        for item in items
+        if not is_dut_dependent(item) and not any(marker in item.keywords for marker in formal_markers)
+    ]
+    if not deselected:
+        return
+
+    deselected_ids = {id(item) for item in deselected}
+    items[:] = [item for item in items if id(item) not in deselected_ids]
+    config.hook.pytest_deselected(items=deselected)
 
 
 def _apply_ont_workflow_order(items: list[pytest.Item]) -> None:
@@ -175,6 +200,14 @@ def _skip_neox_config_for_non_neox_chassis(config: pytest.Config, items: list[py
 
 def selected_node_key(config: pytest.Config) -> str:
     return str(config.getoption("--ems-node") or os.environ.get("EMS_NODE") or "NODE3")
+
+
+def _apply_node_capability_skips(config: pytest.Config, items: list[pytest.Item]) -> None:
+    env_config = load_environment(node=selected_node_key(config))
+    for item in items:
+        reason = capability_skip_reason(item, env_config)
+        if reason:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 
 def _apply_neox_parallel_groups(config: pytest.Config, items: list[pytest.Item]) -> None:

@@ -864,7 +864,7 @@ def run_ge_global_config_command_batch(env_config, commands: list[str]) -> dict[
 
 def run_ge_global_config_command_batch_fresh(env_config, commands: list[str]) -> dict[str, str]:
     ssh_username, ssh_password = neox_cli_credentials(env_config, "GE")
-    client = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
+    client = SshCliClient(env_config.dut.ssh_host, ssh_username, ssh_password)
     results = client.run_commands(["configure", *commands, "exit"])
     return {result.command: result.output for result in results}
 
@@ -892,7 +892,7 @@ def ensure_ge_acl_profile_mode(env_config, expected_mode: str) -> None:
 
 def ge_acl_profile_mode_output(env_config) -> str:
     ssh_username, ssh_password = neox_cli_credentials(env_config, "GE")
-    client = SshCliClient(env_config.dut.device_ip, ssh_username, ssh_password)
+    client = SshCliClient(env_config.dut.ssh_host, ssh_username, ssh_password)
     results = client.run_commands(["show acl-profile mode"])
     return results[0].output if results else ""
 

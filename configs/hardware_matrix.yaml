@@ -12,6 +12,8 @@ supported_devices:
   OLT1408A-C:
     family: "GPON"
     version: "V4.02(ABJC.6) C0"
+    versions: ["V4.02(ABJC.6) C0", "V4.02(ACFQ.6)"]
+    port_operation_status_up: "2"
   OLT1408B:
     family: "GPON"
     version: "V4.02(ABJB.6) C0"
@@ -71,8 +73,10 @@ model_aliases:
   OLC3708-43: "OLC3708-43A"
 
 feature_support:
-  ont_models: ["OLT1404", "OLC3416-42", "OLC3416-42A", "OLC3708-43A", "OLC3416B-IA", "OLC3416B", "OLC3816-IA", "NXP316"]
+  ont_models: ["OLT1404", "OLT1408A-C", "OLC3416-42", "OLC3416-42A", "OLC3708-43A", "OLC3416B-IA", "OLC3416B", "OLC3816-IA", "NXP316"]
   ge_port_models: ["GLC1440X-55", "GLC1540X-55A", "NXA340"]
+  slot_inventory_unsupported_models: ["OLT1404", "OLT1408", "OLT1408A-C", "OLT1408B", "OLT1408B-IA"]
+  ont_inventory_template_unsupported_models: ["OLT1404", "OLT1408", "OLT1408A-C", "OLT1408B", "OLT1408B-IA"]
 
 chassis:
   IES4204:

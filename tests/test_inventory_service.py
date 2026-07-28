@@ -5,10 +5,50 @@ from types import SimpleNamespace
 
 import pytest
 
+from config_loader import load_environment
 from models.api import ApiResponse
-from services.inventory.service import InventoryService, _assert_port_fields
-from tests.support.fixtures import prepare_ont_inventory_with_session_rotation
+from services.inventory.service import InventoryService, _assert_any_field_present, _assert_ont_fields, _assert_port_fields
+from tests.support.fixtures import prepare_ont_inventory_with_session_rotation, prepared_ge_service
+from tests.support.ge_workflow import GeServiceWorkflowState
 from tests.support.ont_workflow import OntInventoryPreconditionError, OntServiceWorkflowState
+
+
+def test_field_presence_can_allow_empty_telephone_without_allowing_missing_field():
+    _assert_any_field_present({"Telephone": ""}, ("Telephone", "telephone"), "Port", allow_empty=True)
+
+    with pytest.raises(AssertionError, match="missing one of Telephone/telephone"):
+        _assert_any_field_present({}, ("Telephone", "telephone"), "Port", allow_empty=True)
+
+
+def _ont_inventory_item(env, template_name):
+    fw_image = str(env.node_target.get("ont", {}).get("fw_image") or "")
+    return {
+        "DevName": env.dut.device_name,
+        "IPAddress": env.dut.device_ip,
+        "Slot": env.dut.slot_id,
+        "Port": env.dut.port_id,
+        "ONT": env.dut.ont_id,
+        "sn": env.dut.ont_sn,
+        "password": env.dut.ont_password,
+        "templateName": template_name,
+        "description": env.dut.ont_description,
+        "model": env.node_target["ont"]["model"],
+        "activeVersion": "",
+        "activeFwVersion": fw_image,
+    }
+
+
+def test_olt140x_ont_inventory_requires_template_field_but_allows_empty_value():
+    env = load_environment(node="NODE2")
+
+    _assert_ont_fields(_ont_inventory_item(env, ""), env, ont_template="#Temporary")
+
+
+def test_neox_ont_inventory_still_requires_expected_template_value():
+    env = load_environment(node="NODE3")
+
+    with pytest.raises(AssertionError, match="templateName"):
+        _assert_ont_fields(_ont_inventory_item(env, ""), env, ont_template="#Temporary")
 
 
 def test_port_inventory_accepts_operation_status_without_provisioning_status():
@@ -59,6 +99,26 @@ def test_port_inventory_accepts_operation_status_without_provisioning_status():
     }
 
     _assert_port_fields(item, env_config)
+
+
+def test_olt1408ac_port_inventory_uses_cli_confirmed_rest_up_status_two():
+    env = load_environment(node="NODE2")
+    item = {
+        "SubmapName": env.node_target.get("submap_name", ""),
+        "Speed": "2.5G",
+        "portAdminState": "1",
+        "DevName": env.dut.device_name,
+        "Telephone": "",
+        "PortID": env.dut.port_id,
+        "PortName": env.dut.ge_port_name,
+        "portOperationStatus": "2",
+        "SlotID": env.dut.slot_id,
+        "txPower": "5.36",
+        "rxPower": "N/A",
+        "IPAddress": env.dut.device_ip,
+    }
+
+    _assert_port_fields(item, env)
 
 
 class FakeApiClient:
@@ -390,6 +450,25 @@ def test_prepare_ont_inventory_stops_when_existing_service_is_not_is():
             SimpleNamespace(readwrite=object()),
             lambda: template_factory_calls.append(True) or "#Temporary",
             cli_status_reader=lambda env: cli_status("UnReg"),
+            allow_provisioning=True,
+        )
+
+    assert template_factory_calls == []
+    assert not any(call[0] == "upsert" for call in inventory.calls)
+
+
+def test_prepare_ont_inventory_skips_existing_non_is_service_for_read_only_seed():
+    inventory = FakeInventoryForPreparation(api_response("Success"), template="#Formal")
+    services = SimpleNamespace(inventory=inventory, provision=FakeProvisionForPreparation())
+    template_factory_calls = []
+
+    with pytest.raises(OntInventoryPreconditionError, match="read-only inventory tests do not modify"):
+        prepare_ont_inventory_with_session_rotation(
+            services,
+            FakeSessionManager(),
+            SimpleNamespace(readwrite=object()),
+            lambda: template_factory_calls.append(True) or "#Temporary",
+            cli_status_reader=lambda env: cli_status("UnReg"),
         )
 
     assert template_factory_calls == []
@@ -462,6 +541,29 @@ def test_prepare_ont_inventory_continues_when_rest_visibility_recovers():
     assert not any(call[0] == "consistency_diagnostic" for call in inventory.calls)
 
 
+def test_prepare_ont_inventory_does_not_provision_for_read_only_seed():
+    session_manager = FakeSessionManager()
+    inventory = FakeInventoryForPreparation(api_response("Fail", "No data found"))
+    services = SimpleNamespace(inventory=inventory, provision=FakeProvisionForPreparation())
+    template_factory_calls = []
+
+    with pytest.raises(OntInventoryPreconditionError, match="read-only inventory tests do not provision"):
+        prepare_ont_inventory_with_session_rotation(
+            services,
+            session_manager,
+            SimpleNamespace(readwrite=object()),
+            lambda: template_factory_calls.append(True) or "#Temporary",
+            cli_status_reader=lambda env: cli_status("UnReg", "xpon-unreg"),
+        )
+
+    assert template_factory_calls == []
+    assert not any(call[0] == "upsert" for call in inventory.calls)
+    assert session_manager.events == [
+        ("open", "session-1"),
+        ("close", "session-1"),
+    ]
+
+
 def test_prepare_ont_inventory_creates_only_when_service_missing_and_cli_unregistered():
     session_manager = FakeSessionManager()
     inventory = FakeInventoryForPreparation(api_response("Fail", "No data found"))
@@ -477,6 +579,7 @@ def test_prepare_ont_inventory_creates_only_when_service_missing_and_cli_unregis
         lambda: template_factory_calls.append(True) or "#Temporary",
         cli_status_reader=lambda env: cli_status("UnReg", "xpon-unreg"),
         cli_is_waiter=lambda env, **kwargs: cli_wait_calls.append(kwargs) or cli_status("IS"),
+        allow_provisioning=True,
     )
 
     assert result == "#Temporary"
@@ -511,6 +614,7 @@ def test_prepare_ont_inventory_rebuilds_only_current_temporary_service_after_wai
         lambda: "#Temporary",
         cli_status_reader=lambda env: cli_status("UnReg"),
         cli_is_waiter=lambda env, **kwargs: cli_status("IS"),
+        allow_provisioning=True,
     )
 
     assert provision.calls == [
@@ -530,3 +634,14 @@ def test_prepare_ont_inventory_rebuilds_only_current_temporary_service_after_wai
         ("open", "session-4"),
         ("close", "session-4"),
     ]
+
+
+def test_prepared_ge_service_does_not_create_seed_for_read_only_flow():
+    with pytest.raises(pytest.skip.Exception, match="read-only tests do not create"):
+        prepared_ge_service.__wrapped__(
+            services=None,
+            session_manager=None,
+            env_config=None,
+            request=None,
+            ge_service_workflow_state=GeServiceWorkflowState(),
+        )

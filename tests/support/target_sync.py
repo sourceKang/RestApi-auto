@@ -43,7 +43,12 @@ def sync_target_data_from_cli(
             return TargetSyncResult(True, f"{node} has no slot-based target data; show lc st sync skipped")
 
         env_config = load_environment(node=node, auth_profile=auth_profile)
-        client = SshCliClient(env_config.dut.device_ip, env_config.readwrite.username, env_config.readwrite.password)
+        if env_config.dut.ssh_backend == "openssh_legacy":
+            return TargetSyncResult(
+                True,
+                f"{node} uses openssh_legacy; NeoX show lc st target sync skipped",
+            )
+        client = SshCliClient(env_config.dut.ssh_host, env_config.readwrite.username, env_config.readwrite.password)
         results = client.run_commands(["show lc st"])
         output = results[0].output if results else ""
         live_cards = parse_show_lc_status(output)

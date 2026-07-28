@@ -57,6 +57,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
             "alarm delete, NeoX config, NeoX ONT error, and live Swagger checks."
         ),
     )
+    parser.addoption(
+        "--formal-testcases-only",
+        action="store_true",
+        default=False,
+        help="Collect formal DUT/API testcases without enabling optional destructive or mutating suites.",
+    )
     parser.addoption("--run-remote", action="store_true", default=False, help="Run remote console tests.")
     parser.addoption("--run-alarm-delete", action="store_true", default=False, help="Run history alarm delete tests.")
     parser.addoption(

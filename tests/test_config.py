@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from config_loader import load_environment
-from config_loader.settings import ConfigError
+from config_loader.hardware import load_hardware_config
+from tests.support.fixtures import temporary_ge_template
 
 
 @pytest.mark.smoke
@@ -70,15 +73,47 @@ def assert_profile_role_mapping(env) -> None:
     assert len({account.username for _, account in accounts.values()}) == len(accounts)
 
 
-def test_explicit_node_without_required_target_data_does_not_fallback():
-    with pytest.raises(ConfigError, match="NODE2 has no ONT test target"):
-        load_environment(node="NODE2")
+def test_node2_resolves_configured_ont_without_ge_target():
+    env = load_environment(node="NODE2")
+
+    assert env.dut.device_name == "OLT1408AC_168.84"
+    assert env.dut.device_ip == "192.168.168.84"
+    assert env.dut.ssh_host == "192.168.168.84"
+    assert env.dut.ssh_backend == "openssh_legacy"
+    assert env.dut.ssh_username == "admin"
+    assert env.dut.ssh_password
+    assert env.dut.slot_id == "0"
+    assert env.dut.port_id == "8"
+    assert env.dut.ont_id == "1"
+    assert env.dut.ont_sn == "5A594F4F805F5C81"
+    assert env.dut.ge_slot_id == ""
+    assert env.dut.ge_port_id == ""
+    assert env.dut.ge_template == ""
+
+
+def test_all_nodes_define_independent_ssh_credentials():
+    hardware = load_hardware_config()
+
+    for node_key, target in hardware.targets["nodes"].items():
+        assert target.get("ssh_username"), f"{node_key} is missing ssh_username"
+        assert target.get("ssh_password"), f"{node_key} is missing ssh_password"
+
+def test_temporary_ge_template_skips_before_setup_when_target_is_missing():
+    env_config = SimpleNamespace(
+        dut=SimpleNamespace(node_key="NODE2", ge_slot_id="", ge_port_id="")
+    )
+    fixture_generator = temporary_ge_template.__wrapped__(None, None, env_config)
+
+    with pytest.raises(pytest.skip.Exception, match="configured GE target for NODE2"):
+        next(fixture_generator)
+
 
 def test_sensitive_config_fields_are_excluded_from_dataclass_repr():
     from config_loader.auth import AuthConfig, ResolvedAccount
     from config_loader.settings import Credentials, DutSample, EnvironmentConfig
 
     assert Credentials.__dataclass_fields__["password"].repr is False
+    assert DutSample.__dataclass_fields__["ssh_password"].repr is False
     assert DutSample.__dataclass_fields__["ont_password"].repr is False
     assert ResolvedAccount.__dataclass_fields__["password"].repr is False
     assert AuthConfig.__dataclass_fields__["raw"].repr is False

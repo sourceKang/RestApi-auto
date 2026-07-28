@@ -31,6 +31,10 @@ class DutSample:
     node_key: str
     device_name: str
     device_ip: str
+    ssh_host: str
+    ssh_backend: str
+    ssh_username: str
+    ssh_password: str = field(repr=False)
     chassis: str
     slot_id: str
     port_id: str
@@ -168,6 +172,10 @@ def _select_dut_sample(hardware: HardwareConfig, preferred_node: str, *, allow_f
                 node_key=node_key,
                 device_name=str(target["device_name"]),
                 device_ip=str(target["device_ip"]),
+                ssh_host=str(target.get("ssh_host") or target["device_ip"]),
+                ssh_backend=str(target.get("ssh_backend") or "paramiko"),
+                ssh_username=str(target.get("ssh_username") or ""),
+                ssh_password=str(target.get("ssh_password") or ""),
                 chassis=str(target["chassis"]),
                 slot_id=str(_target_value(ont_target, "slot_id", card["slot_id"])),
                 port_id=str(_target_value(ont_target, "port_id", ont_port["port_id"])),

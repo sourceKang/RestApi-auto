@@ -1,5 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+from types import SimpleNamespace
+
+from cases.endpoint_cases import READ_ENDPOINTS
 from models.api import EndpointCase
 from services.endpoint_case import request_endpoint_case
 
@@ -15,6 +18,22 @@ class RecordingClient:
 
 class Env:
     value = "target"
+
+
+def test_inventory_port_paths_fallback_to_ont_target_without_ge_target():
+    cases = {case.name: case for case in READ_ENDPOINTS}
+    env = SimpleNamespace(
+        dut=SimpleNamespace(
+            device_name="NODE2",
+            slot_id="0",
+            port_id="8",
+            ge_slot_id="",
+            ge_port_id="",
+        )
+    )
+
+    assert cases["port_by_slot"].build_path(env) == "/port/NODE2/0"
+    assert cases["port_by_id"].build_path(env) == "/port/NODE2/0/8"
 
 
 def test_request_endpoint_case_builds_path_params_and_session():

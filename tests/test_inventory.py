@@ -5,6 +5,7 @@ import pytest
 from cases import READ_ENDPOINTS
 from models.api import SessionRole
 
+from tests.support.capabilities import capability_skip_reason
 from tests.support.fixtures import prepare_ont_inventory_with_session_rotation
 from tests.support.ont_workflow import OntInventoryPreconditionError
 
@@ -13,6 +14,12 @@ INVENTORY_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "inven
 ONT_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "ont"]
 _GE_READINESS_CACHE: set[tuple[str, str, str]] = set()
 _GE_SETUP_FAILURES: dict[tuple[str, str, str], str] = {}
+
+@pytest.fixture(autouse=True)
+def inventory_case_capability_guard(request, env_config):
+    reason = capability_skip_reason(request.node, env_config)
+    if reason:
+        pytest.skip(reason)
 
 
 @pytest.fixture(scope="session")
@@ -27,12 +34,16 @@ def ont_readwrite_session(session_manager, ont_inventory_seed_data):
 
 
 @pytest.fixture
-def ge_inventory_seed_data(request, services, session_manager, env_config, prepared_ge_service):
+def ge_inventory_seed_data(request, services, session_manager, env_config):
     case = getattr(getattr(request.node, "callspec", None), "params", {}).get("case")
     if case is None or not str(case.name).startswith("port_"):
         yield
         return
+    if not env_config.dut.ge_slot_id or not env_config.dut.ge_port_id:
+        yield
+        return
 
+    request.getfixturevalue("prepared_ge_service")
     cache_key = (
         env_config.dut.node_key,
         env_config.dut.ge_slot_id,
@@ -93,6 +104,7 @@ def assert_ge_inventory_seed_ready(setup_failure: str | None) -> None:
 
 
 @pytest.mark.ont
+@pytest.mark.mutating
 @pytest.mark.readwrite
 @pytest.mark.smoke
 def test_ont_inventory_ready_after_post(
@@ -102,6 +114,11 @@ def test_ont_inventory_ready_after_post(
     request,
     ont_service_workflow_state,
 ):
+    if ont_service_workflow_state.post_precondition:
+        pytest.skip(
+            "Blocked because EMS1-6666 ownership precondition was not met: "
+            f"{ont_service_workflow_state.post_precondition}"
+        )
     if ont_service_workflow_state.post_failure:
         pytest.skip(
             "Blocked because EMS1-6666 POST failed: "
@@ -114,6 +131,7 @@ def test_ont_inventory_ready_after_post(
             env_config,
             lambda: request.getfixturevalue("temporary_ont_template"),
             workflow_state=ont_service_workflow_state,
+            allow_provisioning=True,
         )
     except OntInventoryPreconditionError as error:
         ont_service_workflow_state.block_readiness_precondition(error)

@@ -94,3 +94,9 @@ project-root `.env` file; process environment variables take precedence over
 `EMS_ENV_FILE` may select a different local environment file. The existing
 `EMS_AUTH_ACCOUNTS_FILE` and `EMS_TEST_TARGETS_FILE` variables may still select
 an entirely different canonical YAML file when required. Never commit `.env`.
+
+DUT SSH credentials belong to each node target and are independent from EMS REST
+accounts. Configure `ssh_username` and `ssh_password` in `test_targets.yaml`
+with `.env` references such as `DUT_SSH_NODE2_USERNAME` and
+`DUT_SSH_NODE2_PASSWORD`. The generic `DUT_SSH_USERNAME` and
+`DUT_SSH_PASSWORD` process variables remain explicit run-wide overrides.

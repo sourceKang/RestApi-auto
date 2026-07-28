@@ -10,6 +10,7 @@ env/
 ENV/
 .pytest_deps/
 .codex-tools/
+.codex-validation/
 
 # Test, coverage, and tooling caches
 .pytest_cache/
@@ -27,6 +28,8 @@ allure-report/
 # Local environment and editor files
 .env
 .env.*
+configs/auth_accounts.local.yaml
+local/temporary_resources/
 *.log
 .idea/
 .vscode/

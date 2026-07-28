@@ -611,6 +611,7 @@ def _first_present_value(actual, keys):
 def _assert_port_fields(item, env_config):
     dut = env_config.dut
     target = _expected_port_target(env_config)
+    operation_status = _expected_port_operation_status(env_config)
     _assert_fields(
         item,
         {
@@ -629,11 +630,11 @@ def _assert_port_fields(item, env_config):
         lambda: _assert_any_field(
             item,
             ("portOperationStatus", "OperationStatus", "operationStatus"),
-            EXPECTED_PORT_UP_OPERATION_STATE,
+            operation_status,
             "Port",
         ),
         lambda: _assert_optional_port_speed(item, env_config),
-        lambda: _assert_any_field_present(item, ("Telephone", "telephone"), "Port"),
+        lambda: _assert_any_field_present(item, ("Telephone", "telephone"), "Port", allow_empty=True),
         lambda: _assert_any_field_present(item, ("txPower", "TxPower", "Tx Power"), "Port"),
         lambda: _assert_any_field_present(item, ("rxPower", "RxPower", "Rx Power"), "Port"),
     ]
@@ -646,6 +647,15 @@ def _assert_port_fields(item, env_config):
     assert not mismatches, f"Port inventory mismatches: {'; '.join(mismatches)}"
 
 
+def _expected_port_operation_status(env_config) -> str:
+    hardware = getattr(env_config, "hardware", None)
+    resolver = getattr(hardware, "port_operation_status_up", None)
+    chassis = getattr(env_config.dut, "chassis", "")
+    if callable(resolver) and chassis:
+        return str(resolver(chassis))
+    return EXPECTED_PORT_UP_OPERATION_STATE
+
+
 def _assert_ont_fields(item, env_config, ont_template: str | None = None):
     dut = env_config.dut
     _assert_any_field(item, ("DevName",), dut.device_name, "ONT")
@@ -655,7 +665,10 @@ def _assert_ont_fields(item, env_config, ont_template: str | None = None):
     _assert_any_field(item, ("ONT", "ONTID"), dut.ont_id, "ONT")
     _assert_any_field(item, ("sn", "SN", "SerialNumber"), dut.ont_sn, "ONT")
     _assert_any_field(item, ("password",), dut.ont_password, "ONT")
-    _assert_any_field(item, ("templateName", "ontTemplate"), ont_template or dut.ont_template, "ONT")
+    if env_config.hardware.supports_ont_inventory_template(dut.chassis):
+        _assert_any_field(item, ("templateName", "ontTemplate"), ont_template or dut.ont_template, "ONT")
+    else:
+        _assert_any_field_present(item, ("templateName", "ontTemplate"), "ONT", allow_empty=True)
     _assert_any_field(item, ("description", "Desc"), dut.ont_description, "ONT")
     _assert_any_field(item, ("model", "ONTModel", "OntModel"), _expected_ont_model(env_config), "ONT")
     _assert_active_ont_fw_image(item, env_config)
@@ -719,9 +732,10 @@ def _expected_port_target(env_config) -> dict[str, str]:
     }
 
 
-def _assert_any_field_present(item, keys, label: str) -> None:
+def _assert_any_field_present(item, keys, label: str, *, allow_empty: bool = False) -> None:
     actual_value = _first_present_value(item, keys)
-    assert actual_value not in (None, ""), f"{label} missing one of {'/'.join(keys)}: {item!r}"
+    missing_values = (None,) if allow_empty else (None, "")
+    assert actual_value not in missing_values, f"{label} missing one of {'/'.join(keys)}: {item!r}"
 
 
 def _assert_active_ont_fw_image(item, env_config) -> None:

@@ -57,7 +57,7 @@ def capture_ge_service_timeout_cli_diagnostic(
     session = None
     try:
         username, password = ssh_credentials(env_config)
-        session = SshCliSession(dut.device_ip, username, password, timeout=5)
+        session = SshCliSession(dut.ssh_host, username, password, timeout=5)
         session.connect()
         output, elapsed, confirmed = session.run_command(
             command,
@@ -111,7 +111,7 @@ def read_ge_cli_config(
     dut = env_config.dut
     commands = ge_cli_commands(dut.ge_slot_id, dut.ge_port_id)
     username, password = ssh_credentials(env_config)
-    session = SshCliSession(dut.device_ip, username, password, timeout=15)
+    session = SshCliSession(dut.ssh_host, username, password, timeout=15)
     output_by_command = {}
     try:
         session.connect()
@@ -270,7 +270,7 @@ def monitor_ge_patch_transition(
         raise AssertionError("PUT CLI baseline is empty; refusing to monitor PATCH reprovision.")
 
     username, password = ssh_credentials(env_config)
-    session = SshCliSession(dut.device_ip, username, password, timeout=15)
+    session = SshCliSession(dut.ssh_host, username, password, timeout=15)
     timeline: list[dict] = []
     snapshots: dict[str, str] = {"put_baseline": baseline_running_config}
     observed_reprovision = False

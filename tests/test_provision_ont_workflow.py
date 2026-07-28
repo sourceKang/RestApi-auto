@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from models.api import ApiResponse
-from services.provision.service import ProvisionService
+from services.provision.service import ProvisionOwnershipPreconditionError, ProvisionService
 from tests.support.ont_workflow import OntInventoryPreconditionError, OntServiceWorkflowState
 
 
@@ -64,7 +64,7 @@ def test_post_refuses_to_delete_service_using_another_template():
     client = FakeApiClient([response("Success", service=ont_service("#Formal"))])
     service = ProvisionService(client, env_config())
 
-    with pytest.raises(AssertionError, match="Refusing to modify"):
+    with pytest.raises(ProvisionOwnershipPreconditionError, match="Refusing to modify"):
         service.verify_ont_service_post("session", ont_template="#Temporary")
 
     assert [(method, path) for method, path, _ in client.calls] == [
@@ -134,3 +134,14 @@ def test_ont_workflow_state_tracks_precondition_separately_from_failure():
     state.begin_post("#Temporary")
 
     assert state.readiness_precondition == ""
+
+
+def test_ont_workflow_state_tracks_post_ownership_precondition():
+    state = OntServiceWorkflowState()
+    state.begin_post("#Temporary")
+
+    state.block_post_precondition(ProvisionOwnershipPreconditionError("foreign template"))
+
+    assert state.post_precondition == "foreign template"
+    assert state.post_failure == ""
+    assert state.post_succeeded is False

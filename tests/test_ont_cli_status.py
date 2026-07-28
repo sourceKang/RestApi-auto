@@ -5,12 +5,53 @@ from types import SimpleNamespace
 from tests.support import ont_cli_status
 from tests.support.ont_cli_status import (
     OntCliStatus,
+    ont_cli_status_commands,
     parse_ont_cli_status,
     wait_for_ont_cli_config_absent,
     wait_for_ont_cli_config_tokens,
     wait_for_ont_cli_is,
     wait_for_ont_cli_state,
 )
+
+
+def test_ont_cli_client_selects_explicit_backend_only():
+    legacy_env = SimpleNamespace(
+        dut=SimpleNamespace(ssh_backend="openssh_legacy", ssh_host="192.0.2.1")
+    )
+    paramiko_env = SimpleNamespace(
+        dut=SimpleNamespace(ssh_backend="paramiko", ssh_host="192.0.2.2")
+    )
+
+    legacy_client = ont_cli_status.ont_cli_client(legacy_env, "admin", "secret")
+    paramiko_client = ont_cli_status.ont_cli_client(paramiko_env, "admin", "secret")
+
+    assert legacy_client.__class__.__name__ == "LegacyOpenSshCliClient"
+    assert paramiko_client.__class__.__name__ == "SshCliClient"
+
+
+def test_ont_cli_status_commands_use_olt_ug_aid_for_olt1408a_c():
+    olt_env = SimpleNamespace(
+        dut=SimpleNamespace(chassis="OLT1408A-C", slot_id="0", port_id="8", ont_id="1")
+    )
+    neox_env = SimpleNamespace(
+        dut=SimpleNamespace(chassis="NeoX-03", slot_id="3", port_id="16", ont_id="1")
+    )
+
+    assert ont_cli_status_commands(olt_env) == (
+        "show remote ont ont-8-1",
+        "show remote ont unreg",
+    )
+    assert ont_cli_status_commands(neox_env) == (
+        "show interface remote xont 3-16-1 status",
+        "show interface xpon 3-16 unreg",
+    )
+
+
+def test_empty_ont_password_does_not_corrupt_cli_output():
+    output = "ONT 1 status IS"
+
+    assert ont_cli_status._redact_cli_output(output, "") == output
+    assert ont_cli_status._redact_cli_output(output, "status") == "ONT 1 <redacted> IS"
 
 
 def test_parse_ont_cli_status_reads_is_from_remote_xont_status():
@@ -196,6 +237,22 @@ def test_ssh_credentials_prefer_explicit_dut_environment(monkeypatch):
 
     assert ont_cli_status.ssh_credentials(env_config) == ("cli-user", "cli-password")
 
+
+def test_ssh_credentials_use_dut_target_config(monkeypatch):
+    monkeypatch.delenv("DUT_SSH_USERNAME", raising=False)
+    monkeypatch.delenv("DUT_SSH_PASSWORD", raising=False)
+    monkeypatch.delenv("NEOX_SSH_USERNAME", raising=False)
+    monkeypatch.delenv("NEOX_SSH_PASSWORD", raising=False)
+    env_config = SimpleNamespace(
+        auth_profile="default",
+        dut=SimpleNamespace(
+            node_key="NODE2",
+            ssh_username="admin",
+            ssh_password="device-secret",
+        ),
+    )
+
+    assert ont_cli_status.ssh_credentials(env_config) == ("admin", "device-secret")
 
 def test_ssh_credentials_use_default_profile_for_nondefault_rest_auth(monkeypatch):
     monkeypatch.delenv("DUT_SSH_USERNAME", raising=False)

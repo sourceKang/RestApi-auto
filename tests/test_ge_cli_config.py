@@ -344,6 +344,7 @@ def _env_config():
             "node_key": "NODE1",
             "device_name": "device",
             "device_ip": "192.0.2.10",
+            "ssh_host": "192.0.2.10",
             "ge_slot_id": "1",
             "ge_port_id": "39",
         },

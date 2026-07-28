@@ -17,12 +17,27 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from config_loader.auth import AuthConfigError, load_auth_config
 from config_loader.hardware import HardwareConfigError, load_hardware_config
 from tests.support.options import validate_neox_parallel_settings, xdist_worker_count
 from tests.support.preflight import run_startup_preflight
 
 
 REPORT_ROOT = PROJECT_ROOT / "reports" / "multi_node"
+SAFE_DEFAULT_MARKER = "not mutating and not destructive and not session_lifetime"
+NODE_MUTATING_MARKER = "mutating and not ems_scoped and not destructive and not session_lifetime"
+EMS_MUTATING_MARKER = "mutating and ems_scoped and not destructive and not session_lifetime"
+EMS_SESSION_LIFETIME_MARKER = "session_lifetime and not mutating and not destructive"
+LANE_SAFE = "safe"
+LANE_NODE_MUTATING = "node-mutating"
+LANE_EMS_MUTATING = "ems-mutating"
+LANE_EMS_SESSION_LIFETIME = "ems-session-lifetime"
+LANE_CHOICES = (
+    LANE_SAFE,
+    LANE_NODE_MUTATING,
+    LANE_EMS_MUTATING,
+    LANE_EMS_SESSION_LIFETIME,
+)
 COMMON_FULL_TESTCASE_OPTIONS = (
     "--auth-matrix",
     "--run-remote",
@@ -75,6 +90,14 @@ def main(argv: list[str] | None = None) -> int:
     nodes = parse_nodes(args.nodes)
     if not nodes:
         parser.error("--nodes must include at least one node key")
+    if args.run_full_testcases and args.lane != LANE_SAFE:
+        parser.error("--run-full-testcases cannot be combined with a non-safe --lane")
+    if args.lane in {LANE_EMS_MUTATING, LANE_EMS_SESSION_LIFETIME} and (
+        len(nodes) != 1 or args.jobs != 1
+    ):
+        parser.error(f"{args.lane} requires exactly one node and --jobs 1")
+    if args.lane != LANE_SAFE and selected_option_value(pytest_args, "-m") is not None:
+        parser.error("non-safe lanes define their own marker selection; do not also pass pytest -m")
 
     report_dir = Path(args.report_dir) if args.report_dir else default_report_dir()
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -91,6 +114,7 @@ def main(argv: list[str] | None = None) -> int:
             run_full_testcases=args.run_full_testcases,
             python_executable=args.python,
             auth_profile_override=auth_profile_for_node(auth_profiles, index),
+            lane=args.lane,
         )
         for index, node in enumerate(nodes)
     ]
@@ -144,6 +168,17 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Run the full suite per node. NeoX nodes receive --run-full-testcases; "
             "non-NeoX nodes receive the full-suite common options without NeoX-only config options."
+        ),
+    )
+    parser.add_argument(
+        "--lane",
+        choices=LANE_CHOICES,
+        default=LANE_SAFE,
+        help=(
+            "Execution lane: safe is the read-only parallel baseline; node-mutating runs "
+            "node-owned non-destructive mutations serially within each node; ems-mutating "
+            "runs EMS-global non-destructive mutations once; ems-session-lifetime runs the "
+            "600-second EMS session case once. EMS lanes require one node/job."
         ),
     )
     parser.add_argument(
@@ -215,6 +250,30 @@ def validate_parallel_node_auth_profiles(plans: list[NodePlan], jobs: int) -> No
         if len(nodes) > 1
     }
     if not duplicates:
+        try:
+            auth = load_auth_config()
+            signatures = {
+                profile: tuple(
+                    auth.resolve_profile(profile)[role].username
+                    for role in ("readwrite", "readonly", "noaccess")
+                )
+                for profile in nodes_by_profile
+            }
+        except AuthConfigError as error:
+            raise ValueError(f"Cannot validate parallel auth profiles: {error}") from error
+
+        profiles_by_signature: dict[tuple[str, str, str], list[str]] = {}
+        for profile, signature in signatures.items():
+            profiles_by_signature.setdefault(signature, []).append(profile)
+        shared_accounts = [
+            profiles for profiles in profiles_by_signature.values() if len(profiles) > 1
+        ]
+        if shared_accounts:
+            conflicts = "; ".join(",".join(sorted(profiles)) for profiles in shared_accounts)
+            raise ValueError(
+                "Parallel auth profiles must resolve to distinct readwrite, readonly, and noaccess "
+                f"usernames. Shared account signatures: {conflicts}."
+            )
         return
 
     conflicts = "; ".join(
@@ -240,15 +299,23 @@ def build_node_plan(
     run_full_testcases: bool,
     python_executable: str,
     auth_profile_override: str | None = None,
+    lane: str = LANE_SAFE,
 ) -> NodePlan:
+    if lane not in LANE_CHOICES:
+        raise ValueError(f"Unsupported multi-node lane: {lane}")
+    if run_full_testcases and lane != LANE_SAFE:
+        raise ValueError("run_full_testcases cannot be combined with a non-safe lane")
     chassis = node_chassis(node)
     is_neox = chassis.startswith("NeoX")
     sanitized_args, omitted_options = sanitize_pytest_args(pytest_args, is_neox=is_neox)
+    if lane != LANE_SAFE and selected_option_value(sanitized_args, "-m") is not None:
+        raise ValueError("non-safe lanes define their own marker selection")
     validate_parallel_pytest_args(sanitized_args, is_neox=is_neox)
     auth_profile = auth_profile_override or selected_option_value(sanitized_args, "--auth-profile")
     command = [python_executable, "-m", "pytest", "--ems-node", node]
     if auth_profile_override:
         command.extend(["--auth-profile", auth_profile_override])
+    command.append("--formal-testcases-only")
 
     if run_full_testcases:
         if is_neox:
@@ -257,6 +324,16 @@ def build_node_plan(
             command.extend(COMMON_FULL_TESTCASE_OPTIONS)
             omitted_options.append("--run-neox-config")
             omitted_options.append("--run-neox-ont-error")
+    elif lane == LANE_NODE_MUTATING:
+        command.extend(["-m", NODE_MUTATING_MARKER])
+        if is_neox:
+            command.extend(["--run-neox-config", "--run-neox-ont-error"])
+    elif lane == LANE_EMS_MUTATING:
+        command.extend(["-m", EMS_MUTATING_MARKER])
+    elif lane == LANE_EMS_SESSION_LIFETIME:
+        command.extend(["-m", EMS_SESSION_LIFETIME_MARKER])
+    elif selected_option_value(sanitized_args, "-m") is None:
+        command.extend(["-m", SAFE_DEFAULT_MARKER])
 
     command.extend(sanitized_args)
     return NodePlan(
@@ -437,7 +514,11 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
     command = command_with_runner_preflight_skip(plan.command) if preflight else list(plan.command)
     command = command_with_parallel_report_dir(command, report_dir, plan.node)
     process_env = os.environ.copy()
-    process_env.setdefault("EMS_REPORT_SUFFIX", safe_name(plan.node))
+    inherited_suffix = process_env.get("EMS_REPORT_SUFFIX", "").strip()
+    node_suffix = safe_name(plan.node)
+    process_env["EMS_REPORT_SUFFIX"] = (
+        f"{inherited_suffix}_{node_suffix}" if inherited_suffix else node_suffix
+    )
     if not preflight:
         print(f"[{plan.node}] preflight skipped", flush=True)
     print(f"[{plan.node}] pytest started; log={log_path}", flush=True)

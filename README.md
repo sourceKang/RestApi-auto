@@ -151,11 +151,66 @@ Run multiple nodes sequentially with per-node logs and a summary:
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --jobs 2 --auth-profiles default,ems_local_rw2 --run-full-testcases
 ```
 
+Use explicit execution lanes for the stable split workflow:
+
+```powershell
+# Read-only baseline: parallel by node, no lifetime or mutation.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE2,NODE3 --jobs 3 --auth-profiles default,ems_local_rw2,rad_external
+
+# Node-owned mutation: serial inside each node process, parallel across distinct DUT resources.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE2,NODE3 --jobs 3 --auth-profiles default,ems_local_rw2,rad_external --lane node-mutating
+
+# EMS-global mutation: exactly one representative node and one job.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1 --jobs 1 --auth-profiles default --lane ems-mutating
+
+# EMS-scoped absolute session lifetime: exactly one representative node and one job.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1 --jobs 1 --auth-profiles default --lane ems-session-lifetime
+```
+
+The `node-mutating` lane excludes destructive cases and EMS1-6640. NeoX config
+cases are enabled only for NeoX nodes, while each node process remains serial so
+ONT and GE lifecycles stay ordered. The `ems-mutating` lane runs shared EMS
+profile lifecycles exactly once. Alarm acknowledge/clear remains destructive and
+is excluded from both mutation lanes. The `ems-session-lifetime` lane accepts
+exactly one node, preventing the 600-second EMS behavior from being repeated for
+every DUT. If an ONT target already uses a template that was not created by the
+current run, its CRUD workflow is skipped as an ownership precondition; the
+existing service is not overwritten or deleted.
+
+Without `--run-full-testcases` or an explicit pytest `-m` expression, the
+multi-node runner defaults to `not mutating and not destructive and not
+session_lifetime`. This keeps the routine parallel baseline read-only and omits
+the 10-minute EMS session-lifetime case. Pass an explicit `-m` expression for a
+different bounded selection, or `--run-full-testcases` only when the full
+mutating environment workflow is intended.
+
 The multi-node runner still invokes pytest per node. NeoX-only config options
 are kept for NeoX chassis and omitted for non-NeoX chassis. Parallel node runs
 must assign a distinct auth profile to each node because logging in with the same
-EMS account can invalidate an active session. Keep `--jobs 1` when distinct
-accounts are unavailable.
+EMS account can invalidate an active session. The runner validates the resolved
+role usernames as well as profile names. Keep `--jobs 1` when distinct accounts
+are unavailable. Each runner-created pytest process also enables
+`--formal-testcases-only`, so framework unit tests are not repeated under every
+DUT environment unless they are explicitly invoked outside the multi-node runner.
+
+Audit temporary profile graphs left by interrupted runs:
+
+```powershell
+# Read-only audit. Only locally registered graphs older than 24 hours are inspected.
+.\.venv\Scripts\python.exe tools\cleanup_stale_test_data.py --node NODE1 --auth-profile default
+
+# Explicit cleanup after the audit result has been reviewed.
+.\.venv\Scripts\python.exe tools\cleanup_stale_test_data.py --node NODE1 --auth-profile default --cleanup-stale-test-data
+```
+
+Each temporary ONT/GE profile graph is registered locally before its first POST.
+Normal fixture cleanup removes both the EMS profiles and the local manifest. An
+interrupted run leaves the manifest for a later audit. Cleanup is restricted to
+the same EMS identity and node, requires the configured minimum age (24 hours by
+default), performs exact profile GET checks, and refuses deletion when the node's
+ONT/GE target still references the root template or its reference state cannot be
+confirmed. Files that do not match the automation-owned temporary naming pattern
+are reported as invalid and are never deleted.
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.

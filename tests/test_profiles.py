@@ -16,6 +16,9 @@ from cases.case_catalog import case_id
 from models.api import SessionRole
 
 
+pytestmark = pytest.mark.ems_scoped
+
+
 @pytest.fixture(scope="module")
 def profile_workspace(services, session_manager, env_config):
     with session_manager.role_session(SessionRole.READWRITE) as session_id:
@@ -35,6 +38,7 @@ def test_profile_post_cases(services, profile_workspace, case):
 
 
 @pytest.mark.profile
+@pytest.mark.mutating
 @pytest.mark.readwrite
 @pytest.mark.parametrize("case", GET_PROFILE_CASES, ids=case_id)
 def test_profile_get_cases(services, profile_workspace, case):
@@ -42,6 +46,7 @@ def test_profile_get_cases(services, profile_workspace, case):
 
 
 @pytest.mark.profile
+@pytest.mark.mutating
 @pytest.mark.readwrite
 @pytest.mark.parametrize("case", GET_PROFILE_LIST_CASES, ids=case_id)
 def test_profile_get_list_cases(services, profile_workspace, case):

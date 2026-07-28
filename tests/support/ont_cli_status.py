@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
+from clients.legacy_ssh_cli import LegacyOpenSshCliClient
 from clients.ssh_cli import SshCliClient
 from config_loader import load_environment
 from utils.allure_helpers import attach_json
@@ -26,24 +27,47 @@ class OntCliStatus:
     output_by_command: dict[str, str]
 
 
+LEGACY_OLT_CLI_CHASSIS = {"OLT1408A-C"}
+
+
+def _redact_cli_output(output: str, secret: str) -> str:
+    return output.replace(secret, "<redacted>") if secret else output
+
+
+def ont_cli_status_commands(env_config) -> tuple[str, str]:
+    dut = env_config.dut
+    if dut.chassis in LEGACY_OLT_CLI_CHASSIS:
+        return (
+            f"show remote ont ont-{dut.port_id}-{dut.ont_id}",
+            "show remote ont unreg",
+        )
+
+    aid = f"{dut.slot_id}-{dut.port_id}-{dut.ont_id}"
+    pon = f"{dut.slot_id}-{dut.port_id}"
+    return (
+        f"show interface remote xont {aid} status",
+        f"show interface xpon {pon} unreg",
+    )
+
+
+def ont_cli_client(env_config, username: str, password: str):
+    client_type = (
+        LegacyOpenSshCliClient
+        if env_config.dut.ssh_backend == "openssh_legacy"
+        else SshCliClient
+    )
+    return client_type(env_config.dut.ssh_host, username, password, timeout=15)
+
+
 def read_ont_cli_status(env_config) -> OntCliStatus:
     dut = env_config.dut
     aid = f"{dut.slot_id}-{dut.port_id}-{dut.ont_id}"
-    pon = f"{dut.slot_id}-{dut.port_id}"
-    commands = [
-        f"show interface remote xont {aid} status",
-        f"show interface xpon {pon} unreg",
-    ]
+    commands = ont_cli_status_commands(env_config)
     ssh_username, ssh_password = ssh_credentials(env_config)
-    client = SshCliClient(
-        dut.device_ip,
-        ssh_username,
-        ssh_password,
-        timeout=15,
-    )
+    client = ont_cli_client(env_config, ssh_username, ssh_password)
     results = client.run_commands(commands)
     output_by_command = {
-        result.command: result.output.replace(dut.ont_password, "<redacted>")
+        result.command: _redact_cli_output(result.output, dut.ont_password)
         for result in results
     }
     status = parse_ont_cli_status(
@@ -70,14 +94,9 @@ def read_ont_cli_running_config(env_config) -> str:
     pon = f"{dut.slot_id}-{dut.port_id}"
     command = f"show running-config interface xpon {pon}"
     ssh_username, ssh_password = ssh_credentials(env_config)
-    client = SshCliClient(
-        dut.device_ip,
-        ssh_username,
-        ssh_password,
-        timeout=15,
-    )
+    client = ont_cli_client(env_config, ssh_username, ssh_password)
     result = client.run_commands([command])[0]
-    return result.output.replace(dut.ont_password, "<redacted>")
+    return _redact_cli_output(result.output, dut.ont_password)
 
 
 def wait_for_ont_cli_config_absent(
@@ -266,6 +285,10 @@ def ssh_credentials(env_config) -> tuple[str, str]:
     password = os.environ.get("DUT_SSH_PASSWORD") or os.environ.get("NEOX_SSH_PASSWORD")
     if username and password:
         return username, password
+    configured_username = getattr(env_config.dut, "ssh_username", "")
+    configured_password = getattr(env_config.dut, "ssh_password", "")
+    if configured_username and configured_password:
+        return configured_username, configured_password
     ssh_env = env_config
     if env_config.auth_profile != "default":
         ssh_env = load_environment(node=env_config.dut.node_key, auth_profile="default")

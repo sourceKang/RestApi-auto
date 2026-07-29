@@ -261,10 +261,39 @@ def test_run_node_plan_skips_pytest_when_runner_preflight_fails(monkeypatch, tmp
 
     result = run_multi_node.run_node_plan(plan, tmp_path)
 
-    assert result.returncode == 0
+    assert result.returncode != 0
     assert result.skipped
     assert "DevStatus=4" in result.skip_reason
     assert "DevStatus=4" in (tmp_path / "NODE1.log").read_text(encoding="utf-8")
+
+
+def test_summary_renders_preflight_skip_as_blocked(tmp_path):
+    plan = run_multi_node.NodePlan(
+        node="NODE1",
+        chassis="IES4204",
+        is_neox=False,
+        command=["python", "-m", "pytest"],
+        omitted_options=[],
+    )
+    result = run_multi_node.NodeResult(
+        node="NODE1",
+        chassis="IES4204",
+        is_neox=False,
+        returncode=2,
+        duration_seconds=0.1,
+        command=plan.command,
+        log_path=str(tmp_path / "NODE1.log"),
+        summary_line="DUT preflight failed",
+        report_paths={},
+        omitted_options=[],
+        skipped=True,
+        skip_reason="DUT preflight failed",
+    )
+
+    html = run_multi_node.render_html_summary([plan], [result], tmp_path / "summary.json")
+
+    assert "Blocked" in html
+    assert ">Pass<" not in html
 
 
 def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatch, tmp_path):

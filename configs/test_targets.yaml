@@ -15,6 +15,8 @@ nodes:
   NODE1:
     device_name: "California_IES4204_169.57"
     device_ip: "192.168.169.57"
+    ssh_username: "${DUT_SSH_NODE1_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE1_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "IES4204"
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
@@ -63,27 +65,44 @@ nodes:
         port: "39"
 
   NODE2:
-    device_name: "OLT1408B-IA_169.85"
-    device_ip: "192.168.169.85"
-    chassis: "OLT1408B-IA"
-    submap_name: "Cecily"
+    device_name: "OLT1408AC_168.84"
+    device_ip: "192.168.168.84"
+    ssh_host: "192.168.168.84"
+    ssh_backend: "openssh_legacy"
+    ssh_username: "${DUT_SSH_NODE2_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE2_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
+    chassis: "OLT1408A-C"
+    submap_name: "EMS"
     map_name: "EMS"
-    geo_position: "新竹市"
+    geo_position: ""
     slots:
       0:
-        card: "OLT1408B-IA"
+        card: "OLT1408A-C"
         fw_version: "V4.02(ACFQ.6)"
         role: "integrated"
         ports:
           8:
             type: "Network"
             speed: "Auto"
+            onts:
+              1:
+                sn: "5A594F4F805F5C81"
+                password: "${EMS_ONT_NODE2_PASSWORD:-CHANGE_ME_ONT_PASSWORD}"
+                description: "RestApi_test@1234des"
+                model: "PMG5317-T20B"
+                fw_image: "V540ABKI4b3"
     test_targets:
       report_slots: []
+      ont:
+        slot: "0"
+        port: "8"
+        ont: "1"
 
   NODE3:
     device_name: "Taiwan_NeoX-03_169.58"
     device_ip: "192.168.169.58"
+    ssh_username: "${DUT_SSH_NODE3_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE3_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "NeoX-03"
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
@@ -142,6 +161,8 @@ nodes:
   NODE4:
     device_name: "OLT1408A-C_168.84"
     device_ip: "192.168.168.84"
+    ssh_username: "${DUT_SSH_NODE4_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE4_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "OLT1408A-C"
     submap_name: "EMS"
     map_name: "EMS"
@@ -161,6 +182,8 @@ nodes:
   NODE5:
     device_name: "NeoX_168.85"
     device_ip: "192.168.168.85"
+    ssh_username: "${DUT_SSH_NODE5_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE5_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "NeoX-06"
     submap_name: "EMS"
     map_name: "EMS"
@@ -214,6 +237,8 @@ nodes:
   NODE6:
     device_name: "費城_IES5206_169.54"
     device_ip: "192.168.169.54"
+    ssh_username: "${DUT_SSH_NODE6_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE6_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "IES5206"
     submap_name: "!!!AutoMuskSubmap"
     map_name: "EMS"
@@ -266,6 +291,8 @@ nodes:
   NODE7:
     device_name: "Noex-03_169.204"
     device_ip: "192.168.169.204"
+    ssh_username: "${DUT_SSH_NODE7_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE7_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "NeoX-03"
     submap_name: "EMS"
     map_name: "EMS"
@@ -324,6 +351,8 @@ nodes:
   NODE8:
     device_name: "Noex-06_169.202"
     device_ip: "192.168.169.202"
+    ssh_username: "${DUT_SSH_NODE8_USERNAME:-admin}"
+    ssh_password: "${DUT_SSH_NODE8_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "NeoX-06"
     submap_name: "EMS"
     map_name: "EMS"

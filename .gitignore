@@ -29,6 +29,7 @@ allure-report/
 .env
 .env.*
 configs/auth_accounts.local.yaml
+configs/test_targets.local.yaml
 local/temporary_resources/
 *.log
 .idea/

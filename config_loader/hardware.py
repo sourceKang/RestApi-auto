@@ -11,6 +11,7 @@ from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_HARDWARE_MATRIX_FILE = CONFIG_DIR / "hardware_matrix.yaml"
 DEFAULT_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.yaml"
+LOCAL_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.local.yaml"
 
 
 class HardwareConfigError(RuntimeError):
@@ -269,6 +270,8 @@ def _default_test_targets_file() -> Path:
     override = os.environ.get("EMS_TEST_TARGETS_FILE")
     if override:
         return Path(override)
+    if LOCAL_TEST_TARGETS_FILE.exists():
+        return LOCAL_TEST_TARGETS_FILE
     return DEFAULT_TEST_TARGETS_FILE
 
 

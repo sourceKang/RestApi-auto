@@ -500,7 +500,7 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
                 node=plan.node,
                 chassis=plan.chassis,
                 is_neox=plan.is_neox,
-                returncode=0,
+                returncode=2,
                 duration_seconds=round(time.perf_counter() - started, 3),
                 command=plan.command,
                 log_path=str(log_path),
@@ -609,7 +609,15 @@ def render_html_summary(plans: list[NodePlan], results: list[NodeResult], json_p
     rows = []
     for plan in plans:
         result = result_by_node.get(plan.node)
-        status = "Not run" if result is None else ("Pass" if result.returncode == 0 else "Fail")
+        status = (
+            "Not run"
+            if result is None
+            else "Blocked"
+            if result.skipped
+            else "Pass"
+            if result.returncode == 0
+            else "Fail"
+        )
         summary = "" if result is None else result.summary_line
         duration = "" if result is None else format_duration(result.duration_seconds)
         log_link = "" if result is None else link(result.log_path, "log")

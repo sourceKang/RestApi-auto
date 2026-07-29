@@ -130,3 +130,15 @@ def test_hardware_loader_environment_file_override_still_selects_explicit_yaml(m
 
     assert hardware.targets_path == targets_file
     assert "NODEX" in hardware.targets["nodes"]
+
+
+def test_hardware_loader_prefers_ignored_local_yaml_without_environment_override(monkeypatch, tmp_path):
+    local_file = tmp_path / "test_targets.local.yaml"
+    local_file.write_text(TARGETS_YAML, encoding="utf-8")
+    monkeypatch.delenv("EMS_TEST_TARGETS_FILE", raising=False)
+    monkeypatch.setattr(hardware_module, "LOCAL_TEST_TARGETS_FILE", local_file)
+
+    hardware = hardware_module.load_hardware_config()
+
+    assert hardware.targets_path == local_file
+    assert "NODEX" in hardware.targets["nodes"]

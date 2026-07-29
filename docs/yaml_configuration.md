@@ -85,12 +85,17 @@ RAD external summary checks in the same report.
 
 ## Local Private Values
 
-The tracked `auth_accounts.yaml` and `test_targets.yaml` files are the single
-canonical configuration sources. Their sensitive fields use
-`${VARIABLE:-public_fallback}` references. Put real lab values in the ignored
-project-root `.env` file; process environment variables take precedence over
-`.env`, and the public fallback is used only when neither is set.
+The tracked `auth_accounts.yaml` and `test_targets.yaml` files are sanitized,
+shareable defaults. Put complete real lab values in the ignored
+`auth_accounts.local.yaml` and `test_targets.local.yaml` files in the same
+`configs` directory. When present, the local file is selected automatically.
 
-`EMS_ENV_FILE` may select a different local environment file. The existing
-`EMS_AUTH_ACCOUNTS_FILE` and `EMS_TEST_TARGETS_FILE` variables may still select
-an entirely different canonical YAML file when required. Never commit `.env`.
+`EMS_AUTH_ACCOUNTS_FILE` and `EMS_TEST_TARGETS_FILE` remain explicit run-time
+overrides and take precedence over the corresponding local file. Process
+environment variables may still override placeholder values when needed.
+
+DUT SSH credentials belong to each node target and are independent from EMS REST
+accounts. Configure real `ssh_username` and `ssh_password` values only in
+`test_targets.local.yaml`. The tracked file keeps sanitized environment-variable
+placeholders. Generic `DUT_SSH_USERNAME` and `DUT_SSH_PASSWORD` process variables
+remain explicit run-wide overrides.

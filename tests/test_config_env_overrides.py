@@ -109,6 +109,18 @@ def test_auth_loader_environment_file_override_still_selects_explicit_yaml(monke
     assert auth.resolve_profile("default")["readwrite"].username == "rw"
 
 
+def test_auth_loader_prefers_ignored_local_yaml_without_environment_override(monkeypatch, tmp_path):
+    local_file = tmp_path / "auth_accounts.local.yaml"
+    local_file.write_text(AUTH_YAML, encoding="utf-8")
+    monkeypatch.delenv("EMS_AUTH_ACCOUNTS_FILE", raising=False)
+    monkeypatch.setattr(auth_module, "LOCAL_AUTH_ACCOUNTS_FILE", local_file)
+
+    auth = auth_module.load_auth_config()
+
+    assert auth.path == local_file
+    assert auth.resolve_profile("default")["readwrite"].username == "rw"
+
+
 def test_hardware_loader_environment_file_override_still_selects_explicit_yaml(monkeypatch, tmp_path):
     targets_file = tmp_path / "test_targets.env.yaml"
     targets_file.write_text(TARGETS_YAML, encoding="utf-8")
@@ -117,4 +129,16 @@ def test_hardware_loader_environment_file_override_still_selects_explicit_yaml(m
     hardware = hardware_module.load_hardware_config()
 
     assert hardware.targets_path == targets_file
+    assert "NODEX" in hardware.targets["nodes"]
+
+
+def test_hardware_loader_prefers_ignored_local_yaml_without_environment_override(monkeypatch, tmp_path):
+    local_file = tmp_path / "test_targets.local.yaml"
+    local_file.write_text(TARGETS_YAML, encoding="utf-8")
+    monkeypatch.delenv("EMS_TEST_TARGETS_FILE", raising=False)
+    monkeypatch.setattr(hardware_module, "LOCAL_TEST_TARGETS_FILE", local_file)
+
+    hardware = hardware_module.load_hardware_config()
+
+    assert hardware.targets_path == local_file
     assert "NODEX" in hardware.targets["nodes"]

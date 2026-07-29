@@ -5,7 +5,36 @@ from types import SimpleNamespace
 
 import pytest
 
+from clients.legacy_ssh_cli import (
+    ASKPASS_ENV,
+    LEGACY_HOST_KEY,
+    LEGACY_KEX,
+    LEGACY_MAC,
+    LegacyOpenSshCliClient,
+    _askpass_script,
+)
 from clients.ssh_cli import CliCommandResult, FileTokenSemaphore, SshCliClient, SshCliSession, SshSessionPool
+
+
+def test_legacy_openssh_args_are_scoped_and_do_not_contain_password():
+    client = LegacyOpenSshCliClient("192.0.2.1", "admin", "top-secret", timeout=7)
+
+    args = client.ssh_args("ssh.exe")
+    rendered = " ".join(args)
+
+    assert f"KexAlgorithms=+{LEGACY_KEX}" in args
+    assert f"HostKeyAlgorithms=+{LEGACY_HOST_KEY}" in args
+    assert f"MACs=+{LEGACY_MAC}" in args
+    assert "diffie-hellman-group1-sha1" not in rendered
+    assert "top-secret" not in rendered
+    assert args[-1] == "admin@192.0.2.1"
+
+
+def test_legacy_askpass_reads_password_from_environment_without_embedding_secret():
+    script = _askpass_script()
+
+    assert ASKPASS_ENV in script
+    assert "top-secret" not in script
 
 
 class FakeTransport:

@@ -20,6 +20,7 @@ def test_build_node_plan_omits_neox_only_full_options_for_non_neox_node():
 
     assert plan.chassis == "IES4204"
     assert not plan.is_neox
+    assert "--formal-testcases-only" in plan.command
     assert "--run-full-testcases" not in plan.command
     assert "--run-neox-config" not in plan.command
     assert "--run-neox-ont-error" not in plan.command
@@ -41,9 +42,109 @@ def test_build_node_plan_keeps_full_option_for_neox_node():
 
     assert plan.chassis == "NeoX-03"
     assert plan.is_neox
+    assert "--formal-testcases-only" in plan.command
     assert "--run-full-testcases" in plan.command
     assert "tests/test_neox_config.py" in plan.command
     assert plan.omitted_options == []
+
+
+def test_build_node_plan_defaults_to_safe_non_mutating_selection():
+    plan = run_multi_node.build_node_plan(
+        node="NODE3",
+        pytest_args=["-q"],
+        run_full_testcases=False,
+        python_executable="python",
+    )
+
+    marker_index = plan.command.index("-m", plan.command.index("--formal-testcases-only") + 1)
+    assert plan.command[marker_index + 1] == run_multi_node.SAFE_DEFAULT_MARKER
+
+
+def test_build_node_plan_preserves_explicit_marker_selection():
+    plan = run_multi_node.build_node_plan(
+        node="NODE3",
+        pytest_args=["-m", "session and not session_lifetime"],
+        run_full_testcases=False,
+        python_executable="python",
+    )
+
+    pytest_args = plan.command[plan.command.index("--formal-testcases-only") + 1 :]
+    assert pytest_args.count("-m") == 1
+    assert pytest_args[pytest_args.index("-m") + 1] == "session and not session_lifetime"
+
+
+def test_build_node_plan_creates_node_mutating_resource_lane():
+    plan = run_multi_node.build_node_plan(
+        node="NODE3",
+        pytest_args=["-q"],
+        run_full_testcases=False,
+        python_executable="python",
+        lane=run_multi_node.LANE_NODE_MUTATING,
+    )
+
+    marker_index = plan.command.index("-m", plan.command.index("--formal-testcases-only") + 1)
+    assert plan.command[marker_index + 1] == run_multi_node.NODE_MUTATING_MARKER
+    assert "--run-neox-config" in plan.command
+    assert "--run-neox-ont-error" in plan.command
+
+
+def test_build_node_plan_creates_single_ems_mutating_lane():
+    plan = run_multi_node.build_node_plan(
+        node="NODE1",
+        pytest_args=[],
+        run_full_testcases=False,
+        python_executable="python",
+        lane=run_multi_node.LANE_EMS_MUTATING,
+    )
+
+    marker_index = plan.command.index("-m", plan.command.index("--formal-testcases-only") + 1)
+    assert plan.command[marker_index + 1] == run_multi_node.EMS_MUTATING_MARKER
+    assert "--run-neox-config" not in plan.command
+
+
+def test_build_node_plan_creates_single_ems_session_lifetime_lane():
+    plan = run_multi_node.build_node_plan(
+        node="NODE1",
+        pytest_args=[],
+        run_full_testcases=False,
+        python_executable="python",
+        lane=run_multi_node.LANE_EMS_SESSION_LIFETIME,
+    )
+
+    marker_index = plan.command.index("-m", plan.command.index("--formal-testcases-only") + 1)
+    assert plan.command[marker_index + 1] == run_multi_node.EMS_SESSION_LIFETIME_MARKER
+    assert "--run-neox-config" not in plan.command
+
+
+def test_non_safe_lane_rejects_explicit_marker_and_full_mode():
+    with pytest.raises(ValueError, match="own marker selection"):
+        run_multi_node.build_node_plan(
+            node="NODE1",
+            pytest_args=["-m", "smoke"],
+            run_full_testcases=False,
+            python_executable="python",
+            lane=run_multi_node.LANE_NODE_MUTATING,
+        )
+
+    with pytest.raises(ValueError, match="run_full_testcases"):
+        run_multi_node.build_node_plan(
+            node="NODE1",
+            pytest_args=[],
+            run_full_testcases=True,
+            python_executable="python",
+            lane=run_multi_node.LANE_NODE_MUTATING,
+        )
+
+
+@pytest.mark.parametrize(
+    "lane",
+    [run_multi_node.LANE_EMS_MUTATING, run_multi_node.LANE_EMS_SESSION_LIFETIME],
+)
+def test_ems_lanes_require_one_node_and_one_job(lane):
+    with pytest.raises(SystemExit):
+        run_multi_node.main(
+            ["--nodes", "NODE1,NODE3", "--jobs", "2", "--lane", lane, "--dry-run"]
+        )
 
 
 def test_build_node_plan_rejects_unsafe_per_node_xdist():
@@ -160,10 +261,39 @@ def test_run_node_plan_skips_pytest_when_runner_preflight_fails(monkeypatch, tmp
 
     result = run_multi_node.run_node_plan(plan, tmp_path)
 
-    assert result.returncode == 0
+    assert result.returncode != 0
     assert result.skipped
     assert "DevStatus=4" in result.skip_reason
     assert "DevStatus=4" in (tmp_path / "NODE1.log").read_text(encoding="utf-8")
+
+
+def test_summary_renders_preflight_skip_as_blocked(tmp_path):
+    plan = run_multi_node.NodePlan(
+        node="NODE1",
+        chassis="IES4204",
+        is_neox=False,
+        command=["python", "-m", "pytest"],
+        omitted_options=[],
+    )
+    result = run_multi_node.NodeResult(
+        node="NODE1",
+        chassis="IES4204",
+        is_neox=False,
+        returncode=2,
+        duration_seconds=0.1,
+        command=plan.command,
+        log_path=str(tmp_path / "NODE1.log"),
+        summary_line="DUT preflight failed",
+        report_paths={},
+        omitted_options=[],
+        skipped=True,
+        skip_reason="DUT preflight failed",
+    )
+
+    html = run_multi_node.render_html_summary([plan], [result], tmp_path / "summary.json")
+
+    assert "Blocked" in html
+    assert ">Pass<" not in html
 
 
 def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatch, tmp_path):
@@ -186,12 +316,14 @@ def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatc
 
         def __init__(self, command, **kwargs):
             captured["command"] = command
+            captured["env"] = kwargs["env"]
 
         def wait(self):
             return 0
 
     monkeypatch.setattr(run_multi_node.subprocess, "Popen", FakeProcess)
 
+    monkeypatch.setenv("EMS_REPORT_SUFFIX", "batch")
     result = run_multi_node.run_node_plan(plan, tmp_path)
 
     assert "--skip-dut-preflight" in captured["command"]
@@ -200,6 +332,7 @@ def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatc
     assert "--skip-dut-preflight" in result.command
     assert "--alluredir" in result.command
     assert result.summary_line == "1 passed in 0.01s"
+    assert captured["env"]["EMS_REPORT_SUFFIX"] == "batch_NODE3"
 
 
 def test_build_node_plan_injects_auth_profile_override():
@@ -214,6 +347,7 @@ def test_build_node_plan_injects_auth_profile_override():
     assert plan.auth_profile == "ems_local_rw2"
     assert plan.command[:6] == ["python", "-m", "pytest", "--ems-node", "NODE1", "--auth-profile"]
     assert plan.command[6] == "ems_local_rw2"
+    assert plan.command[7] == "--formal-testcases-only"
 
 
 def test_auth_profile_for_node_round_robins_profiles():
@@ -239,6 +373,31 @@ def test_parallel_node_plans_reject_shared_auth_profile(tmp_path):
 
     with pytest.raises(ValueError, match="distinct auth profile"):
         run_multi_node.run_node_plans(plans, tmp_path, jobs=2)
+
+
+def test_parallel_node_plans_reject_different_profiles_with_shared_accounts(monkeypatch):
+    class Account:
+        username = "shared"
+
+    class Auth:
+        def resolve_profile(self, profile):
+            return {role: Account() for role in ("readwrite", "readonly", "noaccess")}
+
+    monkeypatch.setattr(run_multi_node, "load_auth_config", lambda: Auth())
+    plans = [
+        run_multi_node.NodePlan(
+            node=node,
+            chassis="NeoX-03",
+            is_neox=True,
+            command=["python", "-m", "pytest"],
+            omitted_options=[],
+            auth_profile=profile,
+        )
+        for node, profile in (("NODE1", "profile_a"), ("NODE3", "profile_b"))
+    ]
+
+    with pytest.raises(ValueError, match="Shared account signatures"):
+        run_multi_node.validate_parallel_node_auth_profiles(plans, jobs=2)
 
 
 def test_run_node_plans_parallel_preserves_plan_order(monkeypatch, tmp_path):

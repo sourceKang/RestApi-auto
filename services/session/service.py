@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import time
+
 from models.api import SessionRole
-from utils.assertions import assert_api_failure, assert_api_success
+from utils.assertions import assert_api_failure, assert_api_failure_exact, assert_api_success
 from utils.case_metadata import attach_case_id
+
+
+SESSION_KEEPALIVE_INTERVAL_SECONDS = 60
+SESSION_ABSOLUTE_LIFETIME_SECONDS = 600
+SESSION_LAST_AUTHORIZED_MINUTE = 9
+SESSION_EXPIRED_MESSAGE = "Not authorized."
 
 
 class UserSessionService:
@@ -17,9 +25,47 @@ class UserSessionService:
         session_id = self.api_client.session_id_from(response)
         assert session_id
 
+        if role is SessionRole.READWRITE:
+            session_id = self._verify_readwrite_absolute_lifetime(session_id)
+
         logout = self.api_client.logout(session_id)
         assert logout is not None
         assert_api_success(logout)
+
+    def _verify_readwrite_absolute_lifetime(self, session_id: str) -> str:
+        started_at = time.monotonic()
+        observation_count = SESSION_ABSOLUTE_LIFETIME_SECONDS // SESSION_KEEPALIVE_INTERVAL_SECONDS
+
+        for minute in range(1, observation_count + 1):
+            target = started_at + minute * SESSION_KEEPALIVE_INTERVAL_SECONDS
+            remaining = target - time.monotonic()
+            if remaining > 0:
+                time.sleep(remaining)
+
+            response = self.api_client.request(
+                "GET",
+                "/device",
+                session=session_id,
+                expected=f"readwrite session lifetime minute {minute}",
+            )
+            if minute <= SESSION_LAST_AUTHORIZED_MINUTE:
+                assert_api_success(response)
+            else:
+                assert_api_failure_exact(response, expected_retresult=SESSION_EXPIRED_MESSAGE)
+
+        renewed = self.api_client.login(self.env_config.credentials_for(SessionRole.READWRITE))
+        assert_api_success(renewed)
+        renewed_session_id = self.api_client.session_id_from(renewed)
+        assert renewed_session_id
+
+        device = self.api_client.request(
+            "GET",
+            "/device",
+            session=renewed_session_id,
+            expected="device access after readwrite re-login",
+        )
+        assert_api_success(device)
+        return renewed_session_id
 
     def verify_login_rejects_invalid_username(self) -> None:
         attach_case_id("EMS1-7020", "test_usersession_post_invalid_param_should_return_error")

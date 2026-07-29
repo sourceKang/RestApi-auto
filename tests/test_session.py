@@ -6,7 +6,7 @@ from models.api import SessionRole
 
 
 @pytest.mark.session
-@pytest.mark.smoke
+@pytest.mark.session_lifetime
 @pytest.mark.parametrize("role", list(SessionRole), ids=lambda role: role.value)
 def test_login_and_logout_by_role(services, role):
     services.user_session.verify_login_and_logout_by_role(role)

@@ -6,8 +6,13 @@ import pytest
 
 
 @pytest.fixture(scope="module")
-def auth_matrix_seed_data(prepared_ont_inventory, prepared_ge_service):
-    yield {"ont_template": prepared_ont_inventory, "ge_template": prepared_ge_service}
+def auth_matrix_seed_data(request, env_config, prepared_ont_inventory):
+    ge_template = (
+        request.getfixturevalue("prepared_ge_service")
+        if env_config.dut.ge_slot_id and env_config.dut.ge_port_id
+        else None
+    )
+    yield {"ont_template": prepared_ont_inventory, "ge_template": ge_template}
 
 
 @pytest.mark.authmatrix

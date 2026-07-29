@@ -43,9 +43,23 @@ class ReportState:
     case_registry: dict[str, list[CaseRegistration]] = field(default_factory=dict)
     permission_roles: dict[str, str] = field(default_factory=dict)
     results: list[CaseResult] = field(default_factory=list)
+    session_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 REPORT_STATE = ReportState()
+
+SESSION_METRIC_FIELDS = (
+    "login_requests",
+    "logout_requests",
+    "fresh_logins",
+    "cached_logins",
+    "cache_hits",
+    "cache_misses",
+    "proactive_refreshes",
+    "authorization_refreshes",
+    "safe_retries",
+    "mutation_not_retried",
+)
 
 
 def register_case(case_id: str | None, name: str) -> None:
@@ -111,6 +125,23 @@ def ensure_worker_report_dirs(config: Any) -> None:
     current_allure_dir.mkdir(parents=True, exist_ok=True)
     config.option.allure_report_dir = str(current_allure_dir)
     config.option.clean_alluredir = False
+
+
+def set_session_metrics(metrics: dict[str, Any]) -> None:
+    safe: dict[str, Any] = {"mode": "on" if str(metrics.get("mode", "off")).lower() == "on" else "off"}
+    for field_name in SESSION_METRIC_FIELDS:
+        try:
+            safe[field_name] = max(0, int(metrics.get(field_name, 0)))
+        except (TypeError, ValueError):
+            safe[field_name] = 0
+    raw_generations = metrics.get("session_generations", {})
+    if isinstance(raw_generations, dict):
+        safe["session_generations"] = {
+            role: max(0, int(raw_generations.get(role, 0)))
+            for role in ("readwrite", "readonly", "noaccess")
+            if str(raw_generations.get(role, "")).isdigit()
+        }
+    REPORT_STATE.session_metrics = safe
 
 
 def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path, Path | None, Path | None]:
@@ -222,6 +253,7 @@ def _render_txt_report(env_config: Any) -> str:
     ]
     lines.extend(_card_version_lines(env_config))
     lines.extend(_target_summary_lines(env_config))
+    lines.extend(_session_metric_lines())
     lines.extend(["", "Test Results:", "-------------"])
 
     for result in rendered_results:
@@ -269,6 +301,7 @@ def _render_html_report(
     ]
     metadata.extend(_split_label_value(line) for line in _card_version_lines(env_config))
     metadata.extend(_split_label_value(line) for line in _target_summary_lines(env_config))
+    metadata.extend(_split_label_value(line) for line in _session_metric_lines())
 
     links = []
     if integrated_html:
@@ -337,6 +370,31 @@ def _split_label_value(line: str) -> tuple[str, str]:
     if not separator:
         return line, ""
     return label, value.strip()
+
+
+def _session_metric_lines() -> list[str]:
+    metrics = REPORT_STATE.session_metrics
+    if not metrics:
+        return []
+    lines = [f"Session Cache Mode: {metrics.get('mode', 'off')}"]
+    labels = {
+        "login_requests": "Session Login Requests",
+        "logout_requests": "Session Logout Requests",
+        "fresh_logins": "Fresh Session Logins",
+        "cached_logins": "Cached Session Logins",
+        "cache_hits": "Session Cache Hits",
+        "cache_misses": "Session Cache Misses",
+        "proactive_refreshes": "Proactive Session Refreshes",
+        "authorization_refreshes": "Authorization Session Refreshes",
+        "safe_retries": "Safe Request Retries",
+        "mutation_not_retried": "Mutation Requests Not Retried",
+    }
+    lines.extend(f"{labels[field_name]}: {metrics.get(field_name, 0)}" for field_name in SESSION_METRIC_FIELDS)
+    generations = metrics.get("session_generations", {})
+    if isinstance(generations, dict) and generations:
+        rendered = ", ".join(f"{role}={generations[role]}" for role in sorted(generations))
+        lines.append(f"Session Generations: {rendered}")
+    return lines
 
 
 def _summary_card(label: str, value: int, note: str) -> str:

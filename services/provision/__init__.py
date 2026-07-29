@@ -1,3 +1,3 @@
-﻿from services.provision.service import ProvisionService
+from services.provision.service import ProvisionOwnershipPreconditionError, ProvisionService
 
-__all__ = ["ProvisionService"]
+__all__ = ["ProvisionOwnershipPreconditionError", "ProvisionService"]

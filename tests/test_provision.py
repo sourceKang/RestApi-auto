@@ -3,6 +3,8 @@ from __future__ import annotations
 import pytest
 
 from cases.endpoint_cases import MUTATING_ENDPOINTS, READ_ENDPOINTS
+from services.provision.service import ProvisionOwnershipPreconditionError
+from tests.support.capabilities import capability_skip_reason
 from tests.support.ge_cli_config import (
     capture_ge_service_timeout_cli_diagnostic,
     monitor_ge_patch_transition,
@@ -15,6 +17,12 @@ PROVISION_READ_CASES = [case for case in READ_ENDPOINTS if case.domain == "provi
 PROVISION_ONT_READ_CASES = [case for case in PROVISION_READ_CASES if case.name.startswith("ont_service")]
 PROVISION_GE_READ_CASES = [case for case in PROVISION_READ_CASES if case.name.startswith("ge_service")]
 PROVISION_MUTATING_CASES = [case for case in MUTATING_ENDPOINTS if case.domain == "provision"]
+
+@pytest.fixture(autouse=True)
+def provision_case_capability_guard(request, env_config):
+    reason = capability_skip_reason(request.node, env_config)
+    if reason:
+        pytest.skip(reason)
 
 
 @pytest.fixture(scope="module")
@@ -135,6 +143,9 @@ def test_post_ont_service_by_sn(
             readwrite_session,
             ont_template=temporary_ont_template,
         )
+    except ProvisionOwnershipPreconditionError as error:
+        ont_service_workflow_state.block_post_precondition(error)
+        pytest.skip(f"ONT service target is owned by another template: {error}")
     except Exception as error:
         ont_service_workflow_state.fail_post(error)
         raise

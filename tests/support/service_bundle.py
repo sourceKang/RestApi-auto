@@ -27,7 +27,7 @@ class ServiceBundle:
 
 
 def build_service_bundle(api_client, env_config) -> ServiceBundle:
-    profile = ProfileService(api_client)
+    profile = ProfileService(api_client, env_config=env_config)
     return ServiceBundle(
         alarm=AlarmService(api_client, env_config),
         auth_matrix=AuthMatrixService(api_client),

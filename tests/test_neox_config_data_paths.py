@@ -193,6 +193,29 @@ def test_cleanup_registry_add_final_runs_after_lifo_callbacks():
     assert events == ["normal2", "normal1", "final"]
 
 
+def test_cleanup_registry_strict_final_runs_last_and_raises_after_other_callbacks():
+    events = []
+    registry = CleanupRegistry()
+
+    registry.add(lambda: events.append("normal1"))
+
+    def strict_final():
+        events.append("strict_final")
+        raise AssertionError("strict cleanup failed")
+
+    registry.add_strict_final(strict_final)
+    registry.add(lambda: events.append("normal2"))
+
+    try:
+        registry.run()
+    except AssertionError as error:
+        assert "strict cleanup failed" in str(error)
+    else:
+        raise AssertionError("Strict final cleanup failure must be visible")
+
+    assert events == ["normal2", "normal1", "strict_final"]
+
+
 def test_ge_acl_profile_mode_cleanup_plan_restores_port_last():
     commands = [
         "acl-profile mode port",

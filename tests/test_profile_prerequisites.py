@@ -539,6 +539,8 @@ def test_temporary_profile_graph_clones_dependency_and_rewrites_reference(monkey
     client = FakeApiClient(
         [
             api_response("Fail", retresult="No data found"),
+            api_response("Fail", retresult="No data found"),
+            api_response("Fail", retresult="No data found"),
             api_response("Success"),
             api_response("Success", name=temporary_security, content={"securityprofile_fdb": "1023"}),
             api_response("Fail", retresult="No data found"),
@@ -571,6 +573,69 @@ def test_temporary_profile_graph_clones_dependency_and_rewrites_reference(monkey
         f"/profile/ONTSecurityProfile/{temporary_security}",
         f"/profile/ONTTemplateProfile/{temporary_template}",
     ]
+
+
+def test_temporary_profile_graph_reselects_unused_random_token_before_post(monkeypatch):
+    source_name = "#RestApi_Source"
+    source = {
+        "_config_ref": "source_profile_data",
+        "profiletype": "GETemplateProfile",
+        "profilename": source_name,
+        "post_profile_info": {},
+    }
+    install_definitions(monkeypatch, {source_name: source})
+    tokens = iter(["82", "7F"])
+    monkeypatch.setattr(profile_module, "normalized_run_token", lambda run_token=None: next(tokens))
+    stale_name = "#RestApi_GE_3011b10_N3_R82"
+    selected_name = "#RestApi_GE_3011b10_N3_R7F"
+    client = FakeApiClient(
+        [
+            api_response("Success", name=stale_name),
+            api_response("Fail", retresult="No data found"),
+            api_response("Fail", retresult="No data found"),
+            api_response("Success"),
+            api_response("Success", name=selected_name, content={}),
+        ]
+    )
+
+    graph = ProfileService(client).create_temporary_profile_graph(
+        "session",
+        source_name,
+        "03.00.11 (AAVV.221) b10",
+        "NODE3",
+        timeout=1,
+        interval=0,
+    )
+
+    assert graph.root_name == selected_name
+    assert [path for method, path, _ in client.calls if method == "POST"] == [
+        f"/profile/GETemplateProfile/{selected_name}"
+    ]
+    assert not any(method == "DELETE" for method, _, _ in client.calls)
+
+
+def test_temporary_profile_graph_keeps_explicit_token_collision_deterministic(monkeypatch):
+    source_name = "#RestApi_Source"
+    source = {
+        "_config_ref": "source_profile_data",
+        "profiletype": "GETemplateProfile",
+        "profilename": source_name,
+        "post_profile_info": {},
+    }
+    install_definitions(monkeypatch, {source_name: source})
+    stale_name = "#RestApi_GE_3011b10_N3_R82"
+    client = FakeApiClient([api_response("Success", name=stale_name)])
+
+    with pytest.raises(AssertionError, match="collision after read-only name check"):
+        ProfileService(client).create_temporary_profile_graph(
+            "session",
+            source_name,
+            "03.00.11 (AAVV.221) b10",
+            "NODE3",
+            run_token="82",
+        )
+
+    assert not any(method in {"POST", "DELETE"} for method, _, _ in client.calls)
 
 
 def test_temporary_profile_graph_rejects_formal_profile_name_collision(monkeypatch):

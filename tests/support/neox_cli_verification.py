@@ -37,7 +37,7 @@ def run_neox_cli_commands(env_config, credentials: tuple[str, str], commands: li
     xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
     pool = ssh_session_pool(
         env_config.dut.node_key,
-        env_config.dut.device_ip,
+        env_config.dut.ssh_host,
         ssh_username,
         ssh_password,
         max_sessions=1 if xdist_worker else None,

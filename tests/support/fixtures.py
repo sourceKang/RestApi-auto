@@ -8,7 +8,7 @@ from tests.support.collection import RAD_AUTH_MATRIX_CASES
 from clients.runtime import build_run_context
 from clients.session import SessionManager
 from tests.support.service_bundle import ServiceBundle, build_service_bundle
-from tests.support.options import neox_parallel_worker_auth_profile
+from tests.support.options import neox_parallel_worker_auth_profile, session_cache_enabled
 from tests.support.ge_cli_config import wait_for_ge_cli_config
 from tests.support.ge_workflow import GeServiceWorkflowState
 from tests.support.ont_cli_status import read_ont_cli_status, wait_for_ont_cli_is
@@ -20,7 +20,7 @@ from services.profile import TemporaryGeTemplate, TemporaryOntTemplate
 from utils.cleanup import CleanupRegistry
 from utils.allure_helpers import attach_json
 from utils.case_metadata import format_case_title
-from utils.reporting import REPORT_STATE
+from utils.reporting import REPORT_STATE, set_session_metrics
 
 
 @pytest.fixture(autouse=True)
@@ -112,8 +112,21 @@ def api_client(env_config):
 
 
 @pytest.fixture(scope="session")
-def session_manager(api_client, env_config):
-    return SessionManager(api_client, env_config)
+def session_manager(api_client, env_config, request):
+    manager = SessionManager(
+        api_client,
+        env_config,
+        cache_enabled=session_cache_enabled(request.config),
+    )
+    try:
+        yield manager
+    finally:
+        try:
+            manager.close()
+        finally:
+            metrics = manager.metrics_snapshot()
+            set_session_metrics(metrics)
+            attach_json("session cache metrics", metrics)
 
 
 @pytest.fixture(scope="session")
@@ -133,6 +146,9 @@ def ge_service_workflow_state() -> GeServiceWorkflowState:
 
 @pytest.fixture(scope="session")
 def temporary_ge_template(services, session_manager, env_config):
+    if not env_config.dut.ge_slot_id or not env_config.dut.ge_port_id:
+        pytest.skip(f"GE service tests require a configured GE target for {env_config.dut.node_key}")
+
     with session_manager.credentials_session(env_config.readwrite) as session_id:
         graph = services.profile.create_temporary_profile_graph(
             session_id,
@@ -153,6 +169,7 @@ def temporary_ge_template(services, session_manager, env_config):
                     timeout=90,
                     interval=5,
                 )
+            services.profile.complete_temporary_graph_cleanup(graph)
 
 
 @pytest.fixture(scope="session")
@@ -188,6 +205,7 @@ def temporary_ont_template(services, session_manager, env_config, request):
                     timeout=90,
                     interval=5,
                 )
+            services.profile.complete_temporary_graph_cleanup(graph)
 
 
 def prepare_ont_inventory_with_session_rotation(
@@ -199,6 +217,7 @@ def prepare_ont_inventory_with_session_rotation(
     cli_status_reader=read_ont_cli_status,
     cli_is_waiter=wait_for_ont_cli_is,
     workflow_state: OntServiceWorkflowState | None = None,
+    allow_provisioning: bool = False,
 ) -> str:
     with session_manager.credentials_session(env_config.readwrite) as session_id:
         existing = services.inventory.get_ont_service(session_id)
@@ -237,6 +256,13 @@ def prepare_ont_inventory_with_session_rotation(
                     interval=15,
                 )
         elif cli_status.state != "IS":
+            if not allow_provisioning:
+                raise OntInventoryPreconditionError(
+                    "ONT service exists but CLI is not IS; read-only inventory tests do not "
+                    "modify the existing service. "
+                    f"CLI state={cli_status.state}, source={cli_status.source}, "
+                    f"template={existing_template}"
+                )
             raise AssertionError(
                 "ONT service already exists, but CLI is not IS; refusing to modify the existing service. "
                 f"CLI state={cli_status.state}, source={cli_status.source}, template={existing_template}"
@@ -267,6 +293,12 @@ def prepare_ont_inventory_with_session_rotation(
             raise AssertionError(
                 "ONT service is absent, but CLI is not UnReg; refusing automatic provisioning. "
                 f"CLI state={cli_status.state}, source={cli_status.source}"
+            )
+        if not allow_provisioning:
+            raise OntInventoryPreconditionError(
+                "ONT service is absent and CLI reports UnReg; read-only inventory tests do not "
+                "provision an ONT. Run the mutating EMS1-6666 workflow with a dedicated "
+                "disposable ONT first."
             )
 
         selected_template = ont_template_factory()
@@ -321,6 +353,11 @@ def prepare_ont_inventory_with_session_rotation(
 
 @pytest.fixture(scope="session")
 def prepared_ont_inventory(services, session_manager, env_config, request, ont_service_workflow_state):
+    if ont_service_workflow_state.post_precondition:
+        pytest.skip(
+            "Blocked because EMS1-6666 ownership precondition was not met: "
+            f"{ont_service_workflow_state.post_precondition}"
+        )
     if ont_service_workflow_state.post_failure:
         pytest.skip(
             "Blocked because EMS1-6666 POST failed: "
@@ -368,22 +405,10 @@ def prepared_ge_service(
         pytest.skip(f"Blocked because GE CLI verification failed: {ge_service_workflow_state.cli_failure}")
     if ge_service_workflow_state.post_succeeded and ge_service_workflow_state.cli_verified:
         return ge_service_workflow_state.template
-
-    template = request.getfixturevalue("temporary_ge_template")
-    ge_service_workflow_state.begin_post(str(template))
-    try:
-        with session_manager.credentials_session(env_config.readwrite) as session_id:
-            services.provision.verify_ge_service_post(session_id, ge_template=template)
-        ge_service_workflow_state.complete_post()
-        wait_for_ge_cli_config(env_config, template.definition, timeout=120, interval=10)
-        ge_service_workflow_state.complete_cli()
-    except Exception as error:
-        if not ge_service_workflow_state.post_succeeded:
-            ge_service_workflow_state.fail_post(error)
-        else:
-            ge_service_workflow_state.fail_cli(error)
-        pytest.fail(f"GE service setup failed: {error}")
-    return str(template)
+    pytest.skip(
+        "GE service precondition not met; read-only tests do not create a GE service. "
+        "Run the mutating EMS1-6661 workflow with dedicated test data first."
+    )
 
 
 @pytest.fixture(scope="session")
@@ -442,19 +467,19 @@ def cleanup_registry():
 
 @pytest.fixture
 def readwrite_session(session_manager):
-    with session_manager.role_session(SessionRole.READWRITE) as session_id:
+    with session_manager.shared_role_session(SessionRole.READWRITE) as session_id:
         yield session_id
 
 
 @pytest.fixture
 def readonly_session(session_manager):
-    with session_manager.role_session(SessionRole.READONLY) as session_id:
+    with session_manager.shared_role_session(SessionRole.READONLY) as session_id:
         yield session_id
 
 
 @pytest.fixture
 def noaccess_session(session_manager):
-    with session_manager.role_session(SessionRole.NOACCESS) as session_id:
+    with session_manager.shared_role_session(SessionRole.NOACCESS) as session_id:
         yield session_id
 
 

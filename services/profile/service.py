@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import re
 import secrets
 import time
@@ -20,6 +21,11 @@ from utils.allure_helpers import attach_json
 from utils.case_metadata import attach_case_metadata
 from utils.diagnostics import format_response_summary
 from utils.json_match import content_as_dict
+from services.profile.temporary_registry import (
+    create_temporary_graph_record,
+    remove_temporary_graph_record,
+    scan_temporary_graph_records,
+)
 
 
 ISOLATED_PROFILE_NAMES = {
@@ -47,6 +53,7 @@ PROFILE_TYPE_CREATE_RANK = {
 }
 
 TEMPORARY_PROFILE_NAME_MAX_LENGTH = 31
+TEMPORARY_PROFILE_TOKEN_ATTEMPTS = 8
 
 
 @dataclass(frozen=True)
@@ -54,6 +61,7 @@ class TemporaryProfileGraph:
     root_name: str
     definitions: tuple[dict, ...]
     names_by_source: dict[str, str]
+    registry_path: str | None = None
 
     def name_for(self, source_name: str) -> str:
         return self.names_by_source[source_name]
@@ -151,8 +159,10 @@ class ProfileWorkspace:
 
 
 class ProfileService:
-    def __init__(self, api_client) -> None:
+    def __init__(self, api_client, env_config=None, registry_root=None) -> None:
         self.api_client = api_client
+        self.env_config = env_config
+        self.registry_root = registry_root
 
     def verify_post_case(self, session_id: str, workspace: ProfileWorkspace, case) -> None:
         attach_case_metadata(case)
@@ -620,29 +630,65 @@ class ProfileService:
         interval: float = 1,
     ) -> TemporaryProfileGraph:
         source_names = profile_dependency_order(source_profilename)
-        token = normalized_run_token(run_token)
-        temporary_names = {
-            source_name: temporary_profile_name(
-                profile_definition_by_name(source_name),
-                ems_version,
-                node_key,
-                token,
-            )
-            for source_name in source_names
-        }
-        temporary_name_set = set(temporary_names.values())
-        if len(temporary_name_set) != len(temporary_names):
-            raise AssertionError("Temporary profile names must be unique within one run.")
         formal_profile_names = {
             data["profilename"]
             for data in catalog_profile_data().values()
             if isinstance(data, dict) and data.get("profilename")
         }
         formal_profile_names.update(ISOLATED_PROFILE_NAMES.values())
-        collisions = sorted(temporary_name_set & formal_profile_names)
-        if collisions:
-            raise AssertionError(f"Temporary profile names overlap formal profile cases: {collisions!r}")
+        token_attempts = 1 if run_token is not None else TEMPORARY_PROFILE_TOKEN_ATTEMPTS
+        temporary_names: dict[str, str] | None = None
+        collisions: list[str] = []
+        for attempt in range(token_attempts):
+            token = normalized_run_token(run_token)
+            candidate_names = {
+                source_name: temporary_profile_name(
+                    profile_definition_by_name(source_name),
+                    ems_version,
+                    node_key,
+                    token,
+                )
+                for source_name in source_names
+            }
+            temporary_name_set = set(candidate_names.values())
+            if len(temporary_name_set) != len(candidate_names):
+                raise AssertionError("Temporary profile names must be unique within one run.")
+            formal_collisions = sorted(temporary_name_set & formal_profile_names)
+            if formal_collisions:
+                raise AssertionError(
+                    f"Temporary profile names overlap formal profile cases: {formal_collisions!r}"
+                )
 
+            collisions = []
+            for source_name in source_names:
+                probe = copy.deepcopy(profile_definition_by_name(source_name))
+                probe["profilename"] = candidate_names[source_name]
+                existing = self.get_profile(session_id, probe)
+                if existing.retstatus == "Success":
+                    collisions.append(candidate_names[source_name])
+                elif not profile_response_is_missing(existing):
+                    raise AssertionError(
+                        "Cannot inspect temporary profile name before create: "
+                        f"{format_response_summary(existing)}"
+                    )
+            if not collisions:
+                temporary_names = candidate_names
+                break
+            if run_token is not None or attempt + 1 == token_attempts:
+                raise AssertionError(
+                    "Temporary profile collision after read-only name check: "
+                    f"{sorted(collisions)!r}"
+                )
+
+        assert temporary_names is not None
+
+        registry_path = self._register_temporary_graph(
+            source_names=source_names,
+            temporary_names=temporary_names,
+            source_profilename=source_profilename,
+            ems_version=ems_version,
+            node_key=node_key,
+        )
         definitions = []
         try:
             for source_name in source_names:
@@ -658,19 +704,200 @@ class ProfileService:
                     )
                 )
         except Exception:
+            cleanup_succeeded = True
             for definition in reversed(definitions):
-                self.delete_temporary_profile(
-                    session_id,
-                    definition,
-                    timeout=timeout,
-                    interval=interval,
-                )
+                try:
+                    self.delete_temporary_profile(
+                        session_id,
+                        definition,
+                        timeout=timeout,
+                        interval=interval,
+                    )
+                except Exception:
+                    cleanup_succeeded = False
+            if cleanup_succeeded:
+                remove_temporary_graph_record(registry_path)
             raise
         return TemporaryProfileGraph(
             root_name=temporary_names[source_profilename],
             definitions=tuple(definitions),
             names_by_source=dict(temporary_names),
+            registry_path=str(registry_path) if registry_path else None,
         )
+
+    def complete_temporary_graph_cleanup(self, graph: TemporaryProfileGraph) -> None:
+        remove_temporary_graph_record(graph.registry_path)
+
+    def stale_temporary_graphs(self, min_age_hours: float = 24):
+        if self.env_config is None:
+            raise ValueError("Stale temporary resource inspection requires env_config.")
+        return scan_temporary_graph_records(
+            base_url=self.env_config.base_url,
+            node_key=self.env_config.dut.node_key,
+            min_age_hours=min_age_hours,
+            root=self.registry_root,
+        )
+
+    def reconcile_stale_temporary_graphs(
+        self,
+        session_id: str,
+        *,
+        min_age_hours: float = 24,
+        delete: bool = False,
+    ) -> dict:
+        scan = self.stale_temporary_graphs(min_age_hours=min_age_hours)
+        report = {
+            "mode": "delete" if delete else "audit",
+            "minimum_age_hours": min_age_hours,
+            "node": self.env_config.dut.node_key,
+            "invalid_registry_files": list(scan.invalid_files),
+            "records": [],
+        }
+        for record in scan.records:
+            item = {
+                "registry_path": str(record.path),
+                "created_at": record.created_at.isoformat(),
+                "root_name": record.root_name,
+                "profiles": [profile.profilename for profile in record.profiles],
+                "status": "candidate",
+                "profile_status": [],
+            }
+            existing_profiles = []
+            inspection_failed = False
+            for profile in record.profiles:
+                response = self.get_profile(session_id, profile.definition())
+                if response.retstatus == "Success":
+                    existing_profiles.append(profile)
+                    item["profile_status"].append({"name": profile.profilename, "status": "exists"})
+                elif profile_response_is_missing(response):
+                    item["profile_status"].append({"name": profile.profilename, "status": "missing"})
+                else:
+                    inspection_failed = True
+                    item["profile_status"].append(
+                        {
+                            "name": profile.profilename,
+                            "status": "inspection_failed",
+                            "error": format_response_summary(response),
+                        }
+                    )
+
+            if inspection_failed:
+                item["status"] = "skipped_inspection_failed"
+            elif not existing_profiles:
+                item["status"] = "already_absent"
+                if delete:
+                    remove_temporary_graph_record(record.path)
+                    item["registry_removed"] = True
+            else:
+                reference_status, reference_details = self._target_service_reference_status(
+                    session_id,
+                    record.root_name,
+                    record.service_targets,
+                )
+                item["reference_status"] = reference_status
+                item["reference_details"] = reference_details
+                if reference_status == "referenced":
+                    item["status"] = "skipped_referenced"
+                elif reference_status != "unreferenced":
+                    item["status"] = "skipped_reference_unknown"
+                elif not delete:
+                    item["status"] = "audit_candidate"
+                else:
+                    try:
+                        for profile in reversed(record.profiles):
+                            self.delete_temporary_profile(session_id, profile.definition())
+                    except Exception as error:
+                        item["status"] = "cleanup_failed"
+                        item["error"] = str(error)
+                    else:
+                        remove_temporary_graph_record(record.path)
+                        item["status"] = "removed"
+                        item["registry_removed"] = True
+            report["records"].append(item)
+        return report
+
+    def _register_temporary_graph(
+        self,
+        *,
+        source_names: list[str],
+        temporary_names: dict[str, str],
+        source_profilename: str,
+        ems_version: str,
+        node_key: str,
+    ):
+        if self.env_config is None:
+            return None
+        if self.env_config.dut.node_key != node_key:
+            raise AssertionError(
+                f"Temporary graph node mismatch: env={self.env_config.dut.node_key}, requested={node_key}"
+            )
+        profiles = [
+            {
+                "profiletype": profile_definition_by_name(source_name)["profiletype"],
+                "profilename": temporary_names[source_name],
+            }
+            for source_name in source_names
+        ]
+        root_profile_type = profiles[-1]["profiletype"]
+        dut = self.env_config.dut
+        if root_profile_type == "ONTTemplateProfile":
+            service_targets = [{"resource": "ont", "path": f"/ontservice/{dut.ont_sn}"}]
+        elif root_profile_type == "GETemplateProfile" and dut.ge_slot_id and dut.ge_port_id:
+            service_targets = [
+                {
+                    "resource": "ge",
+                    "path": f"/geservice/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}",
+                }
+            ]
+        else:
+            raise AssertionError(
+                f"Cannot register temporary graph service target for root type {root_profile_type!r}."
+            )
+        return create_temporary_graph_record(
+            base_url=self.env_config.base_url,
+            ems_version=ems_version,
+            node_key=node_key,
+            source_profilename=source_profilename,
+            root_name=temporary_names[source_profilename],
+            profiles=profiles,
+            service_targets=service_targets,
+            root=self.registry_root,
+        )
+
+    def _target_service_reference_status(
+        self,
+        session_id: str,
+        root_name: str,
+        service_targets,
+    ) -> tuple[str, list[dict]]:
+        details = []
+        unknown = False
+        referenced = False
+        for target in service_targets:
+            resource_type = target.resource
+            path = target.path
+            response = self.api_client.request("GET", path, session=session_id)
+            if response.retstatus == "Success":
+                has_reference = _payload_contains_exact_string(response.json, root_name)
+                referenced = referenced or has_reference
+                details.append({"resource": resource_type, "path": path, "references_root": has_reference})
+            elif _service_response_is_missing(response):
+                details.append({"resource": resource_type, "path": path, "references_root": False})
+            else:
+                unknown = True
+                details.append(
+                    {
+                        "resource": resource_type,
+                        "path": path,
+                        "references_root": "unknown",
+                        "error": format_response_summary(response),
+                    }
+                )
+        if referenced:
+            return "referenced", details
+        if unknown:
+            return "unknown", details
+        return "unreferenced", details
 
     def delete_temporary_profile(
         self,
@@ -1050,6 +1277,33 @@ def profile_name_is_present(payload, profilename):
     if isinstance(payload, list):
         return any(profile_name_is_present(item, profilename) for item in payload)
     return False
+
+
+def _payload_contains_exact_string(value, expected: str) -> bool:
+    if isinstance(value, dict):
+        return any(_payload_contains_exact_string(item, expected) for item in value.values())
+    if isinstance(value, list):
+        return any(_payload_contains_exact_string(item, expected) for item in value)
+    if isinstance(value, str):
+        if value == expected:
+            return True
+        if value.startswith("{") or value.startswith("["):
+            try:
+                parsed = json.loads(value)
+            except (TypeError, ValueError):
+                return False
+            return _payload_contains_exact_string(parsed, expected)
+    return False
+
+
+def _service_response_is_missing(response) -> bool:
+    if response.retstatus != "Fail":
+        return False
+    message = response.retresult.lower()
+    return any(
+        phrase in message
+        for phrase in ("no data found", "does not exist", "serial number does not exist")
+    )
 
 
 def apply_invalid_values(payload, invalid_param):

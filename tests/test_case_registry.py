@@ -23,6 +23,8 @@ def test_report_order_and_names_match_case_catalog():
     order = cases.case_order()
 
     assert names["EMS1-6640"] == "test_get_sessionid"
+    ems1_6640 = next(case for case in cases.DIRECT_CASES if case.case_id == "EMS1-6640")
+    assert ems1_6640.markers == ("session", "session_lifetime")
     assert names["EMS1-6643"] == "test_get_device_all"
     assert order["EMS1-6640"] < order["EMS1-6643"] < order["EMS1-6666"]
 

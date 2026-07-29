@@ -67,6 +67,30 @@ def test_each_yaml_model_matches_supported_device_matrix():
             )
 
 
+def test_olt140x_models_do_not_claim_slot_inventory_support():
+    hardware = load_hardware_config()
+
+    for chassis in ("OLT1404", "OLT1408", "OLT1408A-C", "OLT1408B", "OLT1408B-IA"):
+        assert not hardware.supports_slot_inventory(chassis)
+    assert hardware.supports_slot_inventory("NeoX-03")
+
+
+def test_olt140x_models_do_not_claim_ont_inventory_template_support():
+    hardware = load_hardware_config()
+
+    for chassis in ("OLT1404", "OLT1408", "OLT1408A-C", "OLT1408B", "OLT1408B-IA"):
+        assert not hardware.supports_ont_inventory_template(chassis)
+    assert hardware.supports_ont_inventory_template("NeoX-03")
+
+
+def test_olt1408ac_uses_model_specific_rest_port_up_status():
+    hardware = load_hardware_config()
+
+    assert hardware.port_operation_status_up("OLT1408A-C") == "2"
+    assert hardware.port_operation_status_up("IES4204") == "1"
+    assert hardware.port_operation_status_up("NeoX-03") == "1"
+
+
 def test_feature_targets_only_use_supported_devices():
     hardware = load_hardware_config()
     aliases = hardware.matrix.get("model_aliases", {})
@@ -107,10 +131,15 @@ def _has_complete_dut_sample(node):
 def _assert_supported_model(supported, aliases, label, model, actual_version):
     canonical_model = aliases.get(model, model)
     assert canonical_model in supported, f"{label} model {model!r} is not listed in supported_devices"
-    expected_version = str(supported[canonical_model]["version"])
-    assert actual_version == expected_version, (
-        f"{label} firmware {actual_version!r} does not match configured test version "
-        f"{expected_version!r} for {canonical_model}"
+    expected_versions = [
+        str(version)
+        for version in supported[canonical_model].get(
+            "versions", [supported[canonical_model]["version"]]
+        )
+    ]
+    assert actual_version in expected_versions, (
+        f"{label} firmware {actual_version!r} does not match configured test versions "
+        f"{expected_versions!r} for {canonical_model}"
     )
 
 

@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable
 
+from clients.legacy_ssh_cli import LegacyOpenSshCliClient
 from clients.ssh_cli import SshCliClient
 from config_loader import load_environment
 from utils.allure_helpers import attach_json
@@ -26,24 +27,47 @@ class OntCliStatus:
     output_by_command: dict[str, str]
 
 
+LEGACY_OLT_CLI_CHASSIS = {"OLT1408A-C"}
+
+
+def _redact_cli_output(output: str, secret: str) -> str:
+    return output.replace(secret, "<redacted>") if secret else output
+
+
+def ont_cli_status_commands(env_config) -> tuple[str, str]:
+    dut = env_config.dut
+    if dut.chassis in LEGACY_OLT_CLI_CHASSIS:
+        return (
+            f"show remote ont ont-{dut.port_id}-{dut.ont_id}",
+            "show remote ont unreg",
+        )
+
+    aid = f"{dut.slot_id}-{dut.port_id}-{dut.ont_id}"
+    pon = f"{dut.slot_id}-{dut.port_id}"
+    return (
+        f"show interface remote xont {aid} status",
+        f"show interface xpon {pon} unreg",
+    )
+
+
+def ont_cli_client(env_config, username: str, password: str):
+    client_type = (
+        LegacyOpenSshCliClient
+        if env_config.dut.ssh_backend == "openssh_legacy"
+        else SshCliClient
+    )
+    return client_type(env_config.dut.ssh_host, username, password, timeout=15)
+
+
 def read_ont_cli_status(env_config) -> OntCliStatus:
     dut = env_config.dut
     aid = f"{dut.slot_id}-{dut.port_id}-{dut.ont_id}"
-    pon = f"{dut.slot_id}-{dut.port_id}"
-    commands = [
-        f"show interface remote xont {aid} status",
-        f"show interface xpon {pon} unreg",
-    ]
+    commands = ont_cli_status_commands(env_config)
     ssh_username, ssh_password = ssh_credentials(env_config)
-    client = SshCliClient(
-        dut.device_ip,
-        ssh_username,
-        ssh_password,
-        timeout=15,
-    )
+    client = ont_cli_client(env_config, ssh_username, ssh_password)
     results = client.run_commands(commands)
     output_by_command = {
-        result.command: result.output.replace(dut.ont_password, "<redacted>")
+        result.command: _redact_cli_output(result.output, dut.ont_password)
         for result in results
     }
     status = parse_ont_cli_status(
@@ -63,6 +87,124 @@ def read_ont_cli_status(env_config) -> OntCliStatus:
         },
     )
     return OntCliStatus(status.state, status.source, output_by_command)
+
+
+def read_ont_cli_running_config(env_config) -> str:
+    dut = env_config.dut
+    pon = f"{dut.slot_id}-{dut.port_id}"
+    command = f"show running-config interface xpon {pon}"
+    ssh_username, ssh_password = ssh_credentials(env_config)
+    client = ont_cli_client(env_config, ssh_username, ssh_password)
+    result = client.run_commands([command])[0]
+    return _redact_cli_output(result.output, dut.ont_password)
+
+
+def wait_for_ont_cli_config_absent(
+    env_config,
+    remote_xont: str,
+    *,
+    config_reader: Callable = read_ont_cli_running_config,
+    timeout: int = 300,
+    interval: int = 15,
+) -> str:
+    expected_absent = f"interface remote xont {remote_xont}"
+    deadline = time.monotonic() + timeout
+    last_output = ""
+    while True:
+        last_output = config_reader(env_config)
+        if expected_absent.casefold() not in last_output.casefold():
+            attach_json(
+                "ONT CLI config cleanup ground truth",
+                {
+                    "node": env_config.dut.node_key,
+                    "device": env_config.dut.device_name,
+                    "expected_absent": expected_absent,
+                    "output": last_output,
+                },
+            )
+            return last_output
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+    attach_json(
+        "ONT CLI config cleanup timeout",
+        {
+            "node": env_config.dut.node_key,
+            "device": env_config.dut.device_name,
+            "expected_absent": expected_absent,
+            "output": last_output,
+        },
+    )
+    raise AssertionError(
+        f"ONT CLI config was not cleared within {timeout}s; still found {expected_absent!r}"
+    )
+
+
+def wait_for_ont_cli_config_tokens(
+    env_config,
+    *,
+    expected_tokens: tuple[str, ...] = (),
+    absent_tokens: tuple[str, ...] = (),
+    consecutive_successes: int = 1,
+    config_reader: Callable = read_ont_cli_running_config,
+    timeout: int = 180,
+    interval: int = 15,
+) -> str:
+    if consecutive_successes < 1:
+        raise ValueError("consecutive_successes must be at least 1")
+
+    deadline = time.monotonic() + timeout
+    stable_hits = 0
+    last_output = ""
+    last_missing: list[str] = []
+    last_present: list[str] = []
+
+    while True:
+        last_output = config_reader(env_config)
+        normalized = last_output.casefold()
+        last_missing = [token for token in expected_tokens if str(token).casefold() not in normalized]
+        last_present = [token for token in absent_tokens if str(token).casefold() in normalized]
+        if not last_missing and not last_present:
+            stable_hits += 1
+            if stable_hits >= consecutive_successes:
+                attach_json(
+                    "ONT CLI config stable ground truth",
+                    {
+                        "node": env_config.dut.node_key,
+                        "device": env_config.dut.device_name,
+                        "expected_tokens": expected_tokens,
+                        "absent_tokens": absent_tokens,
+                        "consecutive_successes": consecutive_successes,
+                        "output": last_output,
+                    },
+                )
+                return last_output
+        else:
+            stable_hits = 0
+
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(interval, remaining))
+
+    attach_json(
+        "ONT CLI config stable timeout",
+        {
+            "node": env_config.dut.node_key,
+            "device": env_config.dut.device_name,
+            "missing_tokens": last_missing,
+            "unexpected_tokens": last_present,
+            "consecutive_successes": consecutive_successes,
+            "stable_hits": stable_hits,
+            "output": last_output,
+        },
+    )
+    raise AssertionError(
+        "ONT CLI config did not become stable within "
+        f"{timeout}s; missing={last_missing!r}, unexpected={last_present!r}, "
+        f"stable_hits={stable_hits}/{consecutive_successes}"
+    )
 
 
 def parse_ont_cli_status(status_output: str, unreg_output: str, ont_sn: str) -> OntCliStatus:
@@ -143,6 +285,10 @@ def ssh_credentials(env_config) -> tuple[str, str]:
     password = os.environ.get("DUT_SSH_PASSWORD") or os.environ.get("NEOX_SSH_PASSWORD")
     if username and password:
         return username, password
+    configured_username = getattr(env_config.dut, "ssh_username", "")
+    configured_password = getattr(env_config.dut, "ssh_password", "")
+    if configured_username and configured_password:
+        return configured_username, configured_password
     ssh_env = env_config
     if env_config.auth_profile != "default":
         ssh_env = load_environment(node=env_config.dut.node_key, auth_profile="default")

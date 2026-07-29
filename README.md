@@ -28,10 +28,11 @@ them for your lab:
 - `configs/auth_accounts.yaml`: auth profiles and role-based accounts.
 
 Do not commit real passwords, tokens, devKeys or private lab credentials.
-Keep the canonical YAML files shareable by storing local credentials in the
-ignored `.env` file. Values such as `${EMS_AUTH_READWRITE_DEFAULT_USERNAME:-example}`
-resolve from the process environment first, then `.env`, and finally the public
-fallback after `:-`. The NeoX test data under `configs/neox_config/` is part of
+Keep the tracked YAML files shareable. Store complete local account and DUT
+settings in the ignored `configs/auth_accounts.local.yaml` and
+`configs/test_targets.local.yaml` files; when present, each local file is loaded
+before its tracked counterpart. Process environment variables remain explicit
+run-time overrides. The NeoX test data under `configs/neox_config/` is part of
 the runnable test dataset and should be kept with the code that consumes it.
 
 ## Project Layout
@@ -65,6 +66,21 @@ pytest --ems-node NODE1 --auth-matrix
 
 `--ems-node` overrides `EMS_NODE` for that pytest run.
 `--auth-profile` overrides `EMS_AUTH_PROFILE` for that pytest run.
+
+Session reuse is enabled by default after the NODE3 rollout validation. The
+explicit equivalent is:
+
+```powershell
+pytest --session-cache-mode on
+```
+
+`EMS_SESSION_CACHE_MODE=on` provides the equivalent environment setting. Role
+sessions are reused within one pytest process, refreshed at
+540 seconds before the confirmed 600-second absolute lifetime, and refreshed
+after exact `Fail / Not authorized.` responses. Only GET/HEAD requests are
+retried once; mutating requests are never replayed automatically.
+Use `--session-cache-mode off` or `EMS_SESSION_CACHE_MODE=off` for immediate
+rollback to per-test login/logout.
 
 ## Hardware Targets
 
@@ -112,6 +128,8 @@ Details: `docs/openapi_version_guard.md`
 
 ```powershell
 pytest -m session
+pytest -m session_lifetime
+pytest -m "session and not session_lifetime"
 pytest -m inventory
 pytest -m "provision and mutating"
 pytest -m "not destructive"
@@ -119,6 +137,12 @@ pytest -m remoteconsole --run-remote
 pytest -m alarm_delete --run-alarm-delete
 pytest --ems-node NODE3 --run-full-testcases
 ```
+
+EMS1-6640 is marked `session_lifetime` because its readwrite path validates the
+600-second absolute lifetime and adds about 10 minutes. It remains part of the
+full and `session` suites, but is intentionally excluded from the fast `smoke`
+selection. The same testcase still covers all three roles; only readwrite runs
+the lifetime boundary checks.
 
 Run multiple nodes sequentially with per-node logs and a summary:
 
@@ -128,11 +152,66 @@ Run multiple nodes sequentially with per-node logs and a summary:
 .\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE3 --jobs 2 --auth-profiles default,ems_local_rw2 --run-full-testcases
 ```
 
+Use explicit execution lanes for the stable split workflow:
+
+```powershell
+# Read-only baseline: parallel by node, no lifetime or mutation.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE2,NODE3 --jobs 3 --auth-profiles default,ems_local_rw2,rad_external
+
+# Node-owned mutation: serial inside each node process, parallel across distinct DUT resources.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1,NODE2,NODE3 --jobs 3 --auth-profiles default,ems_local_rw2,rad_external --lane node-mutating
+
+# EMS-global mutation: exactly one representative node and one job.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1 --jobs 1 --auth-profiles default --lane ems-mutating
+
+# EMS-scoped absolute session lifetime: exactly one representative node and one job.
+.\.venv\Scripts\python.exe tools\run_multi_node.py --nodes NODE1 --jobs 1 --auth-profiles default --lane ems-session-lifetime
+```
+
+The `node-mutating` lane excludes destructive cases and EMS1-6640. NeoX config
+cases are enabled only for NeoX nodes, while each node process remains serial so
+ONT and GE lifecycles stay ordered. The `ems-mutating` lane runs shared EMS
+profile lifecycles exactly once. Alarm acknowledge/clear remains destructive and
+is excluded from both mutation lanes. The `ems-session-lifetime` lane accepts
+exactly one node, preventing the 600-second EMS behavior from being repeated for
+every DUT. If an ONT target already uses a template that was not created by the
+current run, its CRUD workflow is skipped as an ownership precondition; the
+existing service is not overwritten or deleted.
+
+Without `--run-full-testcases` or an explicit pytest `-m` expression, the
+multi-node runner defaults to `not mutating and not destructive and not
+session_lifetime`. This keeps the routine parallel baseline read-only and omits
+the 10-minute EMS session-lifetime case. Pass an explicit `-m` expression for a
+different bounded selection, or `--run-full-testcases` only when the full
+mutating environment workflow is intended.
+
 The multi-node runner still invokes pytest per node. NeoX-only config options
 are kept for NeoX chassis and omitted for non-NeoX chassis. Parallel node runs
 must assign a distinct auth profile to each node because logging in with the same
-EMS account can invalidate an active session. Keep `--jobs 1` when distinct
-accounts are unavailable.
+EMS account can invalidate an active session. The runner validates the resolved
+role usernames as well as profile names. Keep `--jobs 1` when distinct accounts
+are unavailable. Each runner-created pytest process also enables
+`--formal-testcases-only`, so framework unit tests are not repeated under every
+DUT environment unless they are explicitly invoked outside the multi-node runner.
+
+Audit temporary profile graphs left by interrupted runs:
+
+```powershell
+# Read-only audit. Only locally registered graphs older than 24 hours are inspected.
+.\.venv\Scripts\python.exe tools\cleanup_stale_test_data.py --node NODE1 --auth-profile default
+
+# Explicit cleanup after the audit result has been reviewed.
+.\.venv\Scripts\python.exe tools\cleanup_stale_test_data.py --node NODE1 --auth-profile default --cleanup-stale-test-data
+```
+
+Each temporary ONT/GE profile graph is registered locally before its first POST.
+Normal fixture cleanup removes both the EMS profiles and the local manifest. An
+interrupted run leaves the manifest for a later audit. Cleanup is restricted to
+the same EMS identity and node, requires the configured minimum age (24 hours by
+default), performs exact profile GET checks, and refuses deletion when the node's
+ONT/GE target still references the root template or its reference state cannot be
+confirmed. Files that do not match the automation-owned temporary naming pattern
+are reported as invalid and are never deleted.
 
 Requests and responses are attached to Allure when `allure-pytest` is installed.
 Passwords and session ids are redacted from logs.

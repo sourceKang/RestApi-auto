@@ -39,6 +39,12 @@ def assert_api_failure(response: ApiResponse, accepted_messages: Iterable[str] =
     assert any(message.lower() in result for message in accepted_messages), _format_response(response)
 
 
+def assert_api_failure_exact(response: ApiResponse, *, expected_retresult: str) -> None:
+    assert isinstance(response.json, dict), _format_response(response)
+    assert response.json.get("retstatus") == "Fail", _format_response(response)
+    assert response.json.get("retresult") == expected_retresult, _format_response(response)
+
+
 def assert_contains_required_keys(response: ApiResponse, *keys: str) -> None:
     assert_api_success(response)
     for key in keys:

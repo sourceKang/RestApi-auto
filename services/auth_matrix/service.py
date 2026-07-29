@@ -31,8 +31,8 @@ class AuthMatrixService:
             ontservice_response = self.api_client.request("GET", f"/ontservice/{env_config.dut.ont_sn}", session=session_id)
             assert_api_success(ontservice_response)
 
-            geservice_response = self.api_client.request("GET", ge_service_port_path(env_config), session=session_id)
-            assert_api_success(geservice_response)
+            if has_ge_target(env_config):
+                assert_ge_read_allowed(self.api_client, env_config, session_id)
 
             active_alarm_response = self.api_client.request(
                 "GET",
@@ -92,8 +92,8 @@ class AuthMatrixService:
             ontservice_response = self.api_client.request("GET", f"/ontservice/{env_config.dut.ont_sn}", session=session_id)
             assert_api_success(ontservice_response)
 
-            geservice_response = self.api_client.request("GET", ge_service_port_path(env_config), session=session_id)
-            assert_api_success(geservice_response)
+            if has_ge_target(env_config):
+                assert_ge_read_allowed(self.api_client, env_config, session_id)
 
             active_alarm_response = self.api_client.request(
                 "GET",
@@ -103,7 +103,6 @@ class AuthMatrixService:
             )
             assert_read_or_no_data(active_alarm_response)
 
-        ge_mutation_path = ge_service_mutation_path(self.api_client, observer_session_id, env_config)
         definition = ephemeral_igmp_profile_definition()
         with allure_step("Verify RAD readonly POST rejection does not create a profile"):
             profile_create = self.api_client.request(
@@ -135,24 +134,14 @@ class AuthMatrixService:
             ontservice_delete = self.api_client.request("DELETE", f"/ontservice/{env_config.dut.ont_sn}", session=session_id)
             assert_api_failure(ontservice_delete, accepted_messages=AUTH_FAILURE_MESSAGES)
 
-            geservice_create = self.api_client.request(
-                "POST",
-                ge_service_port_path(env_config),
-                session=session_id,
-                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
-            )
-            assert_api_failure(geservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
-
-            geservice_update = self.api_client.request(
-                "PUT",
-                ge_mutation_path,
-                session=session_id,
-                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
-            )
-            assert_api_failure(geservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
-
-            geservice_delete = self.api_client.request("DELETE", ge_mutation_path, session=session_id)
-            assert_api_failure(geservice_delete, accepted_messages=AUTH_FAILURE_MESSAGES)
+            if has_ge_target(env_config):
+                assert_ge_mutations_rejected(
+                    self.api_client,
+                    env_config,
+                    session_id,
+                    observer_session_id,
+                    ge_template,
+                )
 
             remote_response = self.api_client.request(
                 "POST",
@@ -204,8 +193,8 @@ class AuthMatrixService:
             ontservice_response = self.api_client.request("GET", f"/ontservice/{env_config.dut.ont_sn}", session=session_id)
             assert_api_failure(ontservice_response, accepted_messages=AUTH_FAILURE_MESSAGES)
 
-            geservice_response = self.api_client.request("GET", ge_service_port_path(env_config), session=session_id)
-            assert_api_failure(geservice_response, accepted_messages=AUTH_FAILURE_MESSAGES)
+            if has_ge_target(env_config):
+                assert_ge_read_rejected(self.api_client, env_config, session_id)
 
             active_alarm_response = self.api_client.request(
                 "GET",
@@ -223,7 +212,6 @@ class AuthMatrixService:
             )
             assert_api_failure(history_alarm_response, accepted_messages=AUTH_FAILURE_MESSAGES)
 
-        ge_mutation_path = ge_service_mutation_path(self.api_client, observer_session_id, env_config)
         with allure_step("Verify RAD noaccess POST rejection does not create a profile"):
             profile_create = self.api_client.request(
                 "POST",
@@ -254,24 +242,14 @@ class AuthMatrixService:
             ontservice_delete = self.api_client.request("DELETE", f"/ontservice/{env_config.dut.ont_sn}", session=session_id)
             assert_api_failure(ontservice_delete, accepted_messages=AUTH_FAILURE_MESSAGES)
 
-            geservice_create = self.api_client.request(
-                "POST",
-                ge_service_port_path(env_config),
-                session=session_id,
-                json=ge_service_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
-            )
-            assert_api_failure(geservice_create, accepted_messages=AUTH_FAILURE_MESSAGES)
-
-            geservice_update = self.api_client.request(
-                "PUT",
-                ge_mutation_path,
-                session=session_id,
-                json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
-            )
-            assert_api_failure(geservice_update, accepted_messages=AUTH_FAILURE_MESSAGES)
-
-            geservice_delete = self.api_client.request("DELETE", ge_mutation_path, session=session_id)
-            assert_api_failure(geservice_delete, accepted_messages=AUTH_FAILURE_MESSAGES)
+            if has_ge_target(env_config):
+                assert_ge_mutations_rejected(
+                    self.api_client,
+                    env_config,
+                    session_id,
+                    observer_session_id,
+                    ge_template,
+                )
 
             remote_response = self.api_client.request(
                 "POST",
@@ -348,6 +326,47 @@ def assert_profile_json_unchanged(api_client, session_id: str, definition, befor
     after = get_profile_json(api_client, session_id, definition)
     assert after == before, "Rejected profile mutation changed the profile visible to a readwrite observer."
 
+
+def has_ge_target(env_config) -> bool:
+    return bool(env_config.dut.ge_slot_id and env_config.dut.ge_port_id)
+
+
+def assert_ge_read_allowed(api_client, env_config, session_id: str) -> None:
+    response = api_client.request("GET", ge_service_port_path(env_config), session=session_id)
+    assert_api_success(response)
+
+
+def assert_ge_read_rejected(api_client, env_config, session_id: str) -> None:
+    response = api_client.request("GET", ge_service_port_path(env_config), session=session_id)
+    assert_api_failure(response, accepted_messages=AUTH_FAILURE_MESSAGES)
+
+
+def assert_ge_mutations_rejected(
+    api_client,
+    env_config,
+    session_id: str,
+    observer_session_id: str,
+    ge_template: str | None,
+) -> None:
+    mutation_path = ge_service_mutation_path(api_client, observer_session_id, env_config)
+    create = api_client.request(
+        "POST",
+        ge_service_port_path(env_config),
+        session=session_id,
+        json=ge_service_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
+    )
+    assert_api_failure(create, accepted_messages=AUTH_FAILURE_MESSAGES)
+
+    update = api_client.request(
+        "PUT",
+        mutation_path,
+        session=session_id,
+        json=ge_service_modified_payload(env_config, "RAD_AUTH_MATRIX", ge_template=ge_template),
+    )
+    assert_api_failure(update, accepted_messages=AUTH_FAILURE_MESSAGES)
+
+    delete = api_client.request("DELETE", mutation_path, session=session_id)
+    assert_api_failure(delete, accepted_messages=AUTH_FAILURE_MESSAGES)
 
 def ge_service_port_path(env_config) -> str:
     dut = env_config.dut

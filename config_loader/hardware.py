@@ -11,6 +11,7 @@ from config_loader.simple_yaml import SimpleYamlError, load_simple_yaml
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_HARDWARE_MATRIX_FILE = CONFIG_DIR / "hardware_matrix.yaml"
 DEFAULT_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.yaml"
+LOCAL_TEST_TARGETS_FILE = CONFIG_DIR / "test_targets.local.yaml"
 
 
 class HardwareConfigError(RuntimeError):
@@ -34,6 +35,27 @@ class HardwareConfig:
     def chassis_rules(self, chassis: str) -> dict[str, Any]:
         rules = self.matrix.get("chassis", {}).get(chassis, {})
         return rules if isinstance(rules, dict) else {}
+
+    def supports_slot_inventory(self, chassis: str) -> bool:
+        features = self.matrix.get("feature_support", {})
+        unsupported = set(_as_string_list(features.get("slot_inventory_unsupported_models")))
+        aliases = self.matrix.get("model_aliases", {})
+        return _canonical_model(chassis, aliases) not in unsupported
+
+    def supports_ont_inventory_template(self, chassis: str) -> bool:
+        features = self.matrix.get("feature_support", {})
+        unsupported = set(_as_string_list(features.get("ont_inventory_template_unsupported_models")))
+        aliases = self.matrix.get("model_aliases", {})
+        return _canonical_model(chassis, aliases) not in unsupported
+
+    def port_operation_status_up(self, chassis: str) -> str:
+        aliases = self.matrix.get("model_aliases", {})
+        model = _canonical_model(chassis, aliases)
+        rules = self.matrix.get("supported_devices", {}).get(model, {})
+        if not isinstance(rules, dict):
+            return "1"
+        return str(rules.get("port_operation_status_up") or "1")
+
 
     def report_card_names(self, node_key: str, node_data: dict[str, Any]) -> list[str]:
         configured = self.report_card_entries(node_key, node_data)
@@ -162,10 +184,26 @@ class HardwareConfig:
                 )
 
     def _validate_test_target_sections(self, node_key: str, target: dict[str, Any]) -> None:
-        for field in ("device_name", "device_ip", "chassis"):
+        for field in (
+            "device_name",
+            "device_ip",
+            "ssh_host",
+            "ssh_backend",
+            "ssh_username",
+            "ssh_password",
+            "chassis",
+        ):
             value = target.get(field)
             if value is not None and not isinstance(value, (str, int)):
                 raise HardwareConfigError(f"{node_key}.{field} must be a string or integer")
+
+        ssh_backend = str(target.get("ssh_backend") or "paramiko")
+        if ssh_backend not in {"paramiko", "openssh_legacy"}:
+            raise HardwareConfigError(f"{node_key}.ssh_backend uses unsupported backend {ssh_backend!r}")
+        if ssh_backend == "openssh_legacy" and str(target.get("chassis", "")) != "OLT1408A-C":
+            raise HardwareConfigError(
+                f"{node_key}.ssh_backend openssh_legacy is restricted to OLT1408A-C"
+            )
 
         ont = target.get("ont", {})
         if ont is not None and not isinstance(ont, dict):
@@ -232,6 +270,8 @@ def _default_test_targets_file() -> Path:
     override = os.environ.get("EMS_TEST_TARGETS_FILE")
     if override:
         return Path(override)
+    if LOCAL_TEST_TARGETS_FILE.exists():
+        return LOCAL_TEST_TARGETS_FILE
     return DEFAULT_TEST_TARGETS_FILE
 
 

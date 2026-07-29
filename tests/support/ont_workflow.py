@@ -13,6 +13,7 @@ class OntServiceWorkflowState:
     post_attempted: bool = False
     post_succeeded: bool = False
     post_failure: str = ""
+    post_precondition: str = ""
     inventory_ready: bool = False
     readiness_failure: str = ""
     readiness_precondition: str = ""
@@ -23,6 +24,7 @@ class OntServiceWorkflowState:
         self.post_attempted = True
         self.post_succeeded = False
         self.post_failure = ""
+        self.post_precondition = ""
         self.inventory_ready = False
         self.readiness_failure = ""
         self.readiness_precondition = ""
@@ -33,6 +35,11 @@ class OntServiceWorkflowState:
 
     def fail_post(self, error: BaseException) -> None:
         self.post_failure = str(error)
+
+    def block_post_precondition(self, error: BaseException) -> None:
+        self.post_precondition = str(error)
+        self.post_failure = ""
+        self.post_succeeded = False
 
     def mark_inventory_ready(self, template: str) -> None:
         self.template = str(template)

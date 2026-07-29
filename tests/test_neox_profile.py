@@ -14,7 +14,7 @@ import pytest
 
 from cases.boundary_cases import numeric_boundary_negative_cases
 from models.api import SessionRole
-from services.neox_config.cli_expectations import normalize_cli_output
+from services.neox_config.cli_expectations import normalize_cli_output, profile_cli_reports_absent
 from services.neox_config.profile_expectations import neox_profile_cli_field_mismatches, neox_profile_expected_tokens
 from services.neox_config.service import (
     NEOX_PROFILE_READWRITE_TYPES,
@@ -22,7 +22,7 @@ from services.neox_config.service import (
     neox_profile_cli_verify_case,
     neox_profile_negative_cases_config,
 )
-from services.neox_config.profile_api import delete_profile_if_exists
+from services.neox_config.profile_api import delete_profile_if_exists, profile_read_path
 from tests.support.neox_cli_verification import neox_cli_credentials, run_neox_cli_commands, write_neox_cli_verify_report
 from tests.support.connectivity import assert_ping_reachable
 from utils.assertions import assert_api_failure, assert_api_success
@@ -173,6 +173,7 @@ def test_neox_profile_error_readwrite(
             readwrite_session,
             cleanup_registry,
             profile_type,
+            env_config=env_config,
         )
 
 
@@ -241,7 +242,7 @@ def test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected(
 
             run_neox_cli_commands(env_config, credentials, cli_cleanup_commands)
             cli_after_baseline_cleanup = run_neox_cli_commands(env_config, credentials, [show_command])[show_command]
-            assert re.search(r"no such data|not found", cli_after_baseline_cleanup, re.IGNORECASE), (
+            assert profile_cli_reports_absent(cli_after_baseline_cleanup), (
                 cli_after_baseline_cleanup
             )
 
@@ -273,7 +274,7 @@ def test_neox_igmp_group_privilege_bandwidth_below_minimum_is_rejected(
                     "cli_after_rest": cli_after_rest,
                 },
             )
-            assert re.search(r"no such data|not found", cli_after_rest, re.IGNORECASE), cli_after_rest
+            assert profile_cli_reports_absent(cli_after_rest), cli_after_rest
             assert_neox_profile_node_reachable(env_config, profile_type, case_name, "after_cli_ground_truth")
         finally:
             try:
@@ -312,9 +313,12 @@ def verify_neox_profile_error_cases(
     readwrite_session: str,
     cleanup_registry,
     profile_type: str,
+    *,
+    env_config=None,
 ) -> None:
     path = neox_config_service.neox_profile_path(profile_type)
     profile_name = neox_config_service.neox_profile_name(profile_type)
+    read_path = profile_read_path(path)
     cleanup_registry.add(lambda: delete_neox_profile(api_client, session_manager, profile_type, path, readwrite_session))
     observations = []
     failures = []
@@ -369,7 +373,7 @@ def verify_neox_profile_error_cases(
                 }
             )
 
-        residual = api_client.request("GET", path, session=readwrite_session)
+        residual = api_client.request("GET", read_path, session=readwrite_session)
         observation["residual"] = {
             "status_code": residual.status_code,
             "retstatus": residual.retstatus,
@@ -390,6 +394,23 @@ def verify_neox_profile_error_cases(
                 }
             )
 
+    cli_ground_truth = None
+    if env_config is not None:
+        cli_ground_truth = neox_profile_cli_absence_observation(
+            neox_config_service,
+            env_config,
+            profile_type,
+        )
+        if not cli_ground_truth["absent"]:
+            failures.append(
+                {
+                    "case": "final_cli_ground_truth",
+                    "phase": "residual_profile_cli",
+                    "error": f"Profile still exists according to CLI: {cli_ground_truth['command']}",
+                    "observation": cli_ground_truth,
+                }
+            )
+
     report_path = write_neox_profile_error_report(
         neox_config_service,
         profile_type,
@@ -397,12 +418,26 @@ def verify_neox_profile_error_cases(
         path,
         observations,
         failures,
+        cli_ground_truth=cli_ground_truth,
     )
     attach_json(
         f"NeoX {profile_type} error matrix",
         {"report": str(report_path), "failures": failures, "observations": observations},
     )
     assert not failures, f"{profile_type} profile error matrix had {len(failures)} mismatches. Report: {report_path}"
+
+
+def neox_profile_cli_absence_observation(neox_config_service, env_config, profile_type: str) -> dict[str, Any]:
+    ssh_username, ssh_password = neox_cli_credentials(env_config, "PROFILE error matrix")
+    command = neox_profile_show_command(neox_config_service, profile_type)
+    output = run_neox_profile_cli_command(env_config, ssh_username, ssh_password, command)
+    assert_neox_profile_node_reachable(env_config, profile_type, "error", "after_cli_ground_truth")
+    return {
+        "command": command,
+        "output": output,
+        "absent": profile_cli_reports_absent(output),
+        "expected": "explicit CLI absence message",
+    }
 
 
 def assert_invalid_profile_post_did_not_succeed(profile_type: str, negative_case: dict[str, Any], response) -> None:
@@ -490,6 +525,8 @@ def write_neox_profile_error_report(
     path: str,
     observations: list[dict],
     failures: list[dict],
+    *,
+    cli_ground_truth: dict[str, Any] | None = None,
 ) -> Path:
     reports_dir = Path(__file__).resolve().parents[1] / "reports" / "device-verification"
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -507,8 +544,8 @@ def write_neox_profile_error_report(
         "workflow": (
             "Each profile invalid payload clears the profile before POST. API/schema-layer cases assert the "
             "stable status/message contract; device CLI-layer cases assert failure and a non-empty error "
-            "message without pinning device wording. CLI verification is intentionally disabled for profile "
-            "error-readwrite cases."
+            "message without pinning device wording. Each rejected POST is checked through the generic REST "
+            "read path, then one final CLI show verifies that the profile is absent on the device."
         ),
         "summary": {
             "total": len(observations),
@@ -516,6 +553,7 @@ def write_neox_profile_error_report(
         },
         "failures": failures,
         "observations": observations,
+        "cli_ground_truth": cli_ground_truth,
     }
     report_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return report_path

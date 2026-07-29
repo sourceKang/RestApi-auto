@@ -8,6 +8,7 @@ from uuid import uuid4
 import requests
 import urllib3
 
+from clients.session import RefreshableSession
 from config_loader.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
 from utils.allure_helpers import allure_step, attach_json
@@ -28,13 +29,48 @@ class EmsApiClient:
         method: str,
         path: str,
         *,
-        session: str | None = None,
+        session: str | RefreshableSession | None = None,
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         expected: str | None = None,
     ) -> ApiResponse:
         with allure_step(f"{method.upper()} {path}"):
-            return self._send_request(method, path, session=session, params=params, json=json, expected=expected)
+            session_id = session.current_session_id() if isinstance(session, RefreshableSession) else session
+            response = self._send_request(
+                method,
+                path,
+                session=session_id,
+                params=params,
+                json=json,
+                expected=expected,
+            )
+            if not isinstance(session, RefreshableSession) or not self._is_not_authorized(response):
+                return response
+            if not session.should_refresh_on_not_authorized(method):
+                return response
+
+            refreshed_session_id = session.refresh_after_not_authorized(session_id)
+            safe_to_retry = method.upper() in {"GET", "HEAD"}
+            session.record_authorization_recovery(request_retried=safe_to_retry)
+            attach_json(
+                "session refresh after Not authorized",
+                {
+                    "method": method.upper(),
+                    "path": path,
+                    "request_retried": safe_to_retry,
+                },
+            )
+            if not safe_to_retry:
+                return response
+            retry_expected = f"{expected} after session refresh" if expected else "success after session refresh"
+            return self._send_request(
+                method,
+                path,
+                session=refreshed_session_id,
+                params=params,
+                json=json,
+                expected=retry_expected,
+            )
 
     def _send_request(
         self,
@@ -115,6 +151,10 @@ class EmsApiClient:
                 sessionid = retval.get("sessionid")
                 return str(sessionid) if sessionid else None
         return None
+
+    @staticmethod
+    def _is_not_authorized(response: ApiResponse) -> bool:
+        return response.retstatus == "Fail" and response.retresult.strip().casefold() == "not authorized."
 
     @staticmethod
     def _parse_response(response: requests.Response) -> Any:

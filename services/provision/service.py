@@ -15,6 +15,10 @@ from utils.case_metadata import attach_case_id
 from utils.diagnostics import format_response_summary, format_value_summary
 
 
+class ProvisionOwnershipPreconditionError(AssertionError):
+    """Raised when a configured service target is owned by another template/workflow."""
+
+
 class ProvisionService:
     def __init__(self, api_client, env_config, profile_service=None) -> None:
         self.api_client = api_client
@@ -200,7 +204,7 @@ class ProvisionService:
         service = ont_service_info(response.json)
         actual_template = ont_service_template(service)
         if actual_template != expected_template:
-            raise AssertionError(
+            raise ProvisionOwnershipPreconditionError(
                 "Refusing to modify an ONT service that does not use this run's temporary template: "
                 f"expected={expected_template}, actual={actual_template}"
             )

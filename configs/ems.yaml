@@ -2,6 +2,15 @@ version: 1
 
 ems:
   rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
-  version: "03.00.11 (AAVV.221) b10"
+  version: "03.00.11 (AAVV.221) b12"
   verify_tls: false
   timeout: 60
+  # Directory that holds the per-version OpenAPI YAML folders shipped with the
+  # EMS firmware, for example "<openapi_root>/03.00.11 (AAVV.221)/NetAtlasEMS_OpenAPI_20260213.yaml".
+  # These YAML files are not part of this repository, so the location is machine
+  # specific. Use forward slashes; the YAML loader parses quoted values as Python
+  # string literals and would reject "D:\FW\..." backslash escapes.
+  # Override order: EMS_OPENAPI_YAML_FILE > EMS_OPENAPI_ROOT > this value.
+  # Leave it out on machines without the firmware share; the OpenAPI YAML guard
+  # then skips instead of failing.
+  openapi_root: "D:/FW/NetAtlasEMS"

@@ -1,0 +1,87 @@
+# --------------------------------------------------------------------------
+# configs/auth_accounts.local.yaml.example
+#
+# Copy this file to configs/auth_accounts.local.yaml and fill in the real lab
+# accounts. The .local.yaml file is git-ignored on purpose and never leaves
+# this machine.
+#
+#   copy configs\auth_accounts.local.yaml.example configs\auth_accounts.local.yaml
+#
+# Load order (first match wins):
+#   EMS_AUTH_ACCOUNTS_FILE  >  auth_accounts.local.yaml  >  auth_accounts.yaml
+#
+# Every value may also stay as a ${ENV_NAME:-fallback} reference and be
+# supplied by the process environment instead of being written here.
+#
+# The three roles are mandatory for every profile:
+#   readwrite  full API access
+#   readonly   read-only account, used for permission negative checks
+#   noaccess   account without API capability, used for 401/403 checks
+#
+# Parallel runs (tools/run_multi_node.py --jobs > 1) require a DISTINCT
+# profile per node, because logging in twice with the same EMS user
+# invalidates the other session.
+# --------------------------------------------------------------------------
+version: 1
+
+profiles:
+  # Used when --auth-profile is omitted.
+  default:
+    readwrite_account: "default"
+    readonly_account: "default"
+    noaccess_account: "default"
+
+  # Second local EMS account set, for a second parallel node.
+  ems_local_rw2:
+    readwrite_account: "readwrite2"
+    readonly_account: "readonly2"
+    noaccess_account: "noaccess2"
+
+  # RADIUS / external authentication account set.
+  rad_external:
+    readwrite_account: "readwrite1"
+    readonly_account: "readonly1"
+    noaccess_account: "noaccess1"
+
+accounts:
+  readwrite:
+    default:
+      source: "ems_local"
+      username: "admin"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    readwrite1:
+      source: "rad_external"
+      username: "rad_rw_user"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    readwrite2:
+      source: "ems_local"
+      username: "RestApiRW2"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+
+  readonly:
+    default:
+      source: "ems_local"
+      username: "RestApiRO"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    readonly1:
+      source: "rad_external"
+      username: "rad_ro_user"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    readonly2:
+      source: "ems_local"
+      username: "RestApiRO2"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+
+  noaccess:
+    default:
+      source: "ems_local"
+      username: "RestApiNA"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    noaccess1:
+      source: "rad_external"
+      username: "rad_na_user"
+      password: "REPLACE_WITH_REAL_PASSWORD"
+    noaccess2:
+      source: "ems_local"
+      username: "RestApiNA2"
+      password: "REPLACE_WITH_REAL_PASSWORD"

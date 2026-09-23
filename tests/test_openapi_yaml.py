@@ -23,6 +23,8 @@ from cases.openapi_contract import (
     latest_openapi_yaml_file,
     normalize_ems_version,
     openapi_file_date,
+    openapi_root,
+    openapi_root_available,
     openapi_version_dir_name,
     swagger_api_docs_url,
 )
@@ -43,6 +45,14 @@ def test_latest_openapi_yaml_keys_match_live_swagger(request):
 
     if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
         pytest.skip("Latest YAML versus live Swagger key check requires --run-live-swagger-check.")
+
+    if not openapi_root_available():
+        pytest.skip(
+            f"OpenAPI YAML source is not available on this machine: {openapi_root()}. "
+            "The per-version OpenAPI YAML files ship with the EMS firmware and are not "
+            "part of this repository. Set ems.openapi_root in the EMS YAML file, "
+            "EMS_OPENAPI_ROOT, or EMS_OPENAPI_YAML_FILE."
+        )
 
     with allure_step("1. Read configured EMS version from YAML"):
         ems_file = Path(os.environ.get("EMS_YAML_FILE", DEFAULT_EMS_FILE))
@@ -291,6 +301,36 @@ def test_openapi_version_dir_name_uses_ems_release_folder():
 
 def test_openapi_file_date_accepts_suffix_after_date():
     assert openapi_file_date(Path("NetAtlasEMS_OpenAPI_20260605 - test.yaml")) == 20260605
+
+
+def test_openapi_root_prefers_environment_override(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_OPENAPI_ROOT", str(tmp_path))
+    assert openapi_root() == tmp_path
+
+
+def test_openapi_root_reads_ems_yaml_when_environment_is_unset(tmp_path, monkeypatch):
+    configured_root = tmp_path / "NetAtlasEMS"
+    configured_root.mkdir()
+    ems_file = tmp_path / "ems.yaml"
+    ems_file.write_text(
+        "version: 1\n"
+        "\n"
+        "ems:\n"
+        '  rest_api_url: "https://example.invalid/netatlasemsapi"\n'
+        '  version: "03.00.11 (AAVV.221) b12"\n'
+        f'  openapi_root: "{configured_root.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("EMS_OPENAPI_ROOT", raising=False)
+    monkeypatch.setenv("EMS_YAML_FILE", str(ems_file))
+    assert openapi_root() == Path(configured_root.as_posix())
+    assert openapi_root_available() is True
+
+
+def test_openapi_root_available_is_false_for_missing_directory(tmp_path, monkeypatch):
+    monkeypatch.delenv("EMS_OPENAPI_YAML_FILE", raising=False)
+    monkeypatch.setenv("EMS_OPENAPI_ROOT", str(tmp_path / "missing"))
+    assert openapi_root_available() is False
 
 
 def test_latest_openapi_yaml_file_prefers_official_name_for_same_date(tmp_path):

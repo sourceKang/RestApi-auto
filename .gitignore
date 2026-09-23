@@ -42,3 +42,7 @@ Desktop.ini
 
 # Local analysis scratch files
 tmp/
+
+# Claude Code machine-local instructions and permissions
+CLAUDE.local.md
+.claude/settings.local.json

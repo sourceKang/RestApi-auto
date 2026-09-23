@@ -1,0 +1,148 @@
+# --------------------------------------------------------------------------
+# configs/test_targets.local.yaml.example
+#
+# Copy this file to configs/test_targets.local.yaml and replace the values
+# with the real lab topology. The .local.yaml file is git-ignored on purpose.
+#
+#   copy configs\test_targets.local.yaml.example configs\test_targets.local.yaml
+#
+# Load order (first match wins):
+#   EMS_TEST_TARGETS_FILE  >  test_targets.local.yaml  >  test_targets.yaml
+#
+# Schema v2 models the physical layout first:
+#   node -> slots -> card -> ports -> onts
+# and then only SELECTS the target in test_targets:.
+#
+# Only keep the nodes this machine actually reaches. Every node listed here
+# must be reachable by ping (device_ip) and by SSH (ssh_host / device_ip),
+# otherwise the DUT preflight skips all DUT-dependent tests for that node.
+#
+# DUT SSH credentials are independent from the EMS REST accounts in
+# auth_accounts.local.yaml.
+# --------------------------------------------------------------------------
+version: 2
+
+defaults:
+  ont:
+    template: "#RestApi_provision_temp_SFU"
+    service_mode: "veip"
+  ge_service:
+    template: "#RestApi_getemp_ge1"
+    port_name: "1g_Hsinchu"
+    telephone: "011+886+7+2737"
+
+nodes:
+  # ---- Example NeoX chassis -------------------------------------------
+  NODE3:
+    device_name: "Taiwan_NeoX-03_169.58"
+    device_ip: "192.168.169.58"
+    # ssh_host defaults to device_ip when omitted.
+    # ssh_backend: "paramiko" (default) or "openssh_legacy" for old firmware.
+    ssh_username: "admin"
+    ssh_password: "REPLACE_WITH_REAL_DUT_SSH_PASSWORD"
+    chassis: "NeoX-03"
+    submap_name: "!!!AutoMuskSubmap"
+    map_name: "EMS"
+    geo_position: "Hsinchu"
+    slots:
+      4:
+        card: "NXC400"
+        fw_version: "V1.02(ACKG.1)_260604c"
+        hw_version: "AAB"
+        role: "controller"
+        ports:
+          1:
+            type: "Network"
+            speed: "1G"
+          12:
+            type: "Network"
+            speed: "10G"
+      3:
+        card: "NXP316"
+        fw_version: "V1.02(ACKI.1)_260604c"
+        role: "line"
+        ports:
+          16:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "REPLACE_WITH_REAL_ONT_SERIAL"
+                password: "REPLACE_WITH_REAL_ONT_PASSWORD"
+                description: "RestApi_test@1234des"
+                model: "PM7300-T0"
+                fw_image: "V542ABYY2Z0"
+      1:
+        card: "NXA340"
+        fw_version: "V1.02(ACQE.1)_260604b"
+        hw_version: "AA"
+        role: "line"
+        ports:
+          39:
+            type: "GE"
+            speed: "1G"
+            ge_service:
+    test_targets:
+      # Slot order used in the txt/HTML report header.
+      report_slots: ["4", "3", "1"]
+      ont:
+        slot: "3"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"
+      nni:
+        slot: "4"
+        port: "12"
+
+  # ---- Example legacy IES chassis --------------------------------------
+  NODE1:
+    device_name: "California_IES4204_169.57"
+    device_ip: "192.168.169.57"
+    ssh_username: "admin"
+    ssh_password: "REPLACE_WITH_REAL_DUT_SSH_PASSWORD"
+    chassis: "IES4204"
+    submap_name: "!!!AutoMuskSubmap"
+    map_name: "EMS"
+    geo_position: "California"
+    slots:
+      4:
+        card: "MSC1240QA"
+        fw_version: "V2.03(ABGX.9)"
+        role: "controller"
+        ports:
+          1:
+            type: "Network"
+            speed: "1G"
+      1:
+        card: "GLC1440X-55"
+        fw_version: "V2.03(AAWO.9)"
+        role: "line"
+        ports:
+          39:
+            type: "Ethernet Access"
+            speed: "1G"
+            ge_service:
+      2:
+        card: "OLC3816-IA"
+        fw_version: "V2.03(ACHD.9)"
+        role: "line"
+        ports:
+          16:
+            type: "xPON"
+            speed: "1G"
+            onts:
+              1:
+                sn: "REPLACE_WITH_REAL_ONT_SERIAL"
+                password: "REPLACE_WITH_REAL_ONT_PASSWORD"
+                description: "RestApi_test@1234des"
+    test_targets:
+      report_slots: ["4", "1", "2"]
+      ont:
+        slot: "2"
+        port: "16"
+        ont: "1"
+      ge_service:
+        slot: "1"
+        port: "39"

@@ -1,5 +1,14 @@
 # RestApi Auto 專案指引
 
+## Codex 與 Claude Code 共用協作
+
+- 本檔是兩個工具共用的規範來源；CLAUDE.md 引入本檔，只補 Claude 專用入口。
+- 開始工作先讀 docs/project-context.md 與 docs/work-status.md，再確認目前 Git 分支、HEAD、未提交變更及相關子目錄指引；文件中的進度只是快照，以當下程式與驗證證據為準。
+- 輪流接手時保留前一位的未提交變更，不逕自還原、覆蓋或納入提交。同時修改時使用各自獨立的 worktree 與分支；worktree 不會隔離 EMS 帳號或設備，外部測試仍需協調資源及授權。
+- 完成實質工作或交接前，更新 docs/work-status.md 的負責工具、分支／基準 commit、修改範圍、驗證結果、未完成事項與下一步。不要記錄密碼、token 或未經證實的 Root Cause。
+- 在不同 worktree 接續前先整合相關程式與進度文件；聊天記憶、個人工具設定和未提交檔案不會自動同步。
+- 共用規則在本檔維護；架構與操作說明在 docs/project-context.md 維護。避免在工具入口複製另一份規則或流程。
+
 ## 核心原則
 
 - 預設使用繁體中文。

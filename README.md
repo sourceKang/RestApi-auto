@@ -5,10 +5,24 @@ This is a new PyTest based REST API automation framework for NetAtlas EMS.
 ## Quick Start
 
 ```powershell
-cd "D:\CodeX\RestApi auto"
-python -m pip install -r requirements.txt
-pytest -m smoke
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# Copy the machine-local config templates and fill in the real lab values.
+copy configs\auth_accounts.local.yaml.example configs\auth_accounts.local.yaml
+copy configs\test_targets.local.yaml.example  configs\test_targets.local.yaml
+
+# Verify this machine before running anything.
+.\.venv\Scripts\python.exe tools\check_environment.py --node NODE3
+
+.\.venv\Scripts\python.exe -m pytest -m smoke --ems-node NODE3
 ```
+
+Setting the project up on a new machine: `docs/SETUP_NEW_MACHINE.md`.
+`tools/check_environment.py` checks the Python version, packages, config
+files, unresolved placeholder credentials, OpenAPI YAML availability, Allure
+tooling and EMS/DUT reachability, and exits non-zero when something blocks the
+run.
 
 The framework reads its primary configuration from YAML:
 
@@ -103,6 +117,7 @@ node entry to `test_targets.yaml`.
 YAML configuration guidance lives in:
 
 - `docs/yaml_configuration.md`
+- `docs/SETUP_NEW_MACHINE.md` for a first-time setup on another machine
 
 ## Roles
 
@@ -125,6 +140,13 @@ Run the per-version OpenAPI YAML versus live Swagger key guard before device-aff
 ```
 
 Details: `docs/openapi_version_guard.md`
+
+The OpenAPI YAML files ship with the EMS firmware and are not part of this
+repository, so their location is machine specific. Set `ems.openapi_root` in
+`configs/ems.yaml` (use forward slashes), or the `EMS_OPENAPI_ROOT` /
+`EMS_OPENAPI_YAML_FILE` environment variables. On a machine without that
+firmware share the OpenAPI YAML guard skips with an explanation instead of
+failing.
 
 ```powershell
 pytest -m session

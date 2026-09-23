@@ -24,7 +24,8 @@ Use these defaults unless the user gives a different value.
 Project: netatlas-ems_pqa
 Tracker: Bug
 Status: New
-Priority: L1
+Severity: L2 (Redmine built-in priority_id=5)
+Priority: blank (custom field ID 119; do not set until its allowed values are confirmed)
 Category: current tested EMS build, for example 03.00.11(AAVV.221)b6
 Target version: 03.00.11 (AAVA.221) C0 - Internal
 ```
@@ -49,6 +50,11 @@ Fix Version: blank unless verifying a released fix or user specifies it
 Feature Category: EMS-NBI
 Bug analysis: User experience unless evidence points to a different analysis
 ```
+
+Severity and Priority are independent fields. Never send custom field ID 119 as
+Redmine `priority_id`, and never reuse the Severity L1/L2/L3 mapping for the custom
+Priority field. Review both values and their transport fields in the UseTestlink
+preview before approving a write.
 
 Subject convention:
 

@@ -8,10 +8,13 @@ from urllib.parse import urlsplit, urlunsplit
 from typing import Any
 
 
-DEFAULT_OPENAPI_ROOT = Path(r"D:\FW\NetAtlasEMS")
+LEGACY_DEFAULT_OPENAPI_ROOT = Path(r"D:\FW\NetAtlasEMS")
 DEFAULT_OPENAPI_VERSION_DIR = "03.00.11 (AAVV.221)"
 LEGACY_OPENAPI_VERSION_DIR = "V3011"
 OPENAPI_YAML_ENV = "EMS_OPENAPI_YAML_FILE"
+OPENAPI_ROOT_ENV = "EMS_OPENAPI_ROOT"
+EMS_YAML_ENV = "EMS_YAML_FILE"
+DEFAULT_EMS_YAML_FILE = Path(__file__).resolve().parent.parent / "configs" / "ems.yaml"
 BASELINE_CONTRACT_FILE = Path(__file__).with_name("openapi_contract_baseline.json")
 BASELINE_YAML_FILE = Path(__file__).with_name("openapi_yaml_baseline.json")
 OPENAPI_FILE_PATTERN = "NetAtlasEMS_OpenAPI_*.yaml"
@@ -46,6 +49,58 @@ class OpenApiContractError(RuntimeError):
     pass
 
 
+def openapi_root() -> Path:
+    """Resolve the directory that holds per-version OpenAPI YAML folders.
+
+    Resolution order, first match wins:
+
+    1. ``EMS_OPENAPI_ROOT`` process environment variable.
+    2. ``ems.openapi_root`` in the EMS YAML file (``EMS_YAML_FILE`` or
+       ``configs/ems.yaml``).
+    3. ``LEGACY_DEFAULT_OPENAPI_ROOT`` for backward compatibility with the
+       original lab workstation layout.
+
+    The OpenAPI YAML files are released with the EMS firmware and are not part
+    of this repository, so the location is machine specific and must stay
+    configurable.
+    """
+
+    override = os.environ.get(OPENAPI_ROOT_ENV)
+    if override:
+        return Path(override)
+
+    configured = _ems_yaml_openapi_root()
+    if configured:
+        return configured
+
+    return LEGACY_DEFAULT_OPENAPI_ROOT
+
+
+def openapi_root_available() -> bool:
+    """Return True when this machine actually has the OpenAPI YAML root."""
+
+    if os.environ.get(OPENAPI_YAML_ENV):
+        return Path(os.environ[OPENAPI_YAML_ENV]).exists()
+    return openapi_root().exists()
+
+
+def _ems_yaml_openapi_root() -> Path | None:
+    ems_file = Path(os.environ.get(EMS_YAML_ENV, DEFAULT_EMS_YAML_FILE))
+    if not ems_file.exists():
+        return None
+    try:
+        from config_loader.simple_yaml import load_simple_yaml
+
+        raw = load_simple_yaml(ems_file)
+    except Exception:
+        return None
+    ems = raw.get("ems") if isinstance(raw, dict) else None
+    value = ems.get("openapi_root") if isinstance(ems, dict) else None
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return Path(value.strip())
+
+
 def configured_openapi_yaml_file(ems_version: Any | None = None) -> Path:
     override = os.environ.get(OPENAPI_YAML_ENV)
     if override:
@@ -57,7 +112,11 @@ def configured_openapi_yaml_file(ems_version: Any | None = None) -> Path:
 
 def latest_openapi_yaml_file(directory: Path) -> Path:
     if not directory.exists():
-        raise OpenApiContractError(f"OpenAPI version directory does not exist: {directory}")
+        raise OpenApiContractError(
+            f"OpenAPI version directory does not exist: {directory}. "
+            f"Set {OPENAPI_ROOT_ENV}, ems.openapi_root in the EMS YAML file, "
+            f"or {OPENAPI_YAML_ENV} for this machine."
+        )
     candidates = [path for path in directory.glob(OPENAPI_FILE_PATTERN) if path.is_file()]
     if not candidates:
         raise OpenApiContractError(f"No {OPENAPI_FILE_PATTERN} files found in {directory}")
@@ -357,11 +416,12 @@ def _list_items(value: Any) -> list[Any]:
 
 
 def _openapi_version_directory(ems_version: Any | None) -> Path:
+    root = openapi_root()
     preferred = openapi_version_dir_name(ems_version) if ems_version else DEFAULT_OPENAPI_VERSION_DIR
-    candidates = [DEFAULT_OPENAPI_ROOT / preferred]
+    candidates = [root / preferred]
     candidates.extend(_matching_version_directories(ems_version))
     for fallback in (DEFAULT_OPENAPI_VERSION_DIR, LEGACY_OPENAPI_VERSION_DIR):
-        fallback_path = DEFAULT_OPENAPI_ROOT / fallback
+        fallback_path = root / fallback
         if fallback_path not in candidates:
             candidates.append(fallback_path)
     for directory in candidates:
@@ -380,13 +440,14 @@ def _openapi_file_sort_key(path: Path) -> tuple[int, float, str]:
 
 
 def _matching_version_directories(ems_version: Any | None) -> list[Path]:
-    if not ems_version or not DEFAULT_OPENAPI_ROOT.exists():
+    root = openapi_root()
+    if not ems_version or not root.exists():
         return []
     prefix = normalize_ems_version(ems_version)
     if not prefix:
         return []
     try:
-        directories = [path for path in DEFAULT_OPENAPI_ROOT.iterdir() if path.is_dir()]
+        directories = [path for path in root.iterdir() if path.is_dir()]
     except OSError:
         return []
     return sorted(

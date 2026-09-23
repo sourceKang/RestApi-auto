@@ -1,0 +1,16 @@
+# 本機偏好範本
+
+本檔不會自動套用。需要時複製為專案根目錄的 CLAUDE.local.md；
+複製前確認目標不存在，避免覆蓋個人設定。
+CLAUDE.local.md 已由 .gitignore 排除，這份 .example 可提交。
+
+- Python 執行檔：.venv/Scripts/python.exe（依本機實際位置調整）
+- EMS 設定來源：填入檔案位置或環境變數名稱。
+- Auth 設定來源：configs/auth_accounts.local.yaml 或 EMS_AUTH_ACCOUNTS_FILE。
+- DUT 設定來源：configs/test_targets.local.yaml 或 EMS_TEST_TARGETS_FILE。
+- 預計使用的 node／auth profile：執行前依當次任務確認。
+- OpenAPI 來源：EMS_OPENAPI_YAML_FILE 或 EMS_OPENAPI_ROOT，依現有 loader 支援設定。
+
+不要放入實際密碼、token、devKey、ONT password 或其他私密值。
+這些項目只是環境提示，不代表允許連線、登入或變更 EMS／設備。
+Codex 接手仍應依共用文件與實際設定解析，不假設會自動讀取本檔。

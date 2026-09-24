@@ -66,8 +66,11 @@
 
 ## 下一步
 
-1. 確認 `.github/workflows/ci.yml` 推送後在 GitHub Actions 的第一次實際
-   執行結果（本機模擬不能完全取代 GitHub-hosted runner 的真實環境）。
+1. ~~確認 CI workflow 推送後在 GitHub Actions 的第一次實際執行結果~~ ——
+   已確認：push 到 origin/codex/neox-profile-read-path-fix 後，
+   GitHub Actions 上的 "CI #1"（commit `3d64803`）實際執行成功，
+   34 秒完成，與本機模擬結果一致。尚未在 codex/prepare-github-upload
+   （預設分支）或實際 PR 上驗證過。
 2. 決定 `local/`、`docs/qa_bug_drafts/`、`docs/sop/` 是否要收進版控（獨立
    housekeeping 決定，需先對 `local/` 做敏感資料檢查）。
 3. 視需要鎖定 requirements.txt 版本範圍（目前全部為 `>=`，長期可能影響

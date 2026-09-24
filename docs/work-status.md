@@ -5,9 +5,10 @@
 
 ## 雙工具協作設定
 
-- 負責工具：Claude Code（本次更新，2026-09-22 ~ 2026-09-24）；先前由 Codex
-  建立共用協作入口。
-- 分支：codex/neox-profile-read-path-fix（本機工作分支）；已合併進
+- 負責工具：Claude Code（2026-09-22 ~ 2026-09-24）；先前由 Codex 建立共用
+  協作入口。
+- 分支：codex/neox-profile-read-path-fix（工作分支）。每批變更先在 scratch
+  worktree 做 `git merge --no-commit --no-ff` dry run，確認零衝突後才合併進
   codex/prepare-github-upload（GitHub 預設分支）。
 - 共用 QA skill 仍以 .codex/skills/qa-bug-report/SKILL.md 為來源，Claude 側
   （.claude/skills/qa-bug-report/SKILL.md）只轉介，未複製業務規則。
@@ -17,64 +18,66 @@
 
 ## 本次完成的工作
 
-先前「交接前已存在的工作」列出的未提交／未追蹤檔案已全部處理完畢：
-
-- commit `290c45e`（分支 codex/neox-profile-read-path-fix）：整併 16 個檔案，
-  修正新機安裝流程（README、tools/check_environment.py、
-  docs/SETUP_NEW_MACHINE.md、兩個 configs/*.local.yaml.example）、OpenAPI
-  root 寫死路徑（cases/openapi_contract.py 改為 EMS_OPENAPI_ROOT／
-  ems.openapi_root 可設定，找不到時 skip 而非 fail）、新增 Claude Code 入口
-  （CLAUDE.md、.claude/skills/qa-bug-report/SKILL.md、
-  CLAUDE.local.md.example）與 docs/project-context.md、本文。已推送至
-  origin/codex/neox-profile-read-path-fix。
-- 合併前以獨立 scratch worktree 實際執行 `git merge --no-commit --no-ff`
-  驗證零衝突（另一分支的 PR #2 merge commit 對比共同祖先無任何檔案異動），
-  才建立 merge commit `040f4c7` 並推送至 origin/codex/prepare-github-upload
-  （GitHub 預設分支）。已用 `git ls-tree` 比對兩邊完整檔案樹確認一致。
-- 新增 `.github/workflows/ci.yml`：offline-only CI（compileall 全掃、
+- `290c45e`（合併 commit `040f4c7`）：新機安裝修正。包含 README、
+  tools/check_environment.py、docs/SETUP_NEW_MACHINE.md、兩個
+  configs/*.local.yaml.example；cases/openapi_contract.py 的 OpenAPI root
+  改為 EMS_OPENAPI_ROOT／ems.openapi_root 可設定，找不到時 skip 而非 fail；
+  新增 Claude Code 入口（CLAUDE.md、.claude/skills/qa-bug-report/SKILL.md、
+  CLAUDE.local.md.example）與 docs/project-context.md、本文。
+- `3d64803`、`ac9a0cf`（合併 commit `ab8afb2`）：新增
+  `.github/workflows/ci.yml`，只做離線檢查（compileall 全掃、
   `pytest --collect-only --skip-dut-preflight`、
   `pytest tests/test_service_bundle.py --skip-dut-preflight`），跑在
   windows-latest，觸發於 push 到 codex/prepare-github-upload 或
-  codex/neox-profile-read-path-fix，以及對 codex/prepare-github-upload 的
-  PR。
+  codex/neox-profile-read-path-fix，以及對 codex/prepare-github-upload 的 PR。
+- `46992a0`：
+  - requirements.txt 七個直接依賴改為 `==` 鎖定本專案驗證過的版本
+    （pytest 9.0.3、requests 2.34.2、urllib3 2.7.0、allure-pytest 2.16.0、
+    PyYAML 6.0.3、paramiko 5.0.0、pytest-xdist 3.8.0），皆支援 Python 3.11。
+    間接依賴未鎖定。
+  - CI actions 升級為 actions/checkout@v7、actions/setup-python@v7（node24），
+    消除 Node 20 棄用警告。
+  - `.gitignore` 由只忽略 `local/temporary_resources/` 改為忽略整個 `local/`。
+    其中是外部工具寫入的 Redmine／TestLink 稽核紀錄與快取，追蹤中的程式
+    不會讀取；其中一份稽核紀錄含內部 Redmine 伺服器位址，不應公開。
 
-未處理、仍是 untracked，屬於獨立 housekeeping 決定（與新機安裝無關）：
-- `local/`（Redmine／TestLink 稽核資料與暫存資源 registry，提交前需另做
-  敏感資料檢查，不可整批加入）
-- `docs/qa_bug_drafts/`
-- `docs/sop/RestApi_Auto_測試操作_SOP_20260922.docx`
+仍是 untracked、尚待決定是否收進版控：
+- `docs/qa_bug_drafts/`（EMS1-6652 Remote Console bug 草稿）
+- `docs/sop/RestApi_Auto_測試操作_SOP_20260922.docx`（二進位檔，公開前需先
+  解析內容審閱）
 
 ## 本次驗證
 
-- 逐一讀完全部 16 個待提交檔案內容，並對整個 staged diff 做關鍵字掃描
+- 新機安裝相關的 16 個檔案逐一讀完，並對 staged diff 做關鍵字掃描
   （password/secret/token/devkey/api_key），確認無明碼密碼或非預期內容。
-- Merge 安全性：scratch worktree 內 `git merge --no-commit --no-ff` 顯示
-  "Automatic merge went well"，零衝突；merge 後 `git ls-tree` 比對確認檔案
-  樹與來源分支完全一致。
-- CI 三個步驟均已在本機以模擬的「無 .local.yaml、無 EMS_*/DUT_* 環境變數」
-  情境跑過（用 EMS_AUTH_ACCOUNTS_FILE／EMS_TEST_TARGETS_FILE 指向版控範本
-  檔案模擬，未動到本機真實 .local.yaml）：
-  - `python -m compileall`：0.6 秒，exit 0。
-  - `pytest --collect-only --skip-dut-preflight`：647 tests collected，
-    collection 本身 0.35 秒（另有數秒到十餘秒屬 reports/ 目錄既有大量歷史
-    檔案造成的本機 I/O，已確認 utils/reporting.py 無任何網路呼叫；全新
-    checkout 的空 reports/ 目錄預期不會重現此延遲）。
-  - `pytest tests/test_service_bundle.py --skip-dut-preflight`：1 passed。
-  - 本機測試產生的 reports/ 暫存檔已清除，未影響既有歷史報表。
+- 每次合併前在 scratch worktree 執行 `git merge --no-commit --no-ff`，結果皆為
+  "Automatic merge went well"、零衝突；合併後以 `git diff`／`git ls-tree`
+  比對，預設分支內容與工作分支一致。
+- CI 步驟先在本機以「無 .local.yaml、無 EMS_*/DUT_* 環境變數」模擬（用
+  EMS_AUTH_ACCOUNTS_FILE／EMS_TEST_TARGETS_FILE 指向版控範本，未動本機
+  真實 .local.yaml）：compileall 0.6 秒 exit 0；collect-only 647 tests、
+  0.35 秒；test_service_bundle 1 passed。`--skip-dut-preflight` 為必要，因為
+  collection hook 會在收集階段做 live EMS/SSH preflight
+  （tests/support/preflight.py）；utils/reporting.py 無網路呼叫。
+- `46992a0`：鎖定版本與 .venv 實際安裝版本逐一相符、`pip check` 無問題；
+  `git check-ignore` 確認 `local/` 下檔案皆被忽略；actions v6／v7 release
+  notes 的破壞性變更（credential 存放位置、pull_request_target fork 限制、
+  移除 pip-install input）不影響本 workflow。
+- GitHub Actions 實際執行：CI #1（3d64803）34 秒、CI #2（ac9a0cf）41 秒、
+  CI #4（ab8afb2，預設分支）44 秒、CI #5（46992a0，全新 runner 依鎖定版本
+  安裝）36 秒，皆成功。
 - 未連線 EMS／DUT，未執行完整 regression、NeoX CLI → REST → CLI 或外部
   系統寫入。
 
 ## 下一步
 
-1. ~~確認 CI workflow 推送後在 GitHub Actions 的第一次實際執行結果~~ ——
-   已確認：push 到 origin/codex/neox-profile-read-path-fix 後，
-   GitHub Actions 上的 "CI #1"（commit `3d64803`）實際執行成功，
-   34 秒完成，與本機模擬結果一致。尚未在 codex/prepare-github-upload
-   （預設分支）或實際 PR 上驗證過。
-2. 決定 `local/`、`docs/qa_bug_drafts/`、`docs/sop/` 是否要收進版控（獨立
-   housekeeping 決定，需先對 `local/` 做敏感資料檢查）。
-3. 視需要鎖定 requirements.txt 版本範圍（目前全部為 `>=`，長期可能影響
-   環境可重現性）。
+1. 決定 `docs/qa_bug_drafts/`、`docs/sop/` 是否收進版控（SOP 為二進位檔，
+   公開前需先解析內容審閱）。
+2. 觀察 CI：推送 ab8afb2 到預設分支時觸發了兩個 push run，其中 CI #3 被
+   concurrency 設定取消；原因未確認，若後續推送持續重複再查。對
+   codex/prepare-github-upload 的 PR 流程尚未實際跑過 CI。
+3. 依賴改為手動升級：升級時修改 requirements.txt，並確認 CI 與本機離線
+   檢查通過。
 
 ## 後續更新方式
 

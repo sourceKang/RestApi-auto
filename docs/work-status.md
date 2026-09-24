@@ -1,62 +1,77 @@
 # 共用工作進度
 
-更新日期：2026-09-22（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-09-24（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
 
-- 負責工具：Codex。
-- 目標：保留 Codex 工作方式，新增 Claude Code 入口，共用規範與接續文件。
-- 盤點分支：codex/neox-profile-read-path-fix。
-- 盤點基準 HEAD：c75cb35（fix: block false-green multi-node results）。
-- 本次修改：AGENTS.md 增加共用協作入口；新增 CLAUDE.md、
-  CLAUDE.local.md.example、docs/project-context.md、本文及 Claude QA skill 入口；
-  .gitignore 補上本機 Claude 檔案排除。
-- 共用 QA skill 仍以 .codex/skills/qa-bug-report/SKILL.md 為來源，未複製另一份業務規則。
-- 未新增全域權限設定、MCP 憑證或設備操作自動化；未 commit／push。
+- 負責工具：Claude Code（本次更新，2026-09-22 ~ 2026-09-24）；先前由 Codex
+  建立共用協作入口。
+- 分支：codex/neox-profile-read-path-fix（本機工作分支）；已合併進
+  codex/prepare-github-upload（GitHub 預設分支）。
+- 共用 QA skill 仍以 .codex/skills/qa-bug-report/SKILL.md 為來源，Claude 側
+  （.claude/skills/qa-bug-report/SKILL.md）只轉介，未複製業務規則。
+- 未新增全域權限設定、MCP 憑證或設備操作自動化。
+- Repo 公開性：專案負責人已明確決定維持 Public（自動化測試專案，帳密皆為
+  per-person 環境變數，非共用明碼密碼），不需要轉 Private。
 
-## 交接前已存在的工作
+## 本次完成的工作
 
-下列檔案是本次開始前即有的變更；僅記錄範圍，未驗證其功能正確性，
-也不推定其作者或完成狀態。
+先前「交接前已存在的工作」列出的未提交／未追蹤檔案已全部處理完畢：
 
-已修改：
-- README.md
-- cases/openapi_contract.py
-- configs/ems.yaml
-- docs/redmine_bug_template.md
-- tests/test_openapi_yaml.py
+- commit `290c45e`（分支 codex/neox-profile-read-path-fix）：整併 16 個檔案，
+  修正新機安裝流程（README、tools/check_environment.py、
+  docs/SETUP_NEW_MACHINE.md、兩個 configs/*.local.yaml.example）、OpenAPI
+  root 寫死路徑（cases/openapi_contract.py 改為 EMS_OPENAPI_ROOT／
+  ems.openapi_root 可設定，找不到時 skip 而非 fail）、新增 Claude Code 入口
+  （CLAUDE.md、.claude/skills/qa-bug-report/SKILL.md、
+  CLAUDE.local.md.example）與 docs/project-context.md、本文。已推送至
+  origin/codex/neox-profile-read-path-fix。
+- 合併前以獨立 scratch worktree 實際執行 `git merge --no-commit --no-ff`
+  驗證零衝突（另一分支的 PR #2 merge commit 對比共同祖先無任何檔案異動），
+  才建立 merge commit `040f4c7` 並推送至 origin/codex/prepare-github-upload
+  （GitHub 預設分支）。已用 `git ls-tree` 比對兩邊完整檔案樹確認一致。
+- 新增 `.github/workflows/ci.yml`：offline-only CI（compileall 全掃、
+  `pytest --collect-only --skip-dut-preflight`、
+  `pytest tests/test_service_bundle.py --skip-dut-preflight`），跑在
+  windows-latest，觸發於 push 到 codex/prepare-github-upload 或
+  codex/neox-profile-read-path-fix，以及對 codex/prepare-github-upload 的
+  PR。
 
-未追蹤：
-- configs/auth_accounts.local.yaml.example
-- configs/test_targets.local.yaml.example
-- docs/SETUP_NEW_MACHINE.md
-- docs/qa_bug_drafts/
-- docs/sop/
-- local/
-- tools/check_environment.py
-
-接續時優先確認上述工作要完成、審閱或提交哪一部分。
-local/ 與設定檔提交前須另做敏感資料檢查，不可整批加入。
-不得因共用文件已建立，就把既有 OpenAPI／新機建置／bug 草稿視為已完成驗證。
+未處理、仍是 untracked，屬於獨立 housekeeping 決定（與新機安裝無關）：
+- `local/`（Redmine／TestLink 稽核資料與暫存資源 registry，提交前需另做
+  敏感資料檢查，不可整批加入）
+- `docs/qa_bug_drafts/`
+- `docs/sop/RestApi_Auto_測試操作_SOP_20260922.docx`
 
 ## 本次驗證
 
-- 已讀取實際 AGENTS.md、pytest 設定、fixture／collection／preflight、
-  config loader 與既有 QA skill，並核對官方 Claude 指引。
-- 文件檢查：19 個本機 Markdown 連結存在；CLAUDE.md 的 @AGENTS.md 引入已確認。
-- Git 檢查：git diff --check 通過；CLAUDE.local.md 與 .claude/settings.local.json 被忽略，五個新增共用檔案均未被忽略。
-- Skill 格式：以 Python -X utf8 執行 skill-creator/scripts/quick_validate.py .claude/skills/qa-bug-report，結果 Skill is valid。Windows 預設 cp950 無法解碼此 UTF-8 skill，故驗證時明確指定 UTF-8。
-- 最小離線測試：.venv/Scripts/python.exe -m pytest tests/test_service_bundle.py -q，結果 1 passed（Python 3.12.14／pytest 9.0.3）。
-- 本次未修改 Python，無需新增 compile check；上面的測試只證明 service 組裝案例通過，不代表既有未提交變更或完整 regression 通過。
-- Claude 執行檔在目前 PATH 未找到；未進行 Claude runtime 的載入與 skill 觸發測試。
-- 未連線 EMS／DUT，未執行完整 regression、NeoX CLI → REST → CLI 或外部系統寫入。
+- 逐一讀完全部 16 個待提交檔案內容，並對整個 staged diff 做關鍵字掃描
+  （password/secret/token/devkey/api_key），確認無明碼密碼或非預期內容。
+- Merge 安全性：scratch worktree 內 `git merge --no-commit --no-ff` 顯示
+  "Automatic merge went well"，零衝突；merge 後 `git ls-tree` 比對確認檔案
+  樹與來源分支完全一致。
+- CI 三個步驟均已在本機以模擬的「無 .local.yaml、無 EMS_*/DUT_* 環境變數」
+  情境跑過（用 EMS_AUTH_ACCOUNTS_FILE／EMS_TEST_TARGETS_FILE 指向版控範本
+  檔案模擬，未動到本機真實 .local.yaml）：
+  - `python -m compileall`：0.6 秒，exit 0。
+  - `pytest --collect-only --skip-dut-preflight`：647 tests collected，
+    collection 本身 0.35 秒（另有數秒到十餘秒屬 reports/ 目錄既有大量歷史
+    檔案造成的本機 I/O，已確認 utils/reporting.py 無任何網路呼叫；全新
+    checkout 的空 reports/ 目錄預期不會重現此延遲）。
+  - `pytest tests/test_service_bundle.py --skip-dut-preflight`：1 passed。
+  - 本機測試產生的 reports/ 暫存檔已清除，未影響既有歷史報表。
+- 未連線 EMS／DUT，未執行完整 regression、NeoX CLI → REST → CLI 或外部
+  系統寫入。
 
 ## 下一步
 
-1. 在 Claude Code 開啟專案，依 project-context.md 的首次啟動流程確認指引及 skill 載入。
-2. 依使用者當次目標接續既有工作，補上各項實際驗證結果。
-3. 若要同時開發，先整合需要共享的變更，再建立獨立 worktree；確認本機設定和設備資源分配。
+1. 確認 `.github/workflows/ci.yml` 推送後在 GitHub Actions 的第一次實際
+   執行結果（本機模擬不能完全取代 GitHub-hosted runner 的真實環境）。
+2. 決定 `local/`、`docs/qa_bug_drafts/`、`docs/sop/` 是否要收進版控（獨立
+   housekeeping 決定，需先對 `local/` 做敏感資料檢查）。
+3. 視需要鎖定 requirements.txt 版本範圍（目前全部為 `>=`，長期可能影響
+   環境可重現性）。
 
 ## 後續更新方式
 

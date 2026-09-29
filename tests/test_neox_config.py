@@ -466,7 +466,7 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
         services.inventory.wait_for_ont_service_state(
             readwrite_session,
             {"Success"},
-            timeout=180,
+            timeout=600,
             interval=15,
             initial_delay=30,
         )

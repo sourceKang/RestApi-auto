@@ -89,13 +89,12 @@ def _ems_yaml_openapi_root() -> Path | None:
     if not ems_file.exists():
         return None
     try:
-        from config_loader.simple_yaml import load_simple_yaml
+        from config_loader.settings import load_ems_settings
 
-        raw = load_simple_yaml(ems_file)
+        ems = load_ems_settings(ems_file)
     except Exception:
         return None
-    ems = raw.get("ems") if isinstance(raw, dict) else None
-    value = ems.get("openapi_root") if isinstance(ems, dict) else None
+    value = ems.get("openapi_root")
     if not isinstance(value, str) or not value.strip():
         return None
     return Path(value.strip())

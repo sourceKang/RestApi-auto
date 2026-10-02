@@ -22,10 +22,11 @@ D:\FW\NetAtlasEMS\03.00.11 (AAVV.221)\NetAtlasEMS_OpenAPI_20260605.yaml
 .\.venv\Scripts\python.exe tools\run_openapi_version_guard.py
 ```
 
-等同於：
+等同於下列指令；未指定 `--neox-swagger-api-docs-url` 時，使用所選 EMS
+target（`EMS_TARGET` → `ems.default_target`）的 `<rest_api_url>/v3/api-docs`：
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests\test_openapi_yaml.py -x --run-live-swagger-check --neox-swagger-api-docs-url "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
+.\.venv\Scripts\python.exe -m pytest tests\test_openapi_yaml.py -x --run-live-swagger-check
 ```
 
 只做 local OpenAPI YAML 與 baseline 檢查，不連 live Swagger：

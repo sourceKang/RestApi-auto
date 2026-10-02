@@ -268,6 +268,46 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
     assert "EMS response" in rendered
 
 
+def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-01_12-00-00"))
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="test_get_device_all")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]", "passed", 0.11)
+    allure_current = tmp_path / "reports" / ".allure-results-current"
+    allure_current.mkdir(parents=True)
+    config = SimpleNamespace(
+        rootpath=tmp_path,
+        option=SimpleNamespace(
+            allure_report_dir=str(allure_current),
+            archive_allure=False,
+            generate_allure_html=False,
+            skip_integrated_evidence_report=False,
+        ),
+    )
+    env = _fake_env()
+    env.ems_version = "03.00.11 (AAVV.221) b12"
+    env.ems_target = "redhat"
+    env.ems_platform = "RedHat 9 (HA)"
+
+    txt_path, html_summary, _, _, integrated_html = reporting.write_reports(config, env)
+
+    assert txt_path.parent.name == "03.00.11 (AAVV.221) b12_redhat"
+    txt = txt_path.read_text(encoding="utf-8")
+    assert "EMS Version: 03.00.11 (AAVV.221) b12\nEMS Target: redhat\nEMS Platform: RedHat 9 (HA)\n" in txt
+    summary = html_summary.read_text(encoding="utf-8")
+    assert "<h1>03.00.11 (AAVV.221) b12 (RedHat 9 (HA)) / DemoNode</h1>" in summary
+    assert "RedHat 9 (HA)" in integrated_html.read_text(encoding="utf-8")
+
+
+def test_report_without_ems_target_keeps_version_directory_and_metadata():
+    env = _fake_env()
+
+    assert reporting._report_dir_name(env) == "demo"
+    assert reporting._ems_server_metadata(env) == []
+    assert reporting._ems_heading(env) == "demo"
+
+
 def test_write_reports_can_skip_integrated_evidence_report(monkeypatch, tmp_path):
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-05-04_12-00-00"))
     reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [

@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_SWAGGER_URL = "https://192.168.128.8:9116/netatlasemsapi/swagger-ui/index.html#/"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -16,8 +15,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--swagger-url",
-        default=DEFAULT_SWAGGER_URL,
-        help="Swagger UI or /v3/api-docs URL. Defaults to the lab EMS Swagger UI.",
+        default=None,
+        help="Swagger UI or /v3/api-docs URL. Defaults to the selected EMS target in configs/ems.yaml.",
     )
     parser.add_argument(
         "--local-only",
@@ -45,13 +44,9 @@ def main() -> int:
     if not args.collect_all:
         command.append("-x")
     if not args.local_only:
-        command.extend(
-            [
-                "--run-live-swagger-check",
-                "--neox-swagger-api-docs-url",
-                args.swagger_url,
-            ]
-        )
+        command.append("--run-live-swagger-check")
+        if args.swagger_url:
+            command.extend(["--neox-swagger-api-docs-url", args.swagger_url])
     if args.allure_html:
         command.append("--generate-allure-html")
 

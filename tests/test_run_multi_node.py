@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import sys
+
 import pytest
 
 from tests.support.preflight import DutPreflightResult
@@ -296,6 +299,34 @@ def test_summary_renders_preflight_skip_as_blocked(tmp_path):
     assert ">Pass<" not in html
 
 
+def test_summary_records_selected_ems_server(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        run_multi_node,
+        "load_ems_settings",
+        lambda: {
+            "target": "redhat",
+            "platform": "RedHat 9 (HA)",
+            "version": "03.00.11 (AAVV.221) b12",
+            "rest_api_url": "https://redhat.invalid/netatlasemsapi",
+            "timeout": 60,
+        },
+    )
+
+    html_path = run_multi_node.write_summary(tmp_path, [], [])
+
+    data = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert data["ems"] == {
+        "target": "redhat",
+        "platform": "RedHat 9 (HA)",
+        "version": "03.00.11 (AAVV.221) b12",
+        "rest_api_url": "https://redhat.invalid/netatlasemsapi",
+    }
+    assert (
+        "<p>EMS: redhat / RedHat 9 (HA) / 03.00.11 (AAVV.221) b12 / https://redhat.invalid/netatlasemsapi</p>"
+        in html_path.read_text(encoding="utf-8")
+    )
+
+
 def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatch, tmp_path):
     plan = run_multi_node.NodePlan(
         node="NODE3",
@@ -333,6 +364,30 @@ def test_run_node_plan_adds_skip_dut_preflight_after_runner_preflight(monkeypatc
     assert "--alluredir" in result.command
     assert result.summary_line == "1 passed in 0.01s"
     assert captured["env"]["EMS_REPORT_SUFFIX"] == "batch_NODE3"
+
+
+def test_run_node_plan_reads_child_output_as_utf8_regardless_of_inherited_encoding(monkeypatch, tmp_path):
+    message = "遠端主機已強制關閉一個現存的連線。"
+    plan = run_multi_node.NodePlan(
+        node="NODE3",
+        chassis="NeoX-03",
+        is_neox=True,
+        command=[
+            sys.executable,
+            "-c",
+            f"print({message!r}); print('=== 1 passed in 0.01s ===')",
+        ],
+        omitted_options=[],
+    )
+    # An inherited child encoding that differs from the runner's locale used to
+    # garble or crash the log (PowerShell sets PYTHONIOENCODING=utf-8 on cp950).
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-16")
+
+    result = run_multi_node.run_node_plan(plan, tmp_path, preflight=False)
+
+    assert result.returncode == 0
+    assert result.summary_line == "1 passed in 0.01s"
+    assert message in (tmp_path / "NODE3.log").read_text(encoding="utf-8")
 
 
 def test_build_node_plan_injects_auth_profile_override():

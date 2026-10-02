@@ -42,7 +42,7 @@
 
 | 設定 | 來源與順序 |
 | --- | --- |
-| EMS | 明確傳入 loader 的 path → EMS_YAML_FILE → configs/ems.yaml |
+| EMS | 明確傳入 loader 的 path → EMS_YAML_FILE → configs/ems.yaml；有 ems.targets 時以 EMS_TARGET → ems.default_target 選 server（ubuntu 192.168.128.8、redhat 192.168.128.100），由 config_loader.settings.load_ems_settings 統一解析 |
 | 帳號 | EMS_AUTH_ACCOUNTS_FILE → configs/auth_accounts.local.yaml → configs/auth_accounts.yaml |
 | DUT | EMS_TEST_TARGETS_FILE → configs/test_targets.local.yaml → configs/test_targets.yaml |
 | dotenv | EMS_ENV_FILE 或根目錄 .env；既有程序環境變數不被覆蓋 |

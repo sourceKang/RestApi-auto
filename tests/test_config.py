@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from config_loader import load_environment
+from config_loader.settings import ConfigError, load_ems_settings
 from config_loader.hardware import load_hardware_config
 from tests.support.fixtures import temporary_ge_template
 
@@ -128,3 +129,75 @@ def test_sensitive_config_fields_are_excluded_from_dataclass_repr():
         "node_target",
     ):
         assert EnvironmentConfig.__dataclass_fields__[field_name].repr is False
+
+
+def _write_ems_yaml(tmp_path, body: str):
+    ems_file = tmp_path / "ems.yaml"
+    ems_file.write_text("version: 1\n\nems:\n" + body, encoding="utf-8")
+    return ems_file
+
+
+TWO_TARGET_EMS_YAML = """\
+  default_target: "redhat"
+  timeout: 60
+  targets:
+    ubuntu:
+      rest_api_url: "https://ubuntu.invalid/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b13"
+      platform: "Ubuntu"
+    redhat:
+      rest_api_url: "https://redhat.invalid/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b12"
+      platform: "RedHat 9 (HA)"
+      timeout: 90
+"""
+
+
+def test_ems_settings_use_default_target_and_override_shared_keys(tmp_path, monkeypatch):
+    monkeypatch.delenv("EMS_TARGET", raising=False)
+    ems = load_ems_settings(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML))
+
+    assert ems["target"] == "redhat"
+    assert ems["rest_api_url"] == "https://redhat.invalid/netatlasemsapi"
+    assert ems["version"] == "03.00.11 (AAVV.221) b12"
+    assert ems["platform"] == "RedHat 9 (HA)"
+    assert ems["timeout"] == 90
+    assert "targets" not in ems
+
+
+def test_ems_target_environment_overrides_default_target(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_TARGET", "ubuntu")
+    ems = load_ems_settings(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML))
+
+    assert ems["target"] == "ubuntu"
+    assert ems["rest_api_url"] == "https://ubuntu.invalid/netatlasemsapi"
+    assert ems["timeout"] == 60
+
+
+def test_unknown_ems_target_lists_available_targets(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_TARGET", "centos")
+
+    with pytest.raises(ConfigError, match="available: redhat, ubuntu"):
+        load_ems_settings(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML))
+
+
+def test_flat_ems_settings_without_targets_remain_supported(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_TARGET", "ubuntu")
+    ems = load_ems_settings(
+        _write_ems_yaml(
+            tmp_path,
+            '  rest_api_url: "https://flat.invalid/netatlasemsapi"\n  version: "03.00.11 (AAVV.221) b13"\n',
+        )
+    )
+
+    assert ems["rest_api_url"] == "https://flat.invalid/netatlasemsapi"
+    assert "target" not in ems
+
+
+def test_environment_exposes_selected_ems_target_and_platform(tmp_path, monkeypatch):
+    monkeypatch.delenv("EMS_TARGET", raising=False)
+    env = load_environment(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML), node="NODE1")
+
+    assert env.base_url == "https://redhat.invalid/netatlasemsapi"
+    assert env.ems_target == "redhat"
+    assert env.ems_platform == "RedHat 9 (HA)"

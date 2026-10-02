@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from config_loader.auth import AuthConfigError, load_auth_config
 from config_loader.hardware import HardwareConfigError, load_hardware_config
+from config_loader.settings import ConfigError, load_ems_settings
 from tests.support.options import validate_neox_parallel_settings, xdist_worker_count
 from tests.support.preflight import run_startup_preflight
 
@@ -127,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as error:
         parser.error(str(error))
 
+    ems = ems_server_summary()
+    print(f"EMS: {' / '.join(value for value in ems.values() if value)}", flush=True)
     if args.dry_run:
         for plan in plans:
             print(render_plan_line(plan), flush=True)
@@ -519,6 +522,9 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
     process_env["EMS_REPORT_SUFFIX"] = (
         f"{inherited_suffix}_{node_suffix}" if inherited_suffix else node_suffix
     )
+    # Pin the child's output encoding to match how it is decoded below; otherwise an
+    # inherited PYTHONIOENCODING that differs from the locale (cp950) crashes the runner.
+    process_env["PYTHONIOENCODING"] = "utf-8"
     if not preflight:
         print(f"[{plan.node}] preflight skipped", flush=True)
     print(f"[{plan.node}] pytest started; log={log_path}", flush=True)
@@ -529,6 +535,8 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
             env=process_env,
         )
@@ -594,17 +602,34 @@ def parse_report_paths(lines: Iterable[str]) -> dict[str, str]:
 def write_summary(report_dir: Path, plans: list[NodePlan], results: list[NodeResult]) -> Path:
     data = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "ems": ems_server_summary(),
         "plans": [asdict(plan) for plan in plans],
         "results": [asdict(result) for result in results],
     }
     json_path = report_dir / "summary.json"
     json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     html_path = report_dir / "summary.html"
-    html_path.write_text(render_html_summary(plans, results, json_path), encoding="utf-8")
+    html_path.write_text(render_html_summary(plans, results, json_path, data["ems"]), encoding="utf-8")
     return html_path
 
 
-def render_html_summary(plans: list[NodePlan], results: list[NodeResult], json_path: Path) -> str:
+def ems_server_summary() -> dict[str, str]:
+    try:
+        ems = load_ems_settings()
+    except ConfigError as error:
+        return {"error": str(error)}
+    return {
+        key: str(ems.get(key, ""))
+        for key in ("target", "platform", "version", "rest_api_url")
+    }
+
+
+def render_html_summary(
+    plans: list[NodePlan],
+    results: list[NodeResult],
+    json_path: Path,
+    ems: dict[str, str] | None = None,
+) -> str:
     result_by_node = {result.node: result for result in results}
     rows = []
     for plan in plans:
@@ -637,6 +662,7 @@ def render_html_summary(plans: list[NodePlan], results: list[NodeResult], json_p
             "</tr>"
         )
 
+    ems_line = " / ".join(value for value in (ems or {}).values() if value)
     commands = "\n".join(
         f"{plan.node}: {' '.join(quote_for_display(part) for part in plan.command)}" for plan in plans
     )
@@ -657,6 +683,7 @@ def render_html_summary(plans: list[NodePlan], results: list[NodeResult], json_p
 </head>
 <body>
   <h1>Multi-node pytest summary</h1>
+  <p>EMS: {escape(ems_line or "unknown")}</p>
   <p>JSON summary: {link(str(json_path), "summary.json")}</p>
   <table>
     <thead>

@@ -43,6 +43,8 @@ def parse_txt_report(path: Path) -> tuple[dict[str, str], list[TxtCase]]:
                 "Summary",
                 "UI URL",
                 "EMS Version",
+                "EMS Target",
+                "EMS Platform",
                 "Auth Profile",
                 "Node Name",
                 "Node IP",
@@ -346,7 +348,10 @@ def render_report(
     allure_rel = html.escape(allure_dir.name, quote=True)
     pass_count = sum(1 for case in cases if case.result.lower() == "pass")
     fail_count = sum(1 for case in cases if case.result.lower() == "fail")
-    report_title = f"{metadata.get('EMS Version', 'EMS')} / {metadata.get('Node Name', 'Node')} Integrated Evidence Report"
+    ems_version = metadata.get("EMS Version", "EMS")
+    ems_platform = metadata.get("EMS Platform", "")
+    ems_heading = f"{ems_version} ({ems_platform})" if ems_platform else ems_version
+    report_title = f"{ems_heading} / {metadata.get('Node Name', 'Node')} Integrated Evidence Report"
     case_html = "\n".join(
         f'<section id="{esc(case.case_id)}">{render_case(case, by_case.get(case.case_id, []), allure_rel, allure_dir)}</section>'
         for case in cases
@@ -381,7 +386,7 @@ def render_report(
 </header>
 <main>
   <section class="cards">
-    <div class="card"><div class="label">EMS Version</div><div class="value">b7</div><div class="note">{esc(metadata.get("EMS Version", "03.00.11 (AAVV.221) b7"))}</div></div>
+    <div class="card"><div class="label">EMS Version</div><div class="value">{esc(ems_version.split()[-1] if ems_version.split() else ems_version)}</div><div class="note">{esc(" / ".join(part for part in (ems_version, ems_platform, metadata.get("UI URL", "")) if part))}</div></div>
     <div class="card"><div class="label">Node</div><div class="value">Node3</div><div class="note">{esc(metadata.get("Node Name", "Taiwan_NeoX-03_169.58"))} / {esc(metadata.get("Node Chassis", "NXC400"))}</div></div>
     <div class="card"><div class="label">pytest raw</div><div class="value">422 / 28 / 5</div><div class="note">passed / failed / skipped; failed includes Allure 26 failed + 2 broken</div></div>
     <div class="card"><div class="label">TestLink report</div><div class="value">{pass_count} / {fail_count}</div><div class="note">Pass / Fail, {len(cases)} cases</div></div>

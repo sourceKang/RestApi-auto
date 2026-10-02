@@ -146,8 +146,7 @@ def set_session_metrics(metrics: dict[str, Any]) -> None:
 
 def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path, Path | None, Path | None]:
     root = Path(str(config.rootpath))
-    ems_version = str(getattr(env_config, "ems_version", "unknown_ems_version"))
-    report_dir = root / "reports" / _safe_path_part(ems_version)
+    report_dir = root / "reports" / _safe_path_part(_report_dir_name(env_config))
     report_dir.mkdir(parents=True, exist_ok=True)
 
     report_base_name = _report_base_name(env_config, REPORT_STATE.timestamp)
@@ -243,6 +242,7 @@ def _render_txt_report(env_config: Any) -> str:
         f"Summary: {summary['passed']} Pass / {summary['failed']} Fail",
         f"UI URL: {env_config.base_url}",
         f"EMS Version: {getattr(env_config, 'ems_version', 'unknown')}",
+        *(f"{label}: {value}" for label, value in _ems_server_metadata(env_config)),
         f"Auth Profile: {env_config.auth_profile}",
         f"RW Account: {env_config.readwrite_account.account_name} ({env_config.readwrite_account.username})",
         f"RO Account: {env_config.readonly_account.account_name} ({env_config.readonly_account.username})",
@@ -282,6 +282,7 @@ def _render_html_report(
         ("Total test time", f"{_format_timedelta(elapsed)} ({elapsed:.2f} seconds)"),
         ("UI URL", getattr(env_config, "base_url", "")),
         ("EMS Version", getattr(env_config, "ems_version", "unknown")),
+        *_ems_server_metadata(env_config),
         ("Auth Profile", getattr(env_config, "auth_profile", "")),
         (
             "RW Account",
@@ -330,7 +331,7 @@ def _render_html_report(
             '<section class="hero">',
             "<div>",
             "<p>EMS REST API summary report</p>",
-            f"<h1>{escape(getattr(env_config, 'ems_version', 'unknown'))} / {escape(env_config.dut.device_name)}</h1>",
+            f"<h1>{escape(_ems_heading(env_config))} / {escape(env_config.dut.device_name)}</h1>",
             f"<span>{escape(REPORT_STATE.timestamp)}</span>",
             "</div>",
             f'<strong class="status status-{escape(_overall_status(summary))}">{escape(_overall_status_label(summary))}</strong>',
@@ -555,6 +556,29 @@ a { color: #1b62b7; }
   .metadata th { width: auto; }
 }
 """.strip()
+
+
+def _ems_server_metadata(env_config: Any) -> list[tuple[str, str]]:
+    return [
+        (label, value)
+        for label, value in (
+            ("EMS Target", str(getattr(env_config, "ems_target", "") or "")),
+            ("EMS Platform", str(getattr(env_config, "ems_platform", "") or "")),
+        )
+        if value
+    ]
+
+
+def _ems_heading(env_config: Any) -> str:
+    version = str(getattr(env_config, "ems_version", "unknown"))
+    platform = str(getattr(env_config, "ems_platform", "") or "")
+    return f"{version} ({platform})" if platform else version
+
+
+def _report_dir_name(env_config: Any) -> str:
+    version = str(getattr(env_config, "ems_version", "unknown_ems_version"))
+    target = str(getattr(env_config, "ems_target", "") or "")
+    return f"{version}_{target}" if target else version
 
 
 def _report_base_name(env_config: Any, timestamp: str) -> str:

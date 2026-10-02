@@ -83,25 +83,44 @@ $env:EMS_ONT_NODE3_PASSWORD = "..."
 
 ## 3. 設定 EMS 連線
 
-`configs/ems.yaml` 有進版控，若這台機器要連不同的 EMS，改這裡：
+`configs/ems.yaml` 有進版控，實驗室的 EMS server 以 `targets` 分別列出；
+target 內的設定覆蓋外層共用設定：
 
 ```yaml
 version: 1
 
 ems:
-  rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
-  version: "03.00.11 (AAVV.221) b12"
+  default_target: "redhat"
   verify_tls: false
   timeout: 60
+  targets:
+    ubuntu:
+      rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b13"
+      platform: "Ubuntu"
+    redhat:
+      rest_api_url: "https://192.168.128.100:9116/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b12"
+      platform: "RedHat 9 (HA)"
 ```
 
-不想改動版控檔案時，指向另一份 YAML：
+選擇順序：`EMS_TARGET` 環境變數 → `default_target`。兩台 server 不會同時
+納管同一個 node，測試前先把 node 移到要測的 server。
+
+```powershell
+$env:EMS_TARGET = "ubuntu"
+```
+
+只有單台 EMS 時，也可沿用不含 `targets` 的平面寫法（`ems.rest_api_url`、
+`ems.version` 直接放在 `ems:` 下）。不想改動版控檔案時，指向另一份 YAML：
 
 ```powershell
 $env:EMS_YAML_FILE = "D:\path\to\my-ems.yaml"
 ```
 
-`ems.version` 會決定報告輸出目錄 `reports/<EMS version>/`，以及 OpenAPI 版本目錄的挑選。
+`ems.version` 決定 OpenAPI 版本目錄的挑選；報告輸出目錄為
+`reports/<EMS version>_<target>/`（平面寫法為 `reports/<EMS version>/`），
+報表另記錄 `EMS Target`、`EMS Platform`。
 
 ---
 
@@ -113,7 +132,7 @@ $env:EMS_YAML_FILE = "D:\path\to\my-ems.yaml"
 
 | 目標 | 用途 | 不通的後果 |
 | --- | --- | --- |
-| EMS `rest_api_url`（預設 `192.168.128.8:9116`） | 所有 REST 呼叫 | 全部 API 測試失敗 |
+| 所選 EMS target 的 `rest_api_url`（port 9116） | 所有 REST 呼叫 | 全部 API 測試失敗 |
 | 每個 node 的 `device_ip`（**ICMP ping**） | `tests/support/connectivity.py` 會實際 ping | 測試直接 fail |
 | 每個 node 的 SSH（port 22） | `target_sync` 前置、NeoX CLI 驗證 | preflight 失敗 → DUT 測試全部 skip |
 

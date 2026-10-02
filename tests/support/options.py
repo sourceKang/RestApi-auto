@@ -98,11 +98,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--neox-swagger-api-docs-url",
         action="store",
-        default=os.environ.get(
-            "NEOX_SWAGGER_API_DOCS_URL",
-            "https://192.168.128.8:9116/netatlasemsapi/v3/api-docs",
+        default=os.environ.get("NEOX_SWAGGER_API_DOCS_URL"),
+        help=(
+            "Live NeoX Swagger /v3/api-docs URL used with --run-live-swagger-check. "
+            "Defaults to <rest_api_url>/v3/api-docs of the selected EMS target."
         ),
-        help="Live NeoX Swagger /v3/api-docs URL used with --run-live-swagger-check.",
     )
     parser.addoption(
         "--neox-config-delay-seconds",

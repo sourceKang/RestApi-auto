@@ -806,3 +806,21 @@ def test_profile_delete_case_verifies_repeated_delete_is_rejected(monkeypatch):
 
     assert delete_calls == [("#RestApi_Delete", "session")]
     assert discarded == ["#RestApi_Delete"]
+
+
+def test_provision_sfu_template_prerequisites_include_ont_service_bandwidth():
+    from services.neox_config.service import PROVISION_TEMPLATE_SFU_NAME
+
+    env = SimpleNamespace(
+        dut=SimpleNamespace(
+            ont_template="#RestApi_Source",
+            ont_password="placeholder",
+            ont_description="temporary_ont_test",
+        )
+    )
+    payload = recorded_ont_service_payload(env, ont_template=PROVISION_TEMPLATE_SFU_NAME)
+    qos = payload["ontservice"]["data"]["qoss"][0]
+    order = profile_module.profile_dependency_order(PROVISION_TEMPLATE_SFU_NAME)
+
+    assert {qos["qosds"], qos["qosus"]} <= set(order)
+    assert order[-1] == PROVISION_TEMPLATE_SFU_NAME

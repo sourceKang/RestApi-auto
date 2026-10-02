@@ -19,8 +19,7 @@ from cases.openapi_contract import (  # noqa: E402
     load_openapi_document,
     openapi_file_date,
 )
-from config_loader.settings import DEFAULT_EMS_FILE  # noqa: E402
-from config_loader.simple_yaml import load_simple_yaml  # noqa: E402
+from config_loader.settings import load_ems_settings  # noqa: E402
 
 
 def main() -> int:
@@ -69,9 +68,7 @@ def _source_metadata(openapi_file: Path) -> dict[str, Any]:
 
 
 def _configured_ems_version() -> str:
-    raw = load_simple_yaml(DEFAULT_EMS_FILE)
-    ems = raw.get("ems", {}) if isinstance(raw, dict) else {}
-    return str(ems.get("version", ""))
+    return str(load_ems_settings()["version"])
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:

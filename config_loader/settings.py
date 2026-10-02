@@ -13,6 +13,7 @@ from models.api import SessionRole
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_EMS_FILE = CONFIG_DIR / "ems.yaml"
+EMS_TARGET_ENV = "EMS_TARGET"
 
 
 
@@ -67,6 +68,8 @@ class EnvironmentConfig:
     noaccess_account: ResolvedAccount = field(repr=False)
     dut: DutSample
     node_target: dict[str, Any] = field(repr=False)
+    ems_target: str = ""
+    ems_platform: str = ""
 
     def credentials_for(self, role: SessionRole) -> Credentials:
         if role is SessionRole.READWRITE:
@@ -87,7 +90,7 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
         auth = load_auth_config()
     except AuthConfigError as error:
         raise ConfigError(f"Cannot load auth YAML configuration: {error}") from error
-    ems = _load_ems_yaml(path)
+    ems = load_ems_settings(path)
 
     env_node = os.environ.get("EMS_NODE")
     selected_node_key = node or env_node or "NODE3"
@@ -122,10 +125,20 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
         noaccess_account=resolved_accounts["noaccess"],
         dut=dut,
         node_target=selected_node,
+        ems_target=str(ems.get("target", "")),
+        ems_platform=str(ems.get("platform", "")),
     )
 
 
-def _load_ems_yaml(path: str | Path | None = None) -> dict[str, Any]:
+def load_ems_settings(path: str | Path | None = None, target: str | None = None) -> dict[str, Any]:
+    """Return the ems: settings for the selected EMS server.
+
+    With ems.targets, the target is chosen by ``target``, then EMS_TARGET, then
+    ems.default_target; its keys override the shared ems: keys and the result
+    carries the chosen name in ``target``. A flat ems: mapping without targets
+    is returned unchanged.
+    """
+
     ems_path = Path(path or os.environ.get("EMS_YAML_FILE", DEFAULT_EMS_FILE))
     try:
         raw = load_simple_yaml(ems_path)
@@ -136,10 +149,34 @@ def _load_ems_yaml(path: str | Path | None = None) -> dict[str, Any]:
     ems = raw.get("ems")
     if not isinstance(ems, dict):
         raise ConfigError(f"{ems_path} must contain ems: mapping")
+    targets = ems.get("targets")
+    if targets is not None:
+        ems = _select_ems_target(ems_path, ems, targets, target)
     for field in ("rest_api_url", "version"):
         if not ems.get(field):
             raise ConfigError(f"{ems_path} must define ems.{field}")
     return ems
+
+
+def _select_ems_target(
+    ems_path: Path,
+    ems: dict[str, Any],
+    targets: Any,
+    target: str | None,
+) -> dict[str, Any]:
+    if not isinstance(targets, dict) or not targets:
+        raise ConfigError(f"{ems_path} ems.targets must be a non-empty mapping")
+    name = target or os.environ.get(EMS_TARGET_ENV) or ems.get("default_target")
+    if not name:
+        raise ConfigError(f"{ems_path} has ems.targets; set ems.default_target or {EMS_TARGET_ENV}")
+    name = str(name).strip()
+    selected = targets.get(name)
+    if not isinstance(selected, dict):
+        raise ConfigError(
+            f"EMS target {name!r} is not defined in {ems_path}; available: {', '.join(sorted(targets))}"
+        )
+    shared = {key: value for key, value in ems.items() if key not in {"targets", "default_target"}}
+    return {**shared, **selected, "target": name}
 
 
 def _target_cards(target: dict[str, Any]) -> dict[str, Any]:

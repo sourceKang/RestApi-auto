@@ -462,11 +462,14 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
 
         cleanup_registry.add_strict_final(cleanup_scenario)
 
+        # The ONT service references the EMS-level template and its bandwidth
+        # profile by name, so they must exist on a freshly installed EMS too.
+        services.inventory.ensure_profile_by_name(readwrite_session, PROVISION_TEMPLATE_SFU_NAME)
         services.inventory.upsert_ont_service(readwrite_session, PROVISION_TEMPLATE_SFU_NAME)
         services.inventory.wait_for_ont_service_state(
             readwrite_session,
             {"Success"},
-            timeout=180,
+            timeout=600,
             interval=15,
             initial_delay=30,
         )

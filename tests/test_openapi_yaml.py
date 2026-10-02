@@ -28,8 +28,7 @@ from cases.openapi_contract import (
     openapi_version_dir_name,
     swagger_api_docs_url,
 )
-from config_loader.settings import DEFAULT_EMS_FILE
-from config_loader.simple_yaml import load_simple_yaml
+from config_loader.settings import DEFAULT_EMS_FILE, load_ems_settings
 from services.neox_config.service import NEOX_SWAGGER_DATA_FILE
 from tests.support.options import option_or_full_testcases
 from utils.allure_helpers import attach_json, attach_text, allure_step
@@ -127,7 +126,7 @@ def test_latest_openapi_yaml_keys_match_live_swagger(request):
         )
 
     with allure_step("4. Fetch latest live Swagger OpenAPI document"):
-        url = request.config.getoption("--neox-swagger-api-docs-url")
+        url = _live_swagger_url(request)
         live_url = swagger_api_docs_url(url)
         try:
             live_document = fetch_openapi_document(url)
@@ -204,10 +203,14 @@ def test_latest_openapi_yaml_keys_match_live_swagger(request):
         )
 
 def _configured_ems_version() -> str:
-    ems_file = Path(os.environ.get("EMS_YAML_FILE", DEFAULT_EMS_FILE))
-    raw = load_simple_yaml(ems_file)
-    ems = raw.get("ems", {}) if isinstance(raw, dict) else {}
-    return str(ems.get("version", ""))
+    return str(load_ems_settings()["version"])
+
+
+def _live_swagger_url(request) -> str:
+    configured = request.config.getoption("--neox-swagger-api-docs-url")
+    if configured:
+        return str(configured)
+    return f"{str(load_ems_settings()['rest_api_url']).rstrip('/')}/v3/api-docs"
 
 
 def _attach_failed_check(name: str, error: Exception, **context: object) -> None:
@@ -505,7 +508,7 @@ def test_live_neox_swagger_nni_schema_matches_baseline(request):
     if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
         pytest.skip("Live Swagger checks require --run-live-swagger-check.")
 
-    url = request.config.getoption("--neox-swagger-api-docs-url")
+    url = _live_swagger_url(request)
     live_schema = openapi_content_schema(fetch_openapi_document(url), "NniPortInfo")
     baseline_schema = openapi_content_schema(load_baseline_yaml_document(), "NniPortInfo")
 
@@ -519,7 +522,7 @@ def test_live_swagger_openapi_document_is_available(request):
     if not option_or_full_testcases(request.config, "--run-live-swagger-check"):
         pytest.skip("Live Swagger checks require --run-live-swagger-check.")
 
-    url = request.config.getoption("--neox-swagger-api-docs-url")
+    url = _live_swagger_url(request)
     live_url = swagger_api_docs_url(url)
     try:
         live_document = fetch_openapi_document(url)

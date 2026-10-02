@@ -1,8 +1,11 @@
 version: 1
 
 ems:
-  rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
-  version: "03.00.11 (AAVV.221) b12"
+  # Two lab EMS servers are tested in turn; they never manage the same node, so
+  # move the nodes to the selected server before running.
+  # Selection order: EMS_TARGET environment variable > default_target.
+  # A target's keys override the shared keys below.
+  default_target: "redhat"
   verify_tls: false
   timeout: 60
   # Directory that holds the per-version OpenAPI YAML folders shipped with the
@@ -14,3 +17,13 @@ ems:
   # Leave it out on machines without the firmware share; the OpenAPI YAML guard
   # then skips instead of failing.
   openapi_root: "D:/FW/NetAtlasEMS"
+  targets:
+    ubuntu:
+      rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b13"
+      platform: "Ubuntu"
+    # The RedHat build currently supports NeoX series devices only.
+    redhat:
+      rest_api_url: "https://192.168.128.100:9116/netatlasemsapi"
+      version: "03.00.11 (AAVV.221) b12"
+      platform: "RedHat 9 (HA)"

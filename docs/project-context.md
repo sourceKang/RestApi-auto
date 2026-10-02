@@ -52,6 +52,30 @@
 request／response 或 MCP 設定原文放進交接文件。
 EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定及設備證據為準。
 
+### EMS server 切換
+
+實驗室有兩台 EMS 輪流測試，設定在 configs/ems.yaml 的 `ems.targets`：
+
+| target | EMS | 平台 | 說明 |
+| --- | --- | --- | --- |
+| `redhat`（`default_target`） | 192.168.128.100 | RedHat 9 HA | 目前僅支援 NeoX 系列設備 |
+| `ubuntu` | 192.168.128.8 | Ubuntu | |
+
+- 切換方式：PowerShell 執行 `$env:EMS_TARGET = "ubuntu"`；沒設定時使用
+  `default_target`。target 的版本字串寫在各自的 `version`。
+- 兩台 EMS 不會同時納管同一個 node。測試前由使用者手動把 node 移到要測的
+  server；agent 不得自行搬移 node，也不要假設 node 在哪台上。
+- 連線外部 EMS 前，先用 `tools/run_multi_node.py --nodes <N> --dry-run` 確認
+  輸出的 `EMS:` 行（target／platform／version／URL）是預期的 server。
+- 報表輸出到 `reports/<version>_<target>/`，報表內記錄 `EMS Target`、
+  `EMS Platform`。TestLink build 依平台加後綴，例如 `03.00.11 (AAVV.221) b12_redhat`。
+- `.100` 是全新安裝：舊版腳本留在 `.8` 的 EMS 層測資（例如 provision profile）
+  在 `.100` 上不存在；測試需要的前置資料要由測試自行建立。
+- `.100` 在密集連線時偶有 connect timeout／connection reset（使用者判定為
+  server 資源不足，2026-10-02）。這類失敗先單獨重跑確認，不列為 API bug。
+- 完整測試約 1.5 小時，超過 agent 背景工作的時間上限（30 分鐘）；需要長時間執行時
+  改用獨立程序（例如 PowerShell `Start-Process`）並另外監看結果。
+
 ## 本機檢查與外部驗證
 
 從專案根目錄執行，先確認 interpreter 存在：

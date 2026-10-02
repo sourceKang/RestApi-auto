@@ -96,6 +96,7 @@ tests
 
 - EMS node/user/slot/port/ONT/topology 集中管理；slot 與 card type 必須符合環境。
 - 環境差異透過 config、profile 或 pytest option 處理，不硬編碼特定環境資訊。
+- EMS server 由 `configs/ems.yaml` 的 `ems.targets` 搭配 `EMS_TARGET` 選擇。連線外部 EMS 前，先確認所選 target 與 node 實際納管的 server 一致；node 搬移由使用者手動進行（操作細節見 docs/project-context.md「EMS server 切換」）。
 - 修改 Swagger/OpenAPI/schema 比對前，確認 `NetAtlasEMS_OpenAPI_*.yaml` 為最新版本。
 - 回歸前先做 spec/schema diff；遇 breaking change 時依差異更新測試。
 - request、response、log、attachment、report 一律遮罩 devKey、密碼、token、ONT password 等敏感資料。

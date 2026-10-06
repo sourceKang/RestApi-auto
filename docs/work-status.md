@@ -1,11 +1,11 @@
 # 共用工作進度
 
-更新日期：2026-10-01（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-06（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
 
-- 負責工具：Claude Code（2026-09-22 ~ 2026-10-01）；先前由 Codex 建立共用
+- 負責工具：Claude Code（2026-09-22 ~ 2026-10-06）；先前由 Codex 建立共用
   協作入口。
 - 分支：codex/neox-profile-read-path-fix（工作分支）。每批變更先在 scratch
   worktree 做 `git merge --no-commit --no-ff` dry run，確認零衝突後才合併進
@@ -425,12 +425,27 @@
 - 驗證：compileall 通過；相關離線測試 117 passed、3 skipped；collect-only 657 tests。
   離線執行產生的空報表已刪除。
 
+### 2026-10-02 commit、push 與合併到預設分支（Claude Code）
+
+- 經使用者確認範圍後，在 codex/neox-profile-read-path-fix 建立並 push：
+  `c4a9d3d`（雙 EMS target、報表欄位、run_multi_node UTF-8 修正）、
+  `99cae51`（EMS1-7223 SFU 前置 profile）、`d332549`（work-status）、
+  `585fbd3`（AGENTS.md 與 project-context.md 的 EMS server 切換規則）。
+- PR #3（原為 NNI fec/speed，標題與描述已更新為涵蓋上述修改）合併為 `4865c46`；
+  PR #4（EMS 切換規則文件）合併為 `921de33`。兩者合併前 CI 皆通過、scratch
+  worktree dry run 零衝突，合併後預設分支 CI 也通過。
+- 預設分支 codex/prepare-github-upload 目前在 `921de33`；工作分支保留，同事仍會使用。
+- 未納入版控（維持原狀）：已 staged 的刪除 tools/update_testlink_multi_node_notes.py；
+  未追蹤的 docs/qa_bug_drafts/、docs/sop/、.claude/skills/ems-version-regression/、
+  .codex/skills/ems-version-regression/。
+
 ## 下一步
 
-0. b12_redhat TestLink 已回填；runner 編碼問題已修正。待辦：本次修改 commit
-   （等使用者確認範圍）。
-0a. .100 連線錯誤：以報表中的時間點查 .100 伺服器端 log，確認原因後再決定是否
-   在 client 加入限定範圍的重試或共用連線。
+0. b12_redhat 回歸、TestLink 回填與合併都已完成。
+0a. .100 連線中斷已判定為 server 資源不足；若 server 資源調整後仍出現，再以報表中
+   的時間點查 .100 log，並評估 client 改用共用連線或限定範圍的重試。
+0b. 決定上述未納入版控的變更是否收進版控（skill 目錄、qa_bug_drafts、sop、
+   已 staged 的刪除）。
 
 1. ONT SFU 間歇 `Wait`／teardown HTTP 500：測試期間持續以 CLI 記錄 ONT
    狀態，確認 provision template 套用／還原是否觸發 ONT 重新註冊。

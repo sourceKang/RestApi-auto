@@ -596,6 +596,18 @@
   （case_history 中 b12_redhat 判定版皆 Pass）不受影響。工具重產時不會
   自動刪除舊步驟頁。
 
+### 2026-10-07 PR #9 合併（Claude Code）
+
+- 內容：`4f91741`（PR #8 紀錄）與 `aeabb71`（formal_runs 依 node 比對、
+  比對標題顯示「正式（最終）」）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`6ebf890`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `aeabb71` 一致，相關測試 35 passed；之後 `merge --abort` 並移除 scratch
+  worktree。
+- PR #9 CI 通過（45 秒），確認 PR head 仍為 `aeabb71` 後以 merge commit
+  合併為 `c6ab1bf`（2026-10-07 09:13 UTC）。預設分支 push CI（run 37599174258）
+  也通過，約 34 秒。
+
 ### 2026-10-07 PR #8 合併（Claude Code）
 
 - 內容：`669b2f1`（沒有 TestLink case 的 session 不寫報表，含 PR #7 紀錄）。

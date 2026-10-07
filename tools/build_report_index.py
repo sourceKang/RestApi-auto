@@ -164,10 +164,15 @@ class ReportIndex:
     def find_run(self, selector: str, node: str | None) -> RunRecord:
         build_dir, _, run_id = selector.partition("/")
         if run_id:
-            for run in self.runs:
-                if run.build.dir_name == build_dir and run.run_id == run_id:
-                    return run
-            raise ValueError(f"run not found: {selector}")
+            matches = [run for run in self.runs if run.build.dir_name == build_dir and run.run_id == run_id]
+            if node:
+                matches = [run for run in matches if run.node == node]
+            if not matches:
+                raise ValueError(f"run not found: {selector}" + (f" for {node}" if node else ""))
+            if len(matches) > 1:
+                nodes = ", ".join(sorted(run.node for run in matches))
+                raise ValueError(f"{selector} matches runs of several nodes ({nodes}); add --node")
+            return matches[0]
         if not node:
             raise ValueError(f"--node is required when selecting a build without a run id: {selector}")
         run = self.reference_run(build_dir, node)
@@ -347,15 +352,21 @@ def load_formal_runs(path: Path) -> dict[tuple[str, str], list[FormalEntry]]:
 
 
 def apply_formal_runs(index: ReportIndex) -> None:
-    by_key = {(run.build.dir_name, run.run_id): run for run in index.runs}
+    # run_id is only unique per node: nodes run in parallel can share a timestamp
+    # when their txt names carry no _NODEx label.
+    by_key: dict[tuple[str, str], list[RunRecord]] = defaultdict(list)
+    for run in index.runs:
+        by_key[(run.build.dir_name, run.run_id)].append(run)
     for (build_dir, node), entries in index.formal.items():
         for entry in entries:
-            run = by_key.get((build_dir, entry.run))
-            if run is None:
+            candidates = by_key.get((build_dir, entry.run), [])
+            if not candidates:
                 index.warnings.append(f"formal_runs.yaml: {build_dir} / {node} / {entry.run} 找不到對應的 txt 報表")
                 continue
-            if run.node != node:
-                index.warnings.append(f"formal_runs.yaml: {build_dir} / {entry.run} 屬於 {run.node}，不是 {node}")
+            run = next((candidate for candidate in candidates if candidate.node == node), None)
+            if run is None:
+                owners = "、".join(sorted({candidate.node for candidate in candidates}))
+                index.warnings.append(f"formal_runs.yaml: {build_dir} / {entry.run} 屬於 {owners}，不是 {node}")
                 continue
             run.formal = "final" if entry.final else "round"
             run.formal_note = entry.note
@@ -617,8 +628,15 @@ function changedOnly(box, tableId){document.querySelectorAll('#'+tableId+' tbody
 """
 
 
+UNMARKED_LABEL = "未標記，暫用最後一次完整執行"
+
+
 def _run_label(run: RunRecord) -> str:
     return f"{run.build.dir_name} / {run.run_id}"
+
+
+def _formal_label(run: RunRecord) -> str:
+    return {"final": "正式（最終）", "round": "正式"}.get(run.formal, "")
 
 
 def render_comparison(index: ReportIndex, before: RunRecord, after: RunRecord, changes: list[CaseChange]) -> str:
@@ -646,7 +664,7 @@ def render_comparison(index: ReportIndex, before: RunRecord, after: RunRecord, c
     return f"""
 <section class="panel">
   <div class="panel-title"><h2>{esc(after.node)}：{esc(before.build.dir_name)} → {esc(after.build.dir_name)}</h2>
-  <span class="muted">基準 {esc(_run_label(before))}（{esc(before.formal or "未標記，暫用最後一次完整執行")}） → 比對 {esc(_run_label(after))}（{esc(after.formal or "未標記，暫用最後一次完整執行")}）</span></div>
+  <span class="muted">基準 {esc(_run_label(before))}（{esc(_formal_label(before) or UNMARKED_LABEL)}） → 比對 {esc(_run_label(after))}（{esc(_formal_label(after) or UNMARKED_LABEL)}）</span></div>
   <div class="counts">{count_html}</div>
   <div class="table-wrap"><table><thead><tr><th>分類</th><th>Case</th><th>名稱</th><th>基準</th><th>比對</th><th>步驟差異</th></tr></thead><tbody>{body}</tbody></table></div>
 </section>"""
@@ -714,7 +732,7 @@ def render_runs_table(index: ReportIndex) -> str:
             )
             if path is not None
         )
-        formal = {"final": "正式（最終）", "round": "正式"}.get(run.formal, "")
+        formal = _formal_label(run)
         row_class = ' class="empty-run"' if run.kind == "empty" else ""
         rows.append(
             f"<tr{row_class}><td>{esc(run.build.dir_name)}</td><td>{esc(run.node)}</td><td>{esc(run.run_id)}</td>"

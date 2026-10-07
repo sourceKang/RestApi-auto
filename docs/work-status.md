@@ -532,6 +532,21 @@
   `費城_IES5206_169.54` 1 份），亂碼只是 agent 終端機以 cp950 顯示 UTF-8
   輸出造成；index.html／runs.csv／case_history.csv 皆正確寫入，無 U+FFFD。
 
+### 2026-10-07 空報表源頭修正（Claude Code）
+
+- 原因：pytest_sessionfinish 每次都呼叫 write_reports，離線單元測試與
+  `--collect-only` 沒有任何 TestLink case 也會寫出 0 case 的 txt／html／
+  integrated 報表（reports/ 盤點有 813 份）。
+- 修正：utils/reporting.py 新增 `has_reportable_cases()`（與 txt 報表的
+  case 行同一來源 `_rendered_report_results()`）；沒有 case 時
+  `write_reports()` 不寫檔並回傳 None。tests/support/reporting_hooks.py
+  改為輸出 `EMS report: skipped; no TestLink case results in this session.`；
+  此行不符合 run_multi_node 的報表路徑前綴，該 node 的 report_paths 會是空的。
+- 測試：tests/test_reporting.py 新增 collect-only／無 case 結果／有 case
+  三種情境與 session hook 的斷言。驗證：相關離線測試 83 passed、
+  collect-only 680；實際跑單元測試與 collect-only 後 reports/ 只剩
+  `.allure-results-current`，沒有 build 資料夾或 txt。
+
 ### 2026-10-07 commit、push 與合併到預設分支（Claude Code）
 
 - 經使用者確認 staged 清單後，在 claude/stoic-gates-76f17f 建立 `b107aad`
@@ -545,7 +560,19 @@
   （2026-10-07 08:20 UTC）。預設分支 push CI（run 37593066612）
   也通過，約 31 秒。
 - 分支 claude/stoic-gates-76f17f 保留；本條 work-status 紀錄在合併後才補，
-  尚未進預設分支。
+  隨 PR #7 進入預設分支。
+
+### 2026-10-07 PR #7 合併（Claude Code）
+
+- 內容：`05d1b39`（PR #6 紀錄）與 `44b8e62`（integrated 報表失敗數標題）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`89a6d41`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `44b8e62` 一致，相關測試 22 passed；之後 `merge --abort` 並移除 scratch
+  worktree。
+- PR #7 CI 通過（54 秒），確認 PR head 仍為 `44b8e62` 後以 merge commit
+  合併為 `132f88d`（2026-10-07 08:29 UTC）。預設分支 push CI（run 37594112216）
+  也通過，約 38 秒。
+- 空報表源頭修正在 PR #7 合併後才 push 到工作分支，未包含在 PR #7。
 
 ## 下一步
 

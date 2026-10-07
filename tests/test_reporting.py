@@ -316,6 +316,63 @@ def test_integrated_report_failure_heading_counts_failed_txt_cases(tmp_path):
     assert "<h2>1 Failure in txt Report</h2>" in single
 
 
+def _report_config(tmp_path):
+    allure_current = tmp_path / "reports" / ".allure-results-current"
+    allure_current.mkdir(parents=True, exist_ok=True)
+    return SimpleNamespace(
+        rootpath=tmp_path,
+        option=SimpleNamespace(
+            allure_report_dir=str(allure_current),
+            archive_allure=False,
+            generate_allure_html=False,
+            skip_integrated_evidence_report=False,
+        ),
+    )
+
+
+def test_write_reports_skips_sessions_without_testlink_cases(monkeypatch, tmp_path):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-07_12-00-00"))
+    config = _report_config(tmp_path)
+
+    # --collect-only: nothing ran at all.
+    assert reporting.has_reportable_cases() is False
+    assert reporting.write_reports(config, _fake_env()) is None
+
+    # Offline unit tests: results exist but none is registered to a TestLink case.
+    reporting.record_result("tests/test_reporting.py::test_something", "passed", 0.01)
+    reporting.record_result("tests/test_report_index.py::test_other", "failed", 0.02)
+    assert reporting.has_reportable_cases() is False
+    assert reporting.write_reports(config, _fake_env()) is None
+    assert sorted(path.name for path in (tmp_path / "reports").iterdir()) == [".allure-results-current"]
+
+    reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_x"] = [
+        reporting.CaseRegistration(case_id="EMS1-6643", name="test_get_device_all")
+    ]
+    reporting.record_result("tests/test_inventory.py::test_x", "passed", 0.11)
+    assert reporting.has_reportable_cases() is True
+    txt_path, *_ = reporting.write_reports(config, _fake_env())
+    assert "[EMS1-6643][test_get_device_all] Result Pass" in txt_path.read_text(encoding="utf-8")
+
+
+def test_session_finish_reports_skip_instead_of_paths_without_testlink_cases(monkeypatch, tmp_path):
+    from tests.support import reporting_hooks
+
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-07_12-00-00"))
+    reporting.record_result("tests/test_reporting.py::test_something", "passed", 0.01)
+    monkeypatch.setattr(reporting_hooks, "load_environment", lambda **kwargs: _fake_env())
+    monkeypatch.setattr(reporting_hooks, "close_ssh_session_pools", lambda: None)
+    lines: list[str] = []
+    terminal = SimpleNamespace(write_line=lines.append)
+    config = _report_config(tmp_path)
+    config.getoption = lambda name, default=None: None
+    config.pluginmanager = SimpleNamespace(get_plugin=lambda name: terminal)
+
+    reporting_hooks.pytest_sessionfinish(SimpleNamespace(config=config), 0)
+
+    assert lines == ["EMS report: skipped; no TestLink case results in this session."]
+    assert not list((tmp_path / "reports").glob("*/*.txt"))
+
+
 def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-01_12-00-00"))
     reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_inventory_read_endpoints_readwrite[device_list]"] = [

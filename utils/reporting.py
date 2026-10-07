@@ -144,7 +144,19 @@ def set_session_metrics(metrics: dict[str, Any]) -> None:
     REPORT_STATE.session_metrics = safe
 
 
-def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path, Path | None, Path | None]:
+def has_reportable_cases() -> bool:
+    """True when the session has at least one TestLink case line for the txt report."""
+    return bool(_rendered_report_results())
+
+
+def write_reports(config: Any, env_config: Any) -> tuple[Path, Path, Path, Path | None, Path | None] | None:
+    """Write txt/html/integrated reports; return None without writing when no TestLink case ran.
+
+    Offline unit tests and --collect-only sessions record no TestLink case, and
+    their 0-case reports only add noise to reports/<version>/.
+    """
+    if not has_reportable_cases():
+        return None
     root = Path(str(config.rootpath))
     report_dir = root / "reports" / _safe_path_part(_report_dir_name(env_config))
     report_dir.mkdir(parents=True, exist_ok=True)

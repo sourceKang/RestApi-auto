@@ -153,7 +153,10 @@ git diff --stat
 ~~~
 
 此案例使用本機 object 組裝 service，不呼叫 EMS；全域 fixture／報表 hook
-仍會讀取本機設定並產生 reports，因此需要可解析的環境設定。
+仍會讀取本機設定，因此需要可解析的環境設定。沒有任何 TestLink case 結果的
+session（離線單元測試、`--collect-only`）不寫 txt／html／integrated 報表，
+只輸出 `EMS report: skipped; ...`；`reports/.allure-results-current/` 仍是
+Allure 的暫存目錄，下次執行開始時會清空。
 這只是基礎檢查，不代表所有 service、API 或設備測試通過。
 
 既有 tools/check_environment.py 支援 --no-network，可供本機環境診斷；

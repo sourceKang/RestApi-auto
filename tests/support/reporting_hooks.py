@@ -49,8 +49,13 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             node=session.config.getoption("--ems-node"),
             auth_profile=session.config.getoption("--auth-profile"),
         )
-        txt_path, html_summary, allure_results, allure_html, integrated_html = write_reports(session.config, env_config)
+        reports = write_reports(session.config, env_config)
         terminal = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reports is None:
+            if terminal:
+                terminal.write_line("EMS report: skipped; no TestLink case results in this session.")
+            return
+        txt_path, html_summary, allure_results, allure_html, integrated_html = reports
         if terminal:
             if integrated_html:
                 terminal.write_line(f"EMS HTML report: {integrated_html}")

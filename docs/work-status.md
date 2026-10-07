@@ -530,6 +530,21 @@
   `費城_IES5206_169.54` 1 份），亂碼只是 agent 終端機以 cp950 顯示 UTF-8
   輸出造成；index.html／runs.csv／case_history.csv 皆正確寫入，無 U+FFFD。
 
+### 2026-10-07 commit、push 與合併到預設分支（Claude Code）
+
+- 經使用者確認 staged 清單後，在 claude/stoic-gates-76f17f 建立 `b107aad`
+  （卡片修正、索引、步驟比對、歸檔工具、文件，11 個檔案）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`0d79302`，本機與遠端相同）執行 `git merge --no-commit --no-ff`，
+  "Automatic merge went well"、零衝突，合併結果與 `b107aad` 內容一致，
+  相關測試 31 passed；之後 `merge --abort` 並移除 scratch worktree。
+- 使用者同意後 push 分支並開 PR #6，CI（compile check、test collection、
+  offline unit test）通過，以 merge commit 合併為 `89a6d41`
+  （2026-10-07 08:20 UTC）。預設分支 push CI（run 37593066612）
+  也通過，約 31 秒。
+- 分支 claude/stoic-gates-76f17f 保留；本條 work-status 紀錄在合併後才補，
+  尚未進預設分支。
+
 ## 下一步
 
 0. b12_redhat 回歸、TestLink 回填與合併都已完成。

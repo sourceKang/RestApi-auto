@@ -44,9 +44,22 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 
 ## 5. 失敗分類與報表
 
-1. 與上一次同 node 結果比較：讀前後兩次 `summary.json` 與各 node 的
-   txt 報表（`[EMS1-xxxx][test_name] Result ...`），以 testcase ID 列出
-   新失敗、已修復、持續失敗、新增／移除案例。
+1. 與上一次同 node 結果比較（用法見 docs/project-context.md「歷史結果查詢與
+   regression 比對」）：
+   1. 重產索引：`.\.venv\Scripts\python.exe tools/build_report_index.py`
+      （只讀 txt 報表與 `multi_node/*/summary.json`，寫入 `reports/_index/`，
+      不改既有報表）。
+   2. 確認 `reports/_index/formal_runs.yaml` 中，本次與上一次 build 該 node 的
+      正式執行；未標記時工具暫用最後一次完整執行，回報時需註明「未標記」。
+      C0 多輪重測時逐輪列出，以 `final: true` 標最終輪。
+   3. 逐 node 比對（build 目錄為 `reports/` 下的 `<version>[_<target>]`）：
+      `.\.venv\Scripts\python.exe tools/build_report_index.py --compare "<上一次 build 目錄>" "<本次 build 目錄>" --node <NODE>`
+      產出 `reports/_index/compare_*.html`：Regression 候選（Pass → Fail）、
+      既有問題、已修復、新增／移除，附第一個狀態不同的步驟、失敗訊息與
+      「不穩定」標記；有變化的 case 另有 `_index/cases/` 步驟並排頁。
+      需指定特定執行時用 `<build 目錄>/<run_id>`。跨 EMS target（例如 .8 與
+      .100）比對時在報表中註明。
+   4. 比對結果只是差異清單，作為下一步分類的輸入，不等於 Root Cause。
 2. 每個失敗依 AGENTS 分層歸類，並附證據：
    - 測資／設定過期（例：fw_version 與 CLI 不符）
    - 設備／環境前置條件（例：FEC、port disable、帳號）
@@ -56,7 +69,8 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
    會改設備的 CLI 操作 ⏸。
 4. 未取得證據前不得寫 Root Cause；以「推測」「未確認」標示。
 5. 產出 HTML 報表於 `reports/`（首屏結論、環境、各 node 統計、失敗分類、
-   與上次差異、報表連結），內容先完成 redaction。
+   與上次差異、報表連結；與上次差異連到步驟 1 的 `compare_*.html`），
+   內容先完成 redaction。
 
 ## 6. 回填 TestLink ⏸
 

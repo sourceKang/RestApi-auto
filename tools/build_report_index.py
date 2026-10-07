@@ -812,12 +812,21 @@ def _safe_name(value: str) -> str:
     return re.sub(r"[^0-9A-Za-z._-]+", "_", value).strip("_")
 
 
+def _short_build(run: RunRecord) -> str:
+    """Build label such as b13 or C0_redhat for file names."""
+    label = "_".join(part for part in (run.build.build, run.build.target) if part)
+    return _safe_name(label or run.build.dir_name)
+
+
+def _pair_digest(before: RunRecord, after: RunRecord) -> str:
+    return hashlib.sha1(f"{before.key}|{after.key}".encode("utf-8")).hexdigest()[:10]
+
+
 def write_case_page(index: ReportIndex, before: RunRecord, after: RunRecord, case_id: str, output_dir: Path) -> Path:
     """Side-by-side step comparison of one case, written under <output>/cases/."""
     cases_dir = output_dir / CASES_DIRNAME
     cases_dir.mkdir(parents=True, exist_ok=True)
-    digest = hashlib.sha1(f"{before.key}|{after.key}".encode("utf-8")).hexdigest()[:10]
-    path = cases_dir / f"{_safe_name(case_id)}_{_safe_name(after.node)}_{digest}.html"
+    path = cases_dir / f"{_safe_name(case_id)}_{_safe_name(after.node)}_{_pair_digest(before, after)}.html"
     body = render_case_comparison(
         case_id,
         _run_label(before),
@@ -864,7 +873,11 @@ def write_comparison(index: ReportIndex, before: RunRecord, after: RunRecord, ou
     changes = compare_runs(index, before, after, with_steps=with_steps)
     if with_steps:
         write_case_pages(index, before, after, changes, output_dir)
-    name = f"compare_{_safe_name(after.node)}_{_safe_name(before.key)}_vs_{_safe_name(after.key)}.html"
+    # Short label + hash keeps the path under the Windows 260-character limit.
+    name = (
+        f"compare_{_safe_name(after.node)}_{_short_build(before)}_vs_{_short_build(after)}_"
+        f"{_pair_digest(before, after)}.html"
+    )
     path = output_dir / name
     title = f"{after.node} 比對：{before.build.dir_name} → {after.build.dir_name}"
     path.write_text(render_page(title, f"{_run_label(before)} → {_run_label(after)}", render_comparison(index, before, after, changes)), encoding="utf-8")

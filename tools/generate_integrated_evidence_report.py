@@ -336,9 +336,18 @@ def render_failures(cases: list[TxtCase]) -> str:
     return "".join(rows) or '<tr><td colspan="5">No failed TestLink cases.</td></tr>'
 
 
+def allure_status_counts(results: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {"passed": 0, "failed": 0, "broken": 0, "skipped": 0, "unknown": 0}
+    for result in results:
+        status = str(result.get("status") or "unknown").lower()
+        counts[status if status in counts else "unknown"] += 1
+    return counts
+
+
 def render_report(
     metadata: dict[str, str],
     cases: list[TxtCase],
+    results: list[dict[str, Any]],
     by_case: dict[str, list[dict[str, Any]]],
     allure_dir: Path,
     txt_rel: str,
@@ -352,6 +361,14 @@ def render_report(
     ems_platform = metadata.get("EMS Platform", "")
     ems_heading = f"{ems_version} ({ems_platform})" if ems_platform else ems_version
     report_title = f"{ems_heading} / {metadata.get('Node Name', 'Node')} Integrated Evidence Report"
+    status_counts = allure_status_counts(results)
+    raw_failed = status_counts["failed"] + status_counts["broken"]
+    raw_note = (
+        "passed / failed / skipped; failed includes Allure "
+        f"{status_counts['failed']} failed + {status_counts['broken']} broken"
+    )
+    if status_counts["unknown"]:
+        raw_note += f"; {status_counts['unknown']} unknown"
     case_html = "\n".join(
         f'<section id="{esc(case.case_id)}">{render_case(case, by_case.get(case.case_id, []), allure_rel, allure_dir)}</section>'
         for case in cases
@@ -387,8 +404,8 @@ def render_report(
 <main>
   <section class="cards">
     <div class="card"><div class="label">EMS Version</div><div class="value">{esc(ems_version.split()[-1] if ems_version.split() else ems_version)}</div><div class="note">{esc(" / ".join(part for part in (ems_version, ems_platform, metadata.get("UI URL", "")) if part))}</div></div>
-    <div class="card"><div class="label">Node</div><div class="value">Node3</div><div class="note">{esc(metadata.get("Node Name", "Taiwan_NeoX-03_169.58"))} / {esc(metadata.get("Node Chassis", "NXC400"))}</div></div>
-    <div class="card"><div class="label">pytest raw</div><div class="value">422 / 28 / 5</div><div class="note">passed / failed / skipped; failed includes Allure 26 failed + 2 broken</div></div>
+    <div class="card"><div class="label">Node</div><div class="value">{esc(metadata.get("Node Name") or "N/A")}</div><div class="note">Chassis: {esc(metadata.get("Node Chassis") or "N/A")}</div></div>
+    <div class="card"><div class="label">pytest raw</div><div class="value">{status_counts["passed"]} / {raw_failed} / {status_counts["skipped"]}</div><div class="note">{esc(raw_note)}</div></div>
     <div class="card"><div class="label">TestLink report</div><div class="value">{pass_count} / {fail_count}</div><div class="note">Pass / Fail, {len(cases)} cases</div></div>
   </section>
 
@@ -424,6 +441,10 @@ def render_report(
     </div>
   </section>
 </main>
+<script>
+function openCaseFromHash(){{var id=decodeURIComponent(location.hash.slice(1));var section=id&&document.getElementById(id);if(!section)return;var row=section.querySelector('details.case-row');if(row){{row.open=true;}}section.scrollIntoView();}}
+window.addEventListener('hashchange',openCaseFromHash);openCaseFromHash();
+</script>
 </body>
 </html>
 """
@@ -453,6 +474,7 @@ def write_integrated_evidence_report(
     html_text = render_report(
         metadata,
         cases,
+        results,
         by_case,
         allure_dir,
         _relative_or_name(txt_report, base) or txt_report.as_posix(),

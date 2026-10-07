@@ -460,7 +460,9 @@
   `.venv/Scripts/python.exe` 執行。
 - pytest session 寫入的 worktree `reports/`（0 個 case 的報表與
   `.allure-results-current`）經使用者同意已刪除。
-- 未處理：同一頁的「8 Failures in txt Report」標題也是寫死數字，本次未改。
+- 同一頁寫死的「8 Failures in txt Report」標題已改為 txt 報表實際失敗數
+  （與失敗清單同一判定，單數時為 Failure）；tests/test_reporting.py 新增
+  0／1／2 筆失敗的斷言。驗證：相關離線測試 61 passed、collect-only 678。
 
 ### 2026-10-07 reports/ 整理規劃（Claude Code，僅盤點與規劃）
 

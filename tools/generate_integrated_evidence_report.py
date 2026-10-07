@@ -423,7 +423,7 @@ def render_report(
 {photo_issue_section}
 
   <section class="panel">
-    <div class="panel-title"><h2>8 Failures in txt Report</h2><span>Jump directly to merged case evidence</span></div>
+    <div class="panel-title"><h2>{fail_count} Failure{"" if fail_count == 1 else "s"} in txt Report</h2><span>Jump directly to merged case evidence</span></div>
     <div class="table-wrap"><table><thead><tr><th>Case</th><th>Test</th><th>Result</th><th>Duration</th><th>Detail</th></tr></thead><tbody>{render_failures(cases)}</tbody></table></div>
   </section>
 

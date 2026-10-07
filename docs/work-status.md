@@ -574,6 +574,18 @@
   也通過，約 38 秒。
 - 空報表源頭修正在 PR #7 合併後才 push 到工作分支，未包含在 PR #7。
 
+### 2026-10-07 PR #8 合併（Claude Code）
+
+- 內容：`669b2f1`（沒有 TestLink case 的 session 不寫報表，含 PR #7 紀錄）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`132f88d`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `669b2f1` 一致，相關測試 57 passed；之後 `merge --abort` 並移除 scratch
+  worktree。試合併時計到的 6 個 `.txt` 經重跑確認都是
+  `.allure-results-current/` 內的 Allure 附件，不是報表。
+- PR #8 CI 通過（34 秒），確認 PR head 仍為 `669b2f1` 後以 merge commit
+  合併為 `6ebf890`（2026-10-07 08:40 UTC）。預設分支 push CI（run 37595353641）
+  也通過，約 44 秒。
+
 ## 下一步
 
 0. b12_redhat 回歸、TestLink 回填與合併都已完成。

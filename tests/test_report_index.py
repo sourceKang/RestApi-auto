@@ -320,6 +320,8 @@ def test_main_writes_comparison_page_for_selected_runs(tmp_path, capsys):
     assert exit_code == 0
     written = list((reports / "_index").glob("compare_NODE3_*.html"))
     assert len(written) == 1
+    assert written[0].name.startswith("compare_NODE3_b12_redhat_vs_b13_")
+    assert len(written[0].name) < 60
     assert "EMS1-7002" in written[0].read_text(encoding="utf-8")
     assert "Wrote" in capsys.readouterr().out
 

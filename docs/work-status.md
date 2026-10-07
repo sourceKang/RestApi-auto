@@ -596,6 +596,18 @@
   （case_history 中 b12_redhat 判定版皆 Pass）不受影響。工具重產時不會
   自動刪除舊步驟頁。
 
+### 2026-10-07 PR #9 合併（Claude Code）
+
+- 內容：`4f91741`（PR #8 紀錄）與 `aeabb71`（formal_runs 依 node 比對、
+  比對標題顯示「正式（最終）」）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`6ebf890`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `aeabb71` 一致，相關測試 35 passed；之後 `merge --abort` 並移除 scratch
+  worktree。
+- PR #9 CI 通過（45 秒），確認 PR head 仍為 `aeabb71` 後以 merge commit
+  合併為 `c6ab1bf`（2026-10-07 09:13 UTC）。預設分支 push CI（run 37599174258）
+  也通過，約 34 秒。
+
 ### 2026-10-07 PR #8 合併（Claude Code）
 
 - 內容：`669b2f1`（沒有 TestLink case 的 session 不寫報表，含 PR #7 紀錄）。
@@ -608,13 +620,33 @@
   合併為 `6ebf890`（2026-10-07 08:40 UTC）。預設分支 push CI（run 37595353641）
   也通過，約 44 秒。
 
+### 2026-10-07 ems-version-regression skill 收進版控、步驟 5.1 改用索引工具（Claude Code）
+
+- 使用者決定把 skill 收進版控：從主 checkout（未追蹤）原樣複製
+  `.codex/skills/ems-version-regression/SKILL.md`、`agents/openai.yaml` 與
+  `.claude/skills/ems-version-regression/SKILL.md` 到工作分支（先確認三檔與
+  原檔逐位元組相同，內容無帳密或 IP）。主 checkout 那份未追蹤檔沒有修改；
+  主 checkout 之後合併預設分支前，需先移開同路徑的未追蹤檔，否則 git 會拒絕覆蓋。
+- 步驟 5.1 改為：重產索引 → 確認 formal_runs.yaml → 逐 node 執行
+  `tools/build_report_index.py --compare "<上一次 build 目錄>" "<本次 build 目錄>" --node <NODE>`；
+  步驟 5.5 的「與上次差異」連到產出的 `compare_*.html`。取代原本規劃的
+  tools/compare_multi_node_runs.py（下一步第 7 項）。
+- 實跑文件中的指令時發現 `--compare` 輸出檔名過長（約 150 字元），輸出到較長
+  的資料夾時超過 Windows 260 字元路徑上限而 FileNotFoundError。改為
+  `compare_<node>_<build>_vs_<build>_<hash>.html`（例：
+  `compare_NODE1_b12_vs_b13_54164786a0.html`）；hash 公式不變，既有
+  `_index/cases/` 步驟頁檔名不受影響。tests/test_report_index.py 補檔名斷言。
+- 驗證：相關離線測試 85 passed、collect-only 681；在 agent scratchpad（長路徑）
+  實跑 NODE1 b12 → b13 比對成功。
+
 ## 下一步
 
 0. b12_redhat 回歸、TestLink 回填與合併都已完成。
 0a. .100 連線中斷已判定為 server 資源不足；若 server 資源調整後仍出現，再以報表中
    的時間點查 .100 log，並評估 client 改用共用連線或限定範圍的重試。
-0b. 決定上述未納入版控的變更是否收進版控（skill 目錄、qa_bug_drafts、sop、
-   已 staged 的刪除）。
+0b. 決定上述未納入版控的變更是否收進版控（qa_bug_drafts、sop、已 staged 的
+   刪除）。ems-version-regression skill 已於 2026-10-07 收進版控；主 checkout
+   合併預設分支前需先移開同路徑的未追蹤 skill 檔。
 
 1. ONT SFU 間歇 `Wait`／teardown HTTP 500：測試期間持續以 CLI 記錄 ONT
    狀態，確認 provision template 套用／還原是否觸發 ONT 重新註冊。
@@ -629,9 +661,9 @@
    codex/prepare-github-upload 的 PR 流程尚未實際跑過 CI。
 6. 依賴改為手動升級：升級時修改 requirements.txt，並確認 CI 與本機離線
    檢查通過。
-7. 實作 tools/compare_multi_node_runs.py（介面草稿在
-   tmp/handoff_20260930/compare_multi_node_runs_interface.md，tmp/ 不進版控）
-   與對應單元測試；完成後把 ems-version-regression 步驟 5.1 改為呼叫此工具。
+7. 已由 tools/build_report_index.py `--compare` 取代（2026-10-07）；
+   ems-version-regression 步驟 5.1 已改為呼叫它，不再另做
+   tools/compare_multi_node_runs.py。
 
 ## 後續更新方式
 

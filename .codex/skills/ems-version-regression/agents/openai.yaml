@@ -1,0 +1,4 @@
+interface:
+  display_name: "EMS Version Regression"
+  short_description: "Run RestApi Auto regression for a new EMS build."
+  default_prompt: "Use $ems-version-regression to run the RestApi Auto regression for this new EMS version and report the results."

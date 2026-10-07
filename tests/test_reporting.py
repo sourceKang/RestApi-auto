@@ -283,6 +283,37 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
     assert "422 / 28 / 5" not in rendered
     assert '<section id="EMS1-6643">' in rendered
     assert "openCaseFromHash" in rendered
+    assert "<h2>0 Failures in txt Report</h2>" in rendered
+
+
+def test_integrated_report_failure_heading_counts_failed_txt_cases(tmp_path):
+    from tools.generate_integrated_evidence_report import write_integrated_evidence_report
+
+    txt = tmp_path / "run.txt"
+    txt.write_text(
+        "Summary: 1 Pass / 2 Fail\n"
+        "[EMS1-1][test_a] Result Pass (0.10s)\n"
+        "[EMS1-2][test_b] Result Fail (0.20s)\n"
+        "[EMS1-3][test_c] Result Fail (0.30s)\n",
+        encoding="utf-8",
+    )
+    allure_dir = tmp_path / "allure"
+    allure_dir.mkdir()
+    output = tmp_path / "run_integrated.html"
+
+    rendered = write_integrated_evidence_report(
+        txt_report=txt, legacy_html=tmp_path / "run.html", allure_dir=allure_dir, output=output
+    ).read_text(encoding="utf-8")
+
+    assert "<h2>2 Failures in txt Report</h2>" in rendered
+    assert "8 Failures" not in rendered
+    assert rendered.count('">open detail</a>') == 2
+
+    txt.write_text("[EMS1-2][test_b] Result Fail (0.20s)\n", encoding="utf-8")
+    single = write_integrated_evidence_report(
+        txt_report=txt, legacy_html=tmp_path / "run.html", allure_dir=allure_dir, output=output
+    ).read_text(encoding="utf-8")
+    assert "<h2>1 Failure in txt Report</h2>" in single
 
 
 def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):

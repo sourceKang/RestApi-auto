@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-06（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-07（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -438,6 +438,97 @@
 - 未納入版控（維持原狀）：已 staged 的刪除 tools/update_testlink_multi_node_notes.py；
   未追蹤的 docs/qa_bug_drafts/、docs/sop/、.claude/skills/ems-version-regression/、
   .codex/skills/ems-version-regression/。
+
+### 2026-10-07 integrated 報表摘要卡片改用實際資料（Claude Code）
+
+- 分支 claude/stoic-gates-76f17f（worktree），基準 `0d79302`；未 commit。
+- 問題：tools/generate_integrated_evidence_report.py 的 Node 卡片寫死 `Node3`，
+  缺值時預設 `Taiwan_NeoX-03_169.58`／`NXC400`；pytest raw 卡片寫死
+  `422 / 28 / 5` 與「26 failed + 2 broken」，每份報表都顯示舊執行的數字。
+- 修正：Node 卡片值取 txt 的 `Node Name`，note 為 `Chassis: <Node Chassis>`，
+  缺值顯示 `N/A`。新增 `allure_status_counts()`，由已載入的 Allure result
+  統計 passed／failed＋broken／skipped，note 列出 failed 與 broken 各自數量，
+  其他狀態另列 unknown。`render_report()` 多一個 `results` 參數（唯一呼叫端
+  `write_integrated_evidence_report()` 已同步）。
+- 測試：tests/test_reporting.py 的
+  `test_write_reports_generates_integrated_evidence_report_by_default` 加入
+  failed／broken／skipped 各一筆 Allure result，斷言卡片為 `DemoNode`／
+  `Chassis: IES4204` 與 `1 / 2 / 1`、`1 failed + 1 broken`，且不含舊值。
+- 驗證：py_compile 通過；`pytest tests/test_reporting.py --skip-dut-preflight -q`
+  11 passed。本次 pytest session 自己產生的 integrated 報表卡片為
+  `11 / 0 / 0`，與實際結果一致。worktree 內沒有 .venv，使用主 repo 的
+  `.venv/Scripts/python.exe` 執行。
+- pytest session 寫入的 worktree `reports/`（0 個 case 的報表與
+  `.allure-results-current`）經使用者同意已刪除。
+- 未處理：同一頁的「8 Failures in txt Report」標題也是寫死數字，本次未改。
+
+### 2026-10-07 reports/ 整理規劃（Claude Code，僅盤點與規劃）
+
+- 主 repo `reports/` 唯讀盤點：各 build 資料夾的 txt 報表中，0 個 case 的
+  空報表 813 份、部分執行 566 份、完整執行（≥200 case）46 份；體積主要是
+  Allure 附件（b10 約 991 MB／31 萬檔，已量測的 11 個 build 合計約 1.9 GB）。
+- 程式／設定依賴、不可搬動的路徑：`<version>_<target>/`、
+  `.allure-results-current/`、`multi_node/`、`device-verification/`、
+  `stale_cleanup/`、`swagger-readonly/`、`neox_ug_text.txt`、
+  `testlink_backfill_steps.json`。
+- 已確認：版本線保存規則（記在 project-context.md「報表保存」）。
+- 規劃中（未實作）：原始輸出不動，新增 `reports/_index/`（runs、
+  case_history、人工標記的 formal_runs），最上層雜檔依版本號歸到
+  `_archive/<版本號>/<用途>/`。
+- 已確認：版本順序 b1～b13 → `03.00.11 (AAVV.221)C0`（正式發行，可能另測）
+  → `03.00.12 (AAVV.221) b1`。C0 是正式發行版，有問題時會以同一版本字串
+  測試好幾次。
+- 已確認保存方式（2026-10-07 修正）：使用者會看步驟結果與完整
+  request／response，因此保留的執行連同 Allure 一起保留。C0 有測就保留
+  C0 各輪；C0 沒測就保留最後一個 build 的正式執行；case_history 全部保留。
+- 已確認需求：比對檢視要有步驟差異；未來可能需要跨 build 比對同一步驟的
+  request／response。
+- 已確認分享範圍：偶爾給老闆或 RD 看，不常發生。
+- 使用者確認計畫後完成階段 1a＋1b（未 commit）：
+  - 新增 tools/build_report_index.py（索引、case 歷史矩陣、比對與步驟差異）、
+    tests/test_report_index.py（9 項）。
+  - utils/redaction.py 新增 `redact_text()`（自由文字中的敏感 key=value 遮罩，
+    含 devKey）。
+  - integrated 報表加入依網址 `#<case ID>` 自動展開該 case 的 script。
+  - 用法見 project-context.md「歷史結果查詢與 regression 比對」。
+- 驗證：py_compile 通過；test_report_index／test_reporting／test_diagnostics／
+  test_run_multi_node／test_service_bundle／test_collection_reporting 69 passed；
+  collect-only 666 tests。對主 repo reports/ 實跑（約 13 秒，1425 次執行、
+  14 個 build、8 個 node），已寫入 `D:\RestApi auto\reports\_index\`。抽查
+  b12_redhat NODE3：11-22-12 251/3、13-34-09 249/5、09-54-36 252/2、judged
+  254/0，與先前紀錄一致；b11 → b12_redhat 自動比對列出 Regression 候選
+  EMS1-7120（DELETE GE ConnectTimeout）、EMS1-6903（RemoteDisconnected），
+  皆標為不穩定，與先前判定（.100 連線中斷）相符。index.html 不含 IP。
+- 待使用者：檢視 `reports/_index/index.html`，在 `formal_runs.yaml` 標記各
+  build 的正式執行（檔案內已列出目前暫用的執行，取消註解即可）。
+- 階段 1c 完成（未 commit）：新增 tools/case_step_diff.py 與
+  tests/test_case_step_diff.py；build_report_index 改用其共用的步驟對齊與
+  Allure 載入（移除重複實作），新增 `--case`，比對時自動產生
+  `_index/cases/` 步驟並排頁。動態欄位清單依實測決定：b12_redhat 兩次
+  NODE3 完整執行 6870 個對應附件中 `response.elapsed` 有 3433 個不同。
+  實際資料抽查 EMS1-7120（b11 → b12_redhat）：9 個 variant 中只有
+  vlan_tls 在 `DELETE /configNeoXSeries/interface/ge/...` 由 passed 變 broken
+  （ConnectTimeout），之後步驟缺失；其餘 variant 0 個步驟差異。頁面無 IP，
+  sessionid 維持遮罩。已重產 `reports/_index/`，formal_runs.yaml 未被改動
+  （檔案 checksum 前後相同）。
+- 階段 2 工具完成、尚未搬移：新增 tools/archive_reports.py 與
+  tests/test_archive_reports.py。對主 repo reports/ dry run：搬移 74 項
+  （25743 檔、60.5 MB），保留 28 項，未分類 0 項；`full-probes`、
+  `negative-probes` 因被 configs/neox_config/ge/neox_ge_full_accepted_payload.json
+  引用而保留。
+- 2026-10-07 經使用者同意執行 `--apply`（執行前確認僅有 D:\EMS web auto 的
+  pytest 在跑，不寫入本專案 reports/）：搬移 74 項（probes 20、logs 6、
+  runs 8、analysis 12、testlink 28）、25743 檔、60,518,543 bytes 到
+  `reports/_archive/03.00.11/`，逐項檢查檔案數與大小皆與 MANIFEST.csv 相符，
+  原位置皆已不存在；再次 dry run 無待搬項目。reports/ 最上層剩 29 項。
+- 驗證：相關離線測試 81 passed；collect-only 677 tests；compileall 通過
+  （tools/check_environment.py 既有的 SyntaxWarning 非本次修改）。
+- 尚未做：階段 3（03.00.12 b1 有結果後刪除 03.00.11；刪除前需處理上述
+  config 對 b7 報表與 device-verification 的引用）。
+- 更正：先前記錄「部分舊報表 Node Name 本身是亂碼」有誤。檢查原始位元組，
+  這些值是正確的 UTF-8 中文（`北京_NeoX-03_169.58` 182 份、
+  `費城_IES5206_169.54` 1 份），亂碼只是 agent 終端機以 cp950 顯示 UTF-8
+  輸出造成；index.html／runs.csv／case_history.csv 皆正確寫入，無 U+FFFD。
 
 ## 下一步
 

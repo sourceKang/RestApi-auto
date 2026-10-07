@@ -76,6 +76,58 @@ EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定�
 - 完整測試約 1.5 小時，超過 agent 背景工作的時間上限（30 分鐘）；需要長時間執行時
   改用獨立程序（例如 PowerShell `Start-Process`）並另外監看結果。
 
+### 報表保存
+
+- 以版本號區分版本線（例如 `03.00.11`、`03.00.12`），專案代碼
+  `(AAVV.221)` 不用來區分。版本順序：`03.00.11 (AAVV.221) b1`～`b13` →
+  `03.00.11 (AAVV.221)C0`（正式發行，可能另外測試）→ `03.00.12 (AAVV.221) b1`。
+  C0 若有問題會以相同版本字串測試好幾次，各次只能以執行時間區分。
+- 下一條版本線的第一個 build 有測試結果後，前一條版本線的所有 build 報表
+  即可刪除。例：`03.00.12 (AAVV.221) b1` 有結果後，刪除
+  `03.00.11 (AAVV.221)` 的 b1～b13（含 `b12_redhat` 等 target 變體）
+  （使用者確認，2026-10-07）。
+- 刪除時保留比對基準，且保留的執行連同 Allure 原始資料一起保留（步驟的完整
+  request／response 只在 Allure，integrated 報表每個附件只預覽 6000 字）：
+  C0 有測就保留 C0 各輪；C0 沒測就保留最後一個 build 的正式執行。
+  一次 NODE3 完整執行的 Allure 約 8 MB／1 萬檔。
+- 刪除前先列出清單與大小給使用者確認；agent 不自行永久刪除。
+- 刪除前也要檢查版控檔案是否引用要刪的報表：例如
+  `configs/neox_config/ge/neox_ge_full_accepted_payload.json` 以
+  `reports/03.00.11 (AAVV.221) b7/...txt`、`reports/device-verification/...`、
+  `reports/full-probes/`、`reports/negative-probes/` 作為佐證來源。
+- 最上層零散檔案用 `tools/archive_reports.py --version-line <版本號>` 歸到
+  `reports/_archive/<版本號>/<logs|testlink|probes|runs|analysis>/`；預設只列出
+  計畫，加 `--apply` 才搬移（不刪除），並記錄在該資料夾的 MANIFEST.csv。
+  程式固定讀寫的路徑、build 資料夾、`YYYYMMDD_` 統整報表，以及版控檔案中
+  出現 `reports/<名稱>` 的項目都會保留原位。
+
+### 歷史結果查詢與 regression 比對
+
+`tools/build_report_index.py` 掃描 `reports/<version>[_<target>]/*.txt` 與
+`reports/multi_node/*/summary.json`，在 `reports/_index/` 產生索引（只新增
+索引檔，不搬動或修改既有報表；約十幾秒）：
+
+~~~powershell
+.\.venv\Scripts\python.exe tools/build_report_index.py
+.\.venv\Scripts\python.exe tools/build_report_index.py --compare "03.00.11 (AAVV.221) b12_redhat" "03.00.11 (AAVV.221) b13" --node NODE3
+~~~
+
+- `index.html`：各 node 最新比對（Regression 候選／既有問題／已修復／
+  新增／移除，含第一個狀態不同的步驟與失敗訊息）、case × build 歷史矩陣、
+  所有執行清單。結果連到 integrated 報表的 `#<case ID>`，開啟時自動展開步驟。
+- `runs.csv`、`case_history.csv`：每次執行／每個 case 每次執行一列。
+- `formal_runs.yaml`：人工標記各 build × node 的正式判定執行（C0 可列多輪，
+  `final: true` 為最終輪）；工具不會覆寫。未標記時暫用該 build 最後一次完整
+  執行（≥ 同 build 最大 case 數 80%，且 ≥ 版本線最大 case 數 50%）。
+- `--compare` 的參數可為 build 目錄（取 `--node` 的正式執行）或
+  `<build 目錄>/<run_id>`；加 `--case <case ID>` 只產生該 case 的步驟並排頁。
+- 比對中結果有變化或持續失敗的 case 會產生 `_index/cases/` 步驟並排頁：
+  逐步對齊兩次執行，列出 request／response 欄位差異與兩邊完整 JSON。
+  request URL 的 EMS 主機會先去除；耗時、時間、告警流水號、光功率標為
+  「可能為動態值」，顯示但不計入差異數（依兩次 NODE3 完整執行實測）。
+- node 以報表的 `Node IP` 對應有 `_NODEx` 標籤的報表；步驟差異的訊息會遮罩
+  敏感值與 IP。
+
 ## 本機檢查與外部驗證
 
 從專案根目錄執行，先確認 interpreter 存在：

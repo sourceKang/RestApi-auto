@@ -239,6 +239,11 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
 """.strip(),
         encoding="utf-8",
     )
+    for index, status in enumerate(("failed", "broken", "skipped"), start=1):
+        (allure_current / f"extra{index}-result.json").write_text(
+            f'{{"name": "test_extra_{status}", "status": "{status}", "start": 1, "stop": 2}}',
+            encoding="utf-8",
+        )
     config = SimpleNamespace(
         rootpath=tmp_path,
         option=SimpleNamespace(
@@ -266,6 +271,18 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
     assert "EMS1-6643 / test_get_device_all" in rendered
     assert "Request / payload" in rendered
     assert "EMS response" in rendered
+    assert (
+        '<div class="label">Node</div><div class="value">DemoNode</div>'
+        '<div class="note">Chassis: IES4204</div>'
+    ) in rendered
+    assert (
+        '<div class="label">pytest raw</div><div class="value">1 / 2 / 1</div>'
+        '<div class="note">passed / failed / skipped; failed includes Allure 1 failed + 1 broken</div>'
+    ) in rendered
+    assert "Node3" not in rendered
+    assert "422 / 28 / 5" not in rendered
+    assert '<section id="EMS1-6643">' in rendered
+    assert "openCaseFromHash" in rendered
 
 
 def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):

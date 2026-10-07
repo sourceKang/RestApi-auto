@@ -620,6 +620,19 @@
   合併為 `6ebf890`（2026-10-07 08:40 UTC）。預設分支 push CI（run 37595353641）
   也通過，約 44 秒。
 
+### 2026-10-07 PR #10 合併（Claude Code）
+
+- 內容：`7c1cf66`（PR #9 紀錄）、`2d25b9e`（ems-version-regression skill 原樣
+  收進版控）、`7b0ee4b`（步驟 5.1 改用 build_report_index `--compare`、比對頁
+  短檔名）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`c6ab1bf`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `7b0ee4b` 一致，相關測試 35 passed；之後 `merge --abort` 並移除 scratch
+  worktree。
+- PR #10 CI 通過（31 秒），確認 PR head 仍為 `7b0ee4b` 後以 merge commit
+  合併為 `a8d0215`（2026-10-07 09:22 UTC）。預設分支 push CI（run 37600210135）
+  也通過，約 34 秒。
+
 ### 2026-10-07 ems-version-regression skill 收進版控、步驟 5.1 改用索引工具（Claude Code）
 
 - 使用者決定把 skill 收進版控：從主 checkout（未追蹤）原樣複製

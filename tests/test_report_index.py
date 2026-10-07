@@ -198,8 +198,52 @@ def test_formal_runs_choose_reference_run_and_report_unknown_entries(tmp_path):
     reference = index.reference_run(B12, "NODE3")
     assert reference.run_id == "2026-10-01_11-22-12_NODE3_judged"
     assert reference.formal == "final"
+    header = rindex.render_comparison(index, reference, index.find_run(B13, "NODE3"), [])
+    assert "（正式（最終））" in header
+    assert "（未標記，暫用最後一次完整執行）" in header
+    assert "（final）" not in header
     assert index.reference_run(B13, "NODE3").run_id == "2026-10-05_09-00-00"
     assert any("2026-10-05_99-99-99" in warning for warning in index.warnings)
+
+
+def test_formal_runs_match_parallel_nodes_sharing_a_timestamp(tmp_path):
+    reports = tmp_path / "reports"
+    build = reports / "03.00.11 (AAVV.221) b2"
+    for chassis, ip, name in (("NeoX-03", "192.0.2.204", "Noex-03_204"), ("NeoX-06", "192.0.2.202", "Noex-06_202")):
+        _write_txt(
+            build,
+            f"Web_Ems_Rest_Api_b2_{chassis}_NXC400_report_2026-05-27_11-46-06.txt",
+            generated="2026-05-27_11-46-06",
+            version="03.00.11 (AAVV.221) b2",
+            cases=[("EMS1-1", "test_a", "Pass")],
+            node_ip=ip,
+            node_name=name,
+        )
+    formal = tmp_path / "formal_runs.yaml"
+    formal.write_text(
+        yaml.safe_dump(
+            {
+                "03.00.11 (AAVV.221) b2": {
+                    "Noex-03_204": [{"run": "2026-05-27_11-46-06", "final": True}],
+                    "Noex-06_202": [{"run": "2026-05-27_11-46-06", "final": True}],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    index = rindex.build_index(reports, formal)
+
+    assert index.warnings == []
+    assert {run.node: run.formal for run in index.runs} == {"Noex-03_204": "final", "Noex-06_202": "final"}
+    selector = "03.00.11 (AAVV.221) b2/2026-05-27_11-46-06"
+    try:
+        index.find_run(selector, None)
+    except ValueError as error:
+        assert "add --node" in str(error)
+    else:
+        raise AssertionError("ambiguous run id must require --node")
+    assert index.find_run(selector, "Noex-06_202").node_ip == "192.0.2.202"
 
 
 def test_compare_runs_classifies_cases_and_names_first_differing_step(tmp_path):

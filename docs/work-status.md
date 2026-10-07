@@ -574,6 +574,40 @@
   也通過，約 38 秒。
 - 空報表源頭修正在 PR #7 合併後才 push 到工作分支，未包含在 PR #7。
 
+### 2026-10-07 標記正式執行與索引修正（Claude Code）
+
+- 依使用者指示編輯 `reports/_index/formal_runs.yaml`（本機、不進版控）：
+  14 個 build、23 個 build × node 全部標為 final；b12_redhat NODE3 採
+  `2026-10-02_09-54-36_NODE3_judged`（note：EMS1-7120／EMS1-6903 為 .100
+  連線中斷，依 10-02 14:25 單獨重跑判定 Pass），其他沿用當時暫用的最後一次
+  完整執行。編輯前備份在 agent scratchpad。
+- 重產索引時發現工具缺陷：b2 有 3 個時間點是兩個 node 平行執行、txt 檔名
+  沒有 `_NODEx`，run_id 在同一 build 內重複，formal_runs 比對誤報
+  「屬於 Noex-06，不是 Noex-03」。修正 tools/build_report_index.py：
+  formal_runs 以（build、node、run_id）比對；`--compare <build>/<run_id>`
+  遇到多個 node 時要求 `--node`。比對標題改顯示「正式（最終）／正式」，
+  不再顯示 `final`。tests/test_report_index.py 新增對應測試。
+- 驗證：相關離線測試 85 passed、collect-only 681；重產後無 warning，
+  index 中沒有「未標記」。各 node 最新比對：NODE1 b12 → b13 已修復 3；
+  NODE3 b11 → b13、b11 → b12_redhat 皆無差異（b12_redhat 以判定版為基準，
+  EMS1-7120／6903 不再列為 Regression 候選）。
+- `_index/cases/` 中先前產生、已無連結的 EMS1-6903、EMS1-7120 步驟頁經
+  使用者同意刪除；確認刪除前 index.html 對它們的連結為 0，正式結果
+  （case_history 中 b12_redhat 判定版皆 Pass）不受影響。工具重產時不會
+  自動刪除舊步驟頁。
+
+### 2026-10-07 PR #8 合併（Claude Code）
+
+- 內容：`669b2f1`（沒有 TestLink case 的 session 不寫報表，含 PR #7 紀錄）。
+- 合併前 dry run：在 scratch worktree 對 `codex/prepare-github-upload`
+  （`132f88d`）執行 `git merge --no-commit --no-ff`，零衝突，合併結果與
+  `669b2f1` 一致，相關測試 57 passed；之後 `merge --abort` 並移除 scratch
+  worktree。試合併時計到的 6 個 `.txt` 經重跑確認都是
+  `.allure-results-current/` 內的 Allure 附件，不是報表。
+- PR #8 CI 通過（34 秒），確認 PR head 仍為 `669b2f1` 後以 merge commit
+  合併為 `6ebf890`（2026-10-07 08:40 UTC）。預設分支 push CI（run 37595353641）
+  也通過，約 44 秒。
+
 ## 下一步
 
 0. b12_redhat 回歸、TestLink 回填與合併都已完成。

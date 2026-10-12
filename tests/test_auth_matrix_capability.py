@@ -61,3 +61,58 @@ def test_rad_readwrite_without_ge_target_omits_ge_service_requests():
     assert not has_ge_target(env)
     assert all(not path.startswith("/geservice") for _method, path, _session in client.requests)
     assert any(path.startswith("/ontservice/") for _method, path, _session in client.requests)
+
+
+class _RemoteApiClient(_SuccessApiClient):
+    def __init__(self, remote_retval):
+        super().__init__()
+        self.remote_retval = remote_retval
+
+    def request(self, method, path, **kwargs):
+        response = super().request(method, path, **kwargs)
+        if path.startswith("/remote/"):
+            self.remote_payload = kwargs.get("json")
+            return ApiResponse(
+                status_code=200,
+                json={"retstatus": "Success", "retresult": "", "retval": self.remote_retval},
+                text="",
+                elapsed=0.0,
+                request_id="unit",
+                method=method,
+                url=f"https://ems.invalid{path}",
+            )
+        return response
+
+
+def _env_with_device():
+    env = _env(ge_target=False)
+    env.dut.device_name = "UNIT_DEVICE"
+    return env
+
+
+def test_rad_readwrite_skips_remote_console_unless_enabled():
+    client = _RemoteApiClient({"return": ["Firmware version V1.02"]})
+
+    AuthMatrixService(client).verify_rad_readwrite_summary(_env_with_device(), "rad-rw")
+
+    assert all(not path.startswith("/remote/") for _method, path, _session in client.requests)
+
+
+def test_rad_readwrite_runs_read_only_remote_console_when_enabled():
+    client = _RemoteApiClient({"return": ["Firmware version V1.02"]})
+
+    AuthMatrixService(client).verify_rad_readwrite_summary(_env_with_device(), "rad-rw", include_remote=True)
+
+    assert ("POST", "/remote/UNIT_DEVICE", "rad-rw") in client.requests
+    assert client.remote_payload == {"command": ["show version"]}
+
+
+def test_rad_readwrite_remote_console_requires_command_output():
+    client = _RemoteApiClient({"return": []})
+
+    try:
+        AuthMatrixService(client).verify_rad_readwrite_summary(_env_with_device(), "rad-rw", include_remote=True)
+    except AssertionError as error:
+        assert "version" in str(error)
+    else:
+        raise AssertionError("Remote console without CLI output must fail")

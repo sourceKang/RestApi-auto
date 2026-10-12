@@ -5,8 +5,15 @@ import json
 from uuid import uuid4
 
 from cases.case_catalog import profile_definition_by_name
-from cases.payloads import ge_service_payload, ge_service_modified_payload, ont_service_payload, ont_service_modified_payload
-from utils.allure_helpers import allure_step
+from cases.payloads import (
+    ge_service_modified_payload,
+    ge_service_payload,
+    ont_service_modified_payload,
+    ont_service_payload,
+    remote_console_payload,
+)
+from services.remote.service import assert_remote_console_success, remote_console_output
+from utils.allure_helpers import allure_step, attach_text
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.case_metadata import attach_case_id
 
@@ -18,7 +25,7 @@ class AuthMatrixService:
     def __init__(self, api_client) -> None:
         self.api_client = api_client
 
-    def verify_rad_readwrite_summary(self, env_config, session_id: str) -> None:
+    def verify_rad_readwrite_summary(self, env_config, session_id: str, *, include_remote: bool = False) -> None:
         attach_case_id("EMS1-7056", "rad_external_readwrite_summary", summary_group="RAD-RW")
 
         with allure_step("Verify RAD readwrite account can read representative inventory, provision and alarm endpoints"):
@@ -71,6 +78,25 @@ class AuthMatrixService:
                 assert_api_success(delete)
         finally:
             self.delete_profile_if_present(session_id, definition)
+
+        if not include_remote:
+            attach_text(
+                "RAD readwrite remote console",
+                "Skipped: remote console checks require --run-remote or --run-full-testcases.",
+            )
+            return
+        with allure_step("Verify RAD readwrite account can run a read-only remote console command"):
+            remote_response = self.api_client.request(
+                "POST",
+                f"/remote/{env_config.dut.device_name}",
+                session=session_id,
+                json=remote_console_payload(env_config, "RAD_AUTH_MATRIX"),
+            )
+            assert_remote_console_success(remote_response, command="show version", expected_output_tokens=("version",))
+            output = remote_console_output(remote_response)
+            assert "version" in output.casefold(), (
+                f"RAD readwrite remote console 'show version' returned no version output: {output!r}"
+            )
 
     def verify_rad_readonly_summary(
         self,

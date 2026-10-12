@@ -456,3 +456,74 @@ def test_worker_report_dir_preserves_existing_allure_results(tmp_path):
     assert config.option.allure_report_dir == str(allure_current)
     assert config.option.clean_alluredir is False
     assert sentinel.exists()
+
+
+def test_mask_values_replaces_every_known_secret_longest_first():
+    from utils.redaction import mask_values
+
+    text = "credentials = ('admin', 'Secret123!') connect(password='Secret123')"
+
+    masked = mask_values(text, ["Secret123", "Secret123!", ""])
+
+    assert "Secret123" not in masked
+    assert masked.count("***REDACTED***") == 2
+
+
+def test_auth_config_password_values_lists_every_resolvable_account(tmp_path):
+    from config_loader.auth import load_auth_config
+
+    auth_file = tmp_path / "auth_accounts.yaml"
+    auth_file.write_text(
+        "version: 1\n"
+        "\n"
+        "profiles:\n"
+        "  default:\n"
+        '    readwrite_account: "default"\n'
+        '    readonly_account: "default"\n'
+        '    noaccess_account: "default"\n'
+        "accounts:\n"
+        "  readwrite:\n"
+        "    default:\n"
+        '      username: "rw"\n'
+        '      password: "rw-pass"\n'
+        "    broken:\n"
+        '      username: "no-password"\n'
+        "  readonly:\n"
+        "    default:\n"
+        '      username: "ro"\n'
+        '      password: "ro-pass"\n',
+        encoding="utf-8",
+    )
+
+    assert load_auth_config(auth_file).password_values() == {"rw-pass", "ro-pass"}
+
+
+def test_makereport_hook_masks_known_secrets_in_failed_report(monkeypatch):
+    from tests.support import reporting_hooks
+
+    monkeypatch.setattr(reporting_hooks, "_known_secret_values", lambda config: ("Secret123!",))
+    traceback_text = "credentials = ('admin', 'Secret123!')\nE   TypeError: boom"
+    report = SimpleNamespace(failed=True, longrepr=traceback_text, longreprtext=traceback_text)
+
+    hook = reporting_hooks.pytest_runtest_makereport(item=SimpleNamespace(config=None), call=None)
+    next(hook)
+    try:
+        hook.send(SimpleNamespace(get_result=lambda: report))
+    except StopIteration:
+        pass
+
+    assert "Secret123!" not in report.longrepr
+    assert "***REDACTED***" in report.longrepr
+    assert "TypeError: boom" in report.longrepr
+
+
+def test_html_and_txt_reports_show_report_notes(monkeypatch):
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-12_12-00-00"))
+    reporting.record_report_note("ONT Inventory Sync", "SLOW 312s (21 polls, over threshold 16)")
+
+    html = reporting._render_html_report(_fake_env())
+    txt = reporting._render_txt_report(_fake_env())
+
+    assert "ONT Inventory Sync" in html
+    assert "SLOW 312s (21 polls, over threshold 16)" in html
+    assert "ONT Inventory Sync: SLOW 312s (21 polls, over threshold 16)" in txt

@@ -44,9 +44,15 @@ class ReportState:
     permission_roles: dict[str, str] = field(default_factory=dict)
     results: list[CaseResult] = field(default_factory=list)
     session_metrics: dict[str, Any] = field(default_factory=dict)
+    report_notes: dict[str, str] = field(default_factory=dict)
 
 
 REPORT_STATE = ReportState()
+
+
+def record_report_note(label: str, value: str) -> None:
+    """Add a run-level note shown in the txt and HTML report headers (e.g. a slow EMS sync)."""
+    REPORT_STATE.report_notes[label] = value
 
 SESSION_METRIC_FIELDS = (
     "login_requests",
@@ -266,6 +272,7 @@ def _render_txt_report(env_config: Any) -> str:
     lines.extend(_card_version_lines(env_config))
     lines.extend(_target_summary_lines(env_config))
     lines.extend(_session_metric_lines())
+    lines.extend(_report_note_lines())
     lines.extend(["", "Test Results:", "-------------"])
 
     for result in rendered_results:
@@ -315,6 +322,7 @@ def _render_html_report(
     metadata.extend(_split_label_value(line) for line in _card_version_lines(env_config))
     metadata.extend(_split_label_value(line) for line in _target_summary_lines(env_config))
     metadata.extend(_split_label_value(line) for line in _session_metric_lines())
+    metadata.extend(_split_label_value(line) for line in _report_note_lines())
 
     links = []
     if integrated_html:
@@ -383,6 +391,10 @@ def _split_label_value(line: str) -> tuple[str, str]:
     if not separator:
         return line, ""
     return label, value.strip()
+
+
+def _report_note_lines() -> list[str]:
+    return [f"{label}: {value}" for label, value in REPORT_STATE.report_notes.items()]
 
 
 def _session_metric_lines() -> list[str]:

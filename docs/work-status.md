@@ -1,11 +1,11 @@
 # 共用工作進度
 
-更新日期：2026-10-07（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-12（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
 
-- 負責工具：Claude Code（2026-09-22 ~ 2026-10-06）；先前由 Codex 建立共用
+- 負責工具：Claude Code（2026-09-22 ~ 2026-10-12）；先前由 Codex 建立共用
   協作入口。
 - 分支：codex/neox-profile-read-path-fix（工作分支）。每批變更先在 scratch
   worktree 做 `git merge --no-commit --no-ff` dry run，確認零衝突後才合併進
@@ -639,9 +639,171 @@
 - 驗證：相關離線測試 85 passed、collect-only 681；在 agent scratchpad（長路徑）
   實跑 NODE1 b12 → b13 比對成功。
 
+### 2026-10-08 b13 RedHat（.100）NODE3 完整測試（Claude Code）
+
+- 主 checkout 的 codex/neox-profile-read-path-fix fast-forward 到預設分支 `a8d0215`；
+  原本未追蹤的 ems-version-regression skill 檔（已被版控較新版本取代）先移到
+  scratchpad 備份。configs/ems.yaml 的 redhat version 改為 b13（使用者確認 .100 已
+  升級），尚未 commit。TestLink：使用者指示本次不建 build、不回填。
+- OpenAPI：b13 安裝包沒有新 OpenAPI 檔，最新仍為 20260716；guard local-only 12 passed、
+  live（.100）15 passed。
+- 完整測試（reports/multi_node/2026-10-08_09-29-30，獨立程序）：pytest 309 passed、
+  4 failed、4 errors（1:44:13）；TestLink 247 Pass／7 Fail（254）。runner 這次正常寫出
+  summary（UTF-8 修正有效）。
+- build_report_index 比對 b12_redhat 判定版 → b13_redhat（未標記，暫用最後一次完整執行）：
+  Regression 候選 7，其他 0（compare_NODE3_b12_redhat_vs_b13_redhat_37b4f9aebd.html）。
+- 分類：
+  1. RAD external EMS1-7056／7107／7108：`Invalid username.`。測完後以 SessionManager
+     直接登入仍失敗，EMS 本機帳號正常；b12_redhat 三次都 Pass。推測為 .100 升級後的
+     RADIUS 設定或連線，未確認。單獨重跑因前置條件（需 ONT service）被 skip。
+  2. .100 連線中斷 EMS1-7110（[EMS1-6673] noaccess）、7133、6814、6930：單獨重跑
+     （..._2026-10-08_11-26-35_NODE3_rerun.txt）皆 Pass。第一次單獨重跑因 timeout
+     設定過短被中止（`ont_config_error` 曾印 FAILED，原因不明），沒有殘留。
+  3. EMS1-7223 SFU：txt 為 Pass，但 cleanup 還原 ONT 時 ONT 重新註冊、description 未在
+     時限內恢復（teardown error）。txt／TestLink 只記 call 階段，teardown 失敗不會反映。
+- 還原：測完與重跑後以 REST＋CLI 確認 ONT 為 baseline（IS、description
+  REST_API_NEOX_ONT、無 template、無 ONT service）。
+- 報表：reports/20261008_03.00.11-AAVV.221-b13_redhat_NODE3_regression.html。
+
+### 2026-10-08 b13 RedHat NODE3 第二次完整測試與補測（Claude Code）
+
+- 第 2 次完整測試（reports/multi_node/2026-10-08_13-54-45）：pytest 286 passed、8 failed、
+  22 skipped（1:33:14）；TestLink 235 Pass／7 Fail／11 Skip，EMS1-6668 因被 skip 未列入 txt。
+  - 開頭 ONT inventory 檢查失敗：ONT service 已 Success，但 `/ont/sn` templateName 4 分鐘
+    內一直是空的，依賴 ONT 的 case（含 RAD external）被 skip。推測 inventory 同步延遲，未確認。
+  - .100 連線中斷：EMS1-6904、6908、6919、7133、7223。
+  - NODE3 SSH／CLI：EMS1-7172 CLI 輸出空白、EMS1-7176 SSH 連線逾時（都在 14:46），REST 皆成功。
+- 補測：38 筆（含 ONT service 前置，..._2026-10-08_15-29-51_NODE3_rerun2.txt）35 passed，
+  RAD 因缺 GE service 前置被 skip；RAD 正式測試（含 ONT／GE service 前置，
+  ..._2026-10-08_16-00-39_NODE3_rad.txt）3 筆 Pass。
+- RAD external：09:33 與 11:40 都 `Invalid username.`；15:59 直接登入恢復、16:00 測試 Pass。
+  本端沒有修改設定，恢復原因不明。
+- 合併兩次完整測試與補測：254 個 case 全部 Pass。build_report_index 兩次比對 b12_redhat 判定版
+  各列 7 筆 Pass → Fail（第 2 次另有 1 筆「移除」＝EMS1-6668），重跑後都已消除。
+- 還原：每次測試後 REST＋CLI 確認 ONT baseline；16:05 GE／ONT service 皆 No data found。
+- 報表已重寫為統整版：reports/20261008_03.00.11-AAVV.221-b13_redhat_NODE3_regression.html。
+
+### 2026-10-08 b13 RedHat NODE3 第三次完整測試（Claude Code）
+
+- reports/multi_node/2026-10-08_16-14-53：pytest 311 passed、5 failed（1:39:48）；TestLink
+  249 Pass／5 Fail，無 Skip。RAD external、ONT inventory 檢查皆通過。
+- .100 連線中斷 4 筆：EMS1-7145、7153（neox_profile_error）、6903、6904。
+- EMS1-7120 `[vlan_trunk_ether]` `TypeError: cannot unpack non-iterable NoneType object`：
+  clients/ssh_cli.py `SshSessionPool.acquire()` 在 `finally` 中 `return`（`timing.error` 時），
+  吞掉 with 區塊內的 SSH 例外，`run_commands()` 回傳 None。底層 SSH 錯誤無法得知。未修正。
+- redaction 缺口：該筆 allure traceback 顯示 `run_neox_cli_commands` 的 credentials 參數，SSH
+  密碼以明文寫入報表（reports/ 不進版控）。未修正。
+- 比對 b12_redhat 判定版：5 筆 Pass → Fail，皆標「不穩定」（compare_..._d4dfa1c719.html）。
+- teardown 無失敗；ONT baseline、ONT／GE service 皆 No data found。
+
+### 2026-10-12 b13 RedHat NODE3 第四次完整測試（Claude Code）
+
+- reports/multi_node/2026-10-12_09-00-54：pytest 308 passed、8 failed（1:37:51）；TestLink
+  246 Pass／8 Fail，無 Skip。RAD external 3 筆 Pass；teardown 無失敗；測後 ONT baseline，
+  ONT／GE service 皆 No data found。
+- .100 連線中斷 7 筆：EMS1-7223、7159、7168、7141、7189、6925、6908。
+- EMS1-7131 `ont_config_min_create`：REST POST 成功，CLI 兩個 show 指令輸出 0 行
+  （與 10/08 第 2 次 EMS1-7172 同一模式）；推測框架 CLI 讀取等待不足，未確認。
+- 四次完整測試（247／235／249／246 Pass）沒有任何一筆每次都失敗；共 32 個 case 曾非 Pass，
+  其餘 222 筆四次都 Pass。對照表在 b13 統整報表。
+- 第 4 次與 b12_redhat 比對：compare_NODE3_b12_redhat_vs_b13_redhat_564b917815.html（工具這次耗時數分鐘，
+  第一次被 300 秒 timeout 中止，重跑成功）。
+
+### 2026-10-12 SSH 連線池吞例外與 traceback 密碼外洩修正（Claude Code）
+
+- clients/ssh_cli.py：`SshSessionPool.acquire()` 的 `finally` 不再 `return`，改為沒有錯誤時才
+  release；失敗批次已由 `PooledSshSession` discard（關 session、釋放 token），例外會正常往外拋。
+  新增測試 `test_ssh_session_pool_propagates_command_failure`（修正前 DID NOT RAISE）。
+- 密碼遮罩：pytest 的 traceback 會顯示失敗 frame 的參數 repr（例如 CLI credentials tuple、
+  paramiko `connect(password=…)`），Allure 直接讀 `report.longreprtext`。新增
+  `tests/support/reporting_hooks.py` 的 `pytest_runtest_makereport`（hookwrapper、trylast，
+  只處理失敗 report），以 `utils.redaction.mask_values` 遮罩已知密碼值：auth 設定所有帳號密碼
+  （新增 `AuthConfig.password_values()`）、DUT ssh／ont 密碼、名稱以 PASSWORD 結尾的環境變數。
+  conftest 匯出新 hook。
+- 驗證：單元測試（mask_values、password_values、hook）通過；端到端探針（暫時性失敗測試接收
+  真實 CLI credentials，跑完即刪）確認 allure trace 與終端輸出都顯示 `***REDACTED***`、不含
+  密碼；compileall 通過、collect-only 685、受影響離線測試 155 passed、3 skipped。離線執行產生
+  的空報表已刪除。
+- 既有報表（例如 10/08 第 3 次 EMS1-7120 的 allure 結果與 log）中已寫入的明文密碼未處理。
+
+### 2026-10-12 CLI 輸出空白（EMS1-7131、7172）原因與修正（Claude Code）
+
+- 查證：不是 `_read_available` 等待不足。所有 CLI 指令（含通過的）耗時都約 1.203 秒
+  （first_wait 0.8＋idle_wait 0.4），1.2 秒是常態。EMS1-7131 兩個指令 2.4 秒內完全沒有資料
+  （無回顯），若只是慢，延遲輸出會出現在下一次讀取。兩筆都使用 reused pooled session，
+  用後 `is_healthy()` 判為不健康被丟棄，下一次改建新 session 即正常（7172 後緊接 EMS1-7176
+  新連線逾時）。原因：pooled 通道已失效，`run_command` 未檢查、`_read_available` 回傳 ""，
+  空輸出被當成「設備沒有設定」。通道失效的原因未確認。
+- 修正（clients/ssh_cli.py）：新增 `SshChannelClosedError`；`is_healthy` 一併檢查
+  `eof_received`；`run_command` 送出前檢查通道，讀到空輸出且通道失效時拋例外；
+  `SshSessionPool.run_commands` 只在「reused session、尚未完成任何指令」時換新 session
+  重試一次，`SshTiming.stale_session_retry` 記錄原因（出現在 allure SSH timing 附件）。
+  等待時間未修改。
+- 驗證：新增 4 筆測試（修正前 import 失敗），tests/test_ssh_cli.py 15 passed；compileall、
+  collect-only 689、受影響離線測試 159 passed、3 skipped。
+- 已啟動 NODE3 完整測試（b13，.100，獨立程序）確認 CLI 輸出空白是否消失。
+
+### 2026-10-12 第五次完整測試（含 SSH 修正）與 EMS1-7056 Remote Control（Claude Code）
+
+- 第 5 次完整測試（reports/multi_node/2026-10-12_14-14-02，b13、.100）：pytest 291 passed、
+  3 failed、1 error、22 skipped（1:44:16）；TestLink 240 Pass／2 Fail／11 Skip。
+  - CLI 輸出空白未再出現；`stale_session_retry` 0 次、無 `SshChannelClosedError`（本次未發生
+    通道失效，修正未被觸發）。
+  - ONT inventory 檢查再次失敗（ONT service Success 但 inventory 未同步 template），依賴
+    ONT 的 22 筆 skip（含 RAD）；這是第二次出現，需另外調查。
+  - .100 連線中斷：EMS1-7120 [acl_profile_list]、EMS1-7134 neox_profile_clear[IGMP]；
+    EMS1-7034 本體 Pass，但 teardown 清理時 RemoteDisconnected（pytest error）。
+- EMS1-7056 新增 Remote Control 步驟（services/auth_matrix/service.py，`include_remote`，
+  `--run-remote` 或完整測試時執行；只送 `show version`，需回 Success 且輸出含 version）。
+  離線測試 3 筆新增。單獨測試（ONT／GE service 前置＋`--run-full-testcases`，
+  ..._2026-10-12_16-00-02_NODE3_rad_rw_remote.txt）：EMS1-7056 PASSED；
+  `POST /remote/Taiwan_NeoX-03_169.58 {"command": ["show version"]}` → HTTP 200 Success，
+  輸出 `running image : V1.02(ACKG.1)`。RAD readwrite 可以使用 Remote Control。
+- 單獨測試結束於 `delete_ont_service_by_sn`：ONT 3-16-1 的 remote xont 設定被移除，CLI UnReg，
+  `/ont/sn` No data found（完整測試中後續 NeoX ONT 測試會建回 baseline）。GE／ONT service 皆
+  No data found。是否手動還原 ONT baseline 待使用者決定。
+- TestLink EMS1-7056 的 case 說明需更新以涵蓋 Remote Control（未寫入）。
+
+### 2026-10-12 ONT inventory 同步時間實測與等待調整（Claude Code）
+
+- 實測（使用者同意，NODE3、.100、b13，template `#RestApi_provision_temp_SFU`，腳本在 scratchpad）：
+  - 第 1 次：service 16:25:15 Success；之後 146 秒內 `/ont/sn` templateName 皆空，16:27:56 登入
+    ConnectTimeout 中斷；收尾正常。
+  - 第 2 次：service 16:32:59 Success；**第 162～178.6 秒之間** templateName 出現，同時
+    description 也從 REST_API_NEOX_ONT 改為 ONT service 描述（推測 EMS 整批同步 inventory）；
+    194 秒確認。收尾（刪 service、清設定、還原 baseline、REST＋CLI 驗證）正常，最後 CLI IS。
+  - 對照：第 5 次完整測試 service Success 後 287 秒仍未同步（gate 失敗）。
+- 修改：`InventoryService.wait_for_ont_inventory` 新增 `slow_after_polls`、計算 polls／耗時，
+  每次附 allure「ONT inventory sync timing」；超過門檻附「ONT inventory sync slow」並以
+  `utils.reporting.record_report_note` 寫入 txt／HTML 報表開頭（`ONT Inventory Sync: SLOW …`）；
+  逾時訊息含秒數與次數。tests/support/fixtures.py：`ONT_INVENTORY_SYNC_TIMEOUT_SECONDS = 600`、
+  `ONT_INVENTORY_SYNC_SLOW_POLLS = 16`（使用者指定）。
+- 驗證：新增 5 筆離線測試；既有 3 筆 240 → 600 斷言更新；compileall、collect-only 697、
+  受影響離線測試 170 passed、3 skipped。
+- 已啟動 NODE3 完整測試（第 6 次）；使用者指示：若沒有問題，自動 commit、push、PR、合併。
+
+### 2026-10-12 第六次完整測試與 GitHub 更新（Claude Code）
+
+- 第 6 次完整測試（reports/multi_node/2026-10-12_16-43-10，b13、.100）：pytest 313 passed、3 failed、
+  1 error（1:40:53）；TestLink 251 Pass／3 Fail，無 Skip。
+  - ONT inventory 檢查通過：第 9 次、135.3 秒同步，未超過 16 次門檻（未標記 SLOW）。
+  - RAD external 3 筆 Pass（EMS1-7056 含 Remote Control 步驟）。
+  - CLI 輸出空白未出現；`stale_session_retry`、`SshChannelClosedError` 皆 0。
+  - .100 連線中斷：EMS1-7120 [vlan_translation]、6921、6908。
+  - `ont_config_clear` teardown：還原 baseline 未收斂（第 1 次 `/ont/sn` No data found 120 秒、
+    第 2 次 read timeout）；測後設備已是 baseline。
+- 單獨重跑（..._2026-10-12_18-25-51_NODE3_run6_rerun.txt）：上述 4 筆皆 PASSED，無 teardown 錯誤；
+  ONT baseline（CLI IS、description REST_API_NEOX_ONT、無 service）。
+- 依使用者指示（「若都沒問題自動更新到 GitHub」），判定條件全部符合，進行 commit／push／PR／合併。
+
 ## 下一步
 
-0. b12_redhat 回歸、TestLink 回填與合併都已完成。
+0. b13_redhat：SSH／密碼遮罩／inventory 等待／EMS1-7056 Remote Control 已提交；決定是否清理既有報表中的明文密碼；
+   確認 RAD external 11:40～15:59 恢復的原因；決定 formal_runs.yaml 的
+   b13_redhat NODE3 正式執行；決定 TestLink 是否建 build／回填；commit configs/ems.yaml 的
+   b13 版本。
+0-1. 是否讓 teardown 失敗（cleanup 未收斂）反映到 txt／TestLink 結果，待決定。
+0-2. b12_redhat 回歸、TestLink 回填與合併都已完成。
 0a. .100 連線中斷已判定為 server 資源不足；若 server 資源調整後仍出現，再以報表中
    的時間點查 .100 log，並評估 client 改用共用連線或限定範圍的重試。
 0b. 決定上述未納入版控的變更是否收進版控（qa_bug_drafts、sop、已 staged 的

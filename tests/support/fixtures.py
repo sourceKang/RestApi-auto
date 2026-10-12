@@ -23,6 +23,12 @@ from utils.case_metadata import format_case_title
 from utils.reporting import REPORT_STATE, set_session_metrics
 
 
+# EMS can take minutes to show the ONT service template in /ont/sn (179 s measured on
+# 2026-10-12, over 287 s in failed runs). Syncs slower than the old 240 s limit are flagged.
+ONT_INVENTORY_SYNC_TIMEOUT_SECONDS = 600
+ONT_INVENTORY_SYNC_SLOW_POLLS = 16
+
+
 @pytest.fixture(autouse=True)
 def allure_node_context(env_config, request):
     try:
@@ -341,10 +347,11 @@ def prepare_ont_inventory_with_session_rotation(
         services.inventory.wait_for_ont_inventory(
             session_id=session_id,
             ont_template=str(selected_template),
-            timeout=240,
+            timeout=ONT_INVENTORY_SYNC_TIMEOUT_SECONDS,
             interval=15,
             consecutive_successes=2,
             raise_on_timeout=True,
+            slow_after_polls=ONT_INVENTORY_SYNC_SLOW_POLLS,
         )
     if workflow_state is not None:
         workflow_state.mark_inventory_ready(str(selected_template))

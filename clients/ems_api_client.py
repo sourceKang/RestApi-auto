@@ -13,6 +13,16 @@ from config_loader.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
 from utils.allure_helpers import allure_step, attach_json
 from utils.redaction import redact
+from utils.reporting import record_connection_event
+
+# Waits before resending a GET/HEAD after a connect/read timeout or dropped connection.
+TRANSPORT_RETRY_DELAYS: tuple[int, ...] = (5, 15)
+SAFE_TRANSPORT_RETRY_METHODS = frozenset({"GET", "HEAD"})
+
+
+def _transport_error_summary(exc: Exception) -> str:
+    reason = str(exc).replace("\n", " ")
+    return f"{type(exc).__name__}: {reason[:160]}"
 
 
 class EmsApiClient:
@@ -99,14 +109,13 @@ class EmsApiClient:
             },
         )
 
-        raw = requests.request(
+        raw = self._request_with_transport_retry(
             method.upper(),
+            path,
             url,
             headers=headers,
             params=params,
             json=json,
-            verify=self.verify_tls,
-            timeout=self.timeout,
         )
         elapsed = time.perf_counter() - started
         parsed = self._parse_response(raw)
@@ -129,6 +138,67 @@ class EmsApiClient:
             },
         )
         return response
+
+    def _request_with_transport_retry(
+        self,
+        method: str,
+        path: str,
+        url: str,
+        *,
+        headers: dict[str, str] | None,
+        params: dict[str, Any] | None,
+        json: dict[str, Any] | None,
+    ) -> requests.Response:
+        """Send one request; resend only GET/HEAD after a transport error (see ADR 0002).
+
+        Every transport error is recorded for the report header and Allure. Mutating
+        requests are never resent because EMS may already have applied them.
+        """
+        retry_delays = TRANSPORT_RETRY_DELAYS if method in SAFE_TRANSPORT_RETRY_METHODS else ()
+        max_attempts = len(retry_delays) + 1
+        events = []
+        for attempt in range(1, max_attempts + 1):
+            try:
+                raw = requests.request(
+                    method,
+                    url,
+                    headers=headers,
+                    params=params,
+                    json=json,
+                    verify=self.verify_tls,
+                    timeout=self.timeout,
+                )
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                will_retry = attempt < max_attempts
+                event = record_connection_event(
+                    method,
+                    path,
+                    _transport_error_summary(exc),
+                    attempt=attempt,
+                    max_attempts=max_attempts,
+                    action="retried" if will_retry else "raised",
+                )
+                events.append(event)
+                attach_json(
+                    "EMS connection error",
+                    {
+                        "method": method,
+                        "path": path,
+                        "attempt": attempt,
+                        "max_attempts": max_attempts,
+                        "error": event.error,
+                        "action": event.action,
+                        "retry_delay_seconds": retry_delays[attempt - 1] if will_retry else None,
+                    },
+                )
+                if not will_retry:
+                    raise
+                time.sleep(retry_delays[attempt - 1])
+                continue
+            for event in events:
+                event.recovered = True
+            return raw
+        raise AssertionError("unreachable: transport retry loop exited without a response")
 
     def login(self, credentials: Credentials) -> ApiResponse:
         return self.request(

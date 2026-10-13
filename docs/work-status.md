@@ -796,6 +796,37 @@
   ONT baseline（CLI IS、description REST_API_NEOX_ONT、無 service）。
 - 依使用者指示（「若都沒問題自動更新到 GitHub」），判定條件全部符合，進行 commit／push／PR／合併。
 
+### 2026-10-13 b13 RedHat 統整報表最終版（Claude Code）
+
+- PR #11 已合併（`3f5f96b`，CI 2/2 通過，dry run 零衝突）。
+- reports/20261008_03.00.11-AAVV.221-b13_redhat_NODE3_regression.html 重寫為最終版（腳本在 scratchpad）：
+  6 次完整測試（247／235／249／246／240／251 Pass）、5 次單獨重跑、34 筆曾非 Pass 對照、
+  問題分類、PR #11 修改、inventory 實測。6 次中沒有每次都失敗的 case；220 筆 6 次都 Pass。
+- 第 6 次＋重跑 254 Pass；build_report_index 比對 b12_redhat 判定版 → 第 6 次：Pass → Fail 3
+  （即 3 筆連線中斷），其他 0（compare_..._5cb0e63355.html）。
+- 最終判定建議（待使用者確認）：254 Pass，以第 6 次（2026-10-12_16-43-12_NODE3）＋重跑
+  （2026-10-12_18-25-51_NODE3_run6_rerun）為正式執行；保留 RAD 10/08 失效原因不明等事項。
+
+### 2026-10-13 b13_redhat 判定與 TestLink 回填（Claude Code）
+
+- 使用者同意判定 254 筆全部 Pass。
+- 判定版 txt：..._2026-10-12_16-43-12_NODE3_judged.txt（第 6 次為基礎，EMS1-7120 [vlan_translation]／
+  6921／6908 改用 2026-10-12 18:25 重跑 Pass，Summary 254／0，檔頭 Judgement 說明；原始 txt 未改）。
+- reports/_index/formal_runs.yaml：b13_redhat NODE3 final = 2026-10-12_16-43-12_NODE3_judged（附 note）。
+- TestLink：預覽 `b13-redhat-node3-20261013` 254 筆 p、warnings 0、ignored 0、build id 20644、
+  platform NetAtlas EMS，ID 與判定版一致；寫入前抽查 build 20644 無既有 execution；寫入 completed，
+  254 筆、0 錯誤（2026-10-13 09:05）。get_last_result 抽查 EMS1-6640、7056、7120 皆 p。
+- 統整報表首屏改為最終判定並記錄回填。
+
+### 2026-10-13 TestLink EMS1-7056 case 說明更新（Claude Code）
+
+- 經使用者同意（精簡版），以 testlink_update_testcase 更新 EMS1-7056（version 2 原地更新，
+  modification_ts 2026-10-13 10:13:54）：summary「驗證 RAD readwrite 帳號的讀取、寫入與 Remote
+  Control 權限。」；單一步驟列 4 項（登入／讀取 device、ONT、ONT service、GE service、active alarm／
+  暫時 IGMP profile GET、PATCH、DELETE 無殘留／Remote Control show version 需 --run-remote → Success
+  且輸出含 version）。工具 verification_status verified，get_test_case 讀回內容一致。
+  名稱、優先度、執行類型未改。audit：local/testlink_audit/testcase_update/。
+
 ## 下一步
 
 0. b13_redhat：SSH／密碼遮罩／inventory 等待／EMS1-7056 Remote Control 已提交；決定是否清理既有報表中的明文密碼；

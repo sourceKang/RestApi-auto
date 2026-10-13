@@ -35,7 +35,13 @@ from tests.support.fixtures import (
     user_session_service,
 )
 from tests.support.options import pytest_addoption
-from tests.support.reporting_hooks import pytest_configure, pytest_runtest_logreport, pytest_sessionfinish, pytest_sessionstart
+from tests.support.reporting_hooks import (
+    pytest_configure,
+    pytest_runtest_logreport,
+    pytest_runtest_makereport,
+    pytest_sessionfinish,
+    pytest_sessionstart,
+)
 
 
 __all__ = [
@@ -61,6 +67,7 @@ __all__ = [
     "pytest_collection_modifyitems",
     "pytest_configure",
     "pytest_runtest_logreport",
+    "pytest_runtest_makereport",
     "pytest_sessionfinish",
     "pytest_sessionstart",
     "rad_env_config",

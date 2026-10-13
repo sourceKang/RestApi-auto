@@ -53,6 +53,21 @@ class AuthConfig:
             resolved[role] = _resolve_account(role, account_key, account)
         return resolved
 
+    def password_values(self) -> set[str]:
+        """Return every resolvable account password so reports can mask them."""
+        values: set[str] = set()
+        for role, role_accounts in self.raw.get("accounts", {}).items():
+            if not isinstance(role_accounts, dict):
+                continue
+            for account_name, account in role_accounts.items():
+                if not isinstance(account, dict):
+                    continue
+                try:
+                    values.add(_resolve_account(str(role), str(account_name), account).password)
+                except AuthConfigError:
+                    continue
+        return values
+
 
 def load_auth_config(path: str | Path | None = None) -> AuthConfig:
     config_path = Path(path) if path is not None else _default_auth_accounts_file()

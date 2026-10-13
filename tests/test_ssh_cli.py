@@ -13,7 +13,14 @@ from clients.legacy_ssh_cli import (
     LegacyOpenSshCliClient,
     _askpass_script,
 )
-from clients.ssh_cli import CliCommandResult, FileTokenSemaphore, SshCliClient, SshCliSession, SshSessionPool
+from clients.ssh_cli import (
+    CliCommandResult,
+    FileTokenSemaphore,
+    SshChannelClosedError,
+    SshCliClient,
+    SshCliSession,
+    SshSessionPool,
+)
 
 
 def test_legacy_openssh_args_are_scoped_and_do_not_contain_password():
@@ -48,6 +55,7 @@ class FakeTransport:
 class FakeChannel:
     def __init__(self, fail_on_send: str | None = None) -> None:
         self.closed = False
+        self.eof_received = False
         self.sent: list[str] = []
         self.fail_on_send = fail_on_send
 
@@ -228,6 +236,123 @@ def test_ssh_session_pool_reuses_healthy_session(monkeypatch: pytest.MonkeyPatch
     assert second_timing.reused_session
     assert fake_client.connect_count == 1
     assert channel.sent == ["show one\n", "show two\n", "exit\n"]
+    assert not list(tmp_path.glob("*.token"))
+
+
+def test_ssh_session_pool_propagates_command_failure(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    channel = FakeChannel(fail_on_send="show")
+    fake_client = FakeSshClient(channel)
+    install_fake_paramiko(monkeypatch, fake_client)
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(lambda *args, **kwargs: "ok"))
+    pool = SshSessionPool(
+        "NODE3",
+        "host",
+        "user",
+        "password",
+        max_sessions=1,
+        acquire_timeout_seconds=1,
+        token_directory=tmp_path,
+    )
+
+    with pytest.raises(RuntimeError, match="send failed"):
+        pool.run_commands(["show one"], owner="first")
+
+    assert channel.closed
+    assert not list(tmp_path.glob("*.token"))
+
+
+def install_fake_paramiko_clients(monkeypatch: pytest.MonkeyPatch, clients: list[FakeSshClient]) -> None:
+    remaining = iter(clients)
+    fake_paramiko = SimpleNamespace(
+        SSHClient=lambda: next(remaining),
+        AutoAddPolicy=lambda: object(),
+    )
+    monkeypatch.setitem(sys.modules, "paramiko", fake_paramiko)
+
+
+def install_dying_reader(monkeypatch: pytest.MonkeyPatch, dying: dict[FakeChannel, str]) -> None:
+    """Reads return "" and set EOF once a channel's trigger command was sent; others return "ok"."""
+
+    def read_available(channel, **kwargs):
+        trigger = dying.get(channel)
+        if trigger and channel.sent and trigger in channel.sent[-1]:
+            channel.eof_received = True
+            return ""
+        return "ok"
+
+    monkeypatch.setattr(SshCliClient, "_read_available", staticmethod(read_available))
+
+
+def stale_test_pool(tmp_path) -> SshSessionPool:
+    return SshSessionPool(
+        "NODE3",
+        "host",
+        "user",
+        "password",
+        max_sessions=1,
+        acquire_timeout_seconds=1,
+        token_directory=tmp_path,
+    )
+
+
+def test_ssh_session_raises_when_channel_dies_without_output(monkeypatch: pytest.MonkeyPatch):
+    channel = FakeChannel()
+    session = SshCliSession("host", "user", "password")
+    session.channel = channel
+    install_dying_reader(monkeypatch, {channel: "show"})
+
+    with pytest.raises(SshChannelClosedError, match="show version"):
+        session.run_command("show version")
+
+
+def test_ssh_session_pool_retries_once_when_reused_session_is_stale(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    stale_channel, fresh_channel = FakeChannel(), FakeChannel()
+    stale_client, fresh_client = FakeSshClient(stale_channel), FakeSshClient(fresh_channel)
+    install_fake_paramiko_clients(monkeypatch, [stale_client, fresh_client])
+    install_dying_reader(monkeypatch, {stale_channel: "show two"})
+    pool = stale_test_pool(tmp_path)
+
+    pool.run_commands(["show one"], owner="first")
+    results, timing = pool.run_commands(["show two"], owner="second")
+    pool.close_all()
+
+    assert results == [CliCommandResult(command="show two", output="ok")]
+    assert not timing.reused_session
+    assert "show two" in timing.stale_session_retry
+    assert timing.as_dict()["stale_session_retry"] == timing.stale_session_retry
+    assert stale_channel.closed
+    assert fresh_client.connect_count == 1
+    assert not list(tmp_path.glob("*.token"))
+
+
+def test_ssh_session_pool_does_not_retry_a_new_session(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    channel = FakeChannel()
+    client = FakeSshClient(channel)
+    install_fake_paramiko_clients(monkeypatch, [client])
+    install_dying_reader(monkeypatch, {channel: "show one"})
+    pool = stale_test_pool(tmp_path)
+
+    with pytest.raises(SshChannelClosedError):
+        pool.run_commands(["show one"], owner="first")
+
+    assert client.connect_count == 1
+    assert not list(tmp_path.glob("*.token"))
+
+
+def test_ssh_session_pool_does_not_retry_after_a_command_completed(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    channel = FakeChannel()
+    client = FakeSshClient(channel)
+    install_fake_paramiko_clients(monkeypatch, [client])
+    install_dying_reader(monkeypatch, {channel: "configure"})
+    pool = stale_test_pool(tmp_path)
+    pool.run_commands(["show one"], owner="first")
+    install_dying_reader(monkeypatch, {channel: "exit"})
+
+    with pytest.raises(SshChannelClosedError, match="exit"):
+        pool.run_commands(["configure", "exit"], owner="second")
+
+    assert channel.sent.count("configure\n") == 1
+    assert client.connect_count == 1
     assert not list(tmp_path.glob("*.token"))
 
 

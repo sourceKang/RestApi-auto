@@ -17,6 +17,10 @@ LOGOUT_CONFIRM_PROMPT = re.compile(r"logout\s+system\s+now\s*\(y/n\)\?", re.IGNO
 YES_NO_CONFIRM_PROMPT = re.compile(r"(?:please\s+)?confirm\s*\[y/n\]|confirm\s*\(y/n\)", re.IGNORECASE)
 
 
+class SshChannelClosedError(RuntimeError):
+    """The SSH shell channel stopped responding, so an empty read is not real CLI output."""
+
+
 @dataclass(frozen=True)
 class CliCommandResult:
     command: str
@@ -38,6 +42,7 @@ class SshTiming:
     logout_seconds: float = 0.0
     closed: bool = False
     error: str | None = None
+    stale_session_retry: str | None = None
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -61,6 +66,7 @@ class SshTiming:
             "logout_seconds": round(self.logout_seconds, 3),
             "closed": self.closed,
             "error": self.error,
+            "stale_session_retry": self.stale_session_retry,
         }
 
 
@@ -145,15 +151,21 @@ class SshCliSession:
         self.banner_read_seconds += time.monotonic() - started
 
     def is_healthy(self) -> bool:
-        if self.client is None or self.channel is None:
-            return False
-        if bool(getattr(self.channel, "closed", False)):
+        return self.client is not None and not self._channel_unusable()
+
+    def _channel_unusable(self) -> bool:
+        channel = self.channel
+        if channel is None:
+            return True
+        if bool(getattr(channel, "closed", False)) or bool(getattr(channel, "eof_received", False)):
+            return True
+        if self.client is None:
             return False
         transport = self.client.get_transport()
         if transport is None:
-            return False
+            return True
         is_active = getattr(transport, "is_active", None)
-        return bool(is_active()) if callable(is_active) else True
+        return callable(is_active) and not is_active()
 
     def run_commands(self, commands: list[str]) -> list[CliCommandResult]:
         self.connect()
@@ -175,6 +187,8 @@ class SshCliSession:
     ) -> tuple[str, float, bool]:
         if self.channel is None:
             raise RuntimeError("SSH channel is not available")
+        if self._channel_unusable():
+            raise SshChannelClosedError(f"SSH channel {self.session_id} was closed before sending {command!r}")
         started = time.monotonic()
         confirmed = False
         self.channel.send(command + "\n")
@@ -184,6 +198,8 @@ class SshCliSession:
             idle_wait=idle_wait,
             max_wait=max_wait,
         )
+        if not output and self._channel_unusable():
+            raise SshChannelClosedError(f"SSH channel {self.session_id} closed without output for {command!r}")
         if YES_NO_CONFIRM_PROMPT.search(output):
             confirmed = True
             self.channel.send("y\n")
@@ -340,14 +356,27 @@ class SshSessionPool:
         try:
             yield pooled
         finally:
-            if pooled.timing.error:
-                return
-            self.release(pooled)
+            # A failed batch already discarded its session; a return here would
+            # swallow the exception raised inside the with block.
+            if not pooled.timing.error:
+                self.release(pooled)
 
     def run_commands(self, commands: list[str], *, owner: str) -> tuple[list[CliCommandResult], SshTiming]:
-        with self.acquire(owner) as pooled:
-            results = pooled.run_commands(commands)
-            return results, pooled.timing
+        pooled = None
+        try:
+            with self.acquire(owner) as pooled:
+                results = pooled.run_commands(commands)
+                return results, pooled.timing
+        except SshChannelClosedError as error:
+            # Retry only a reused pooled session that was already dead, and only before any
+            # command completed, so configuration commands are never replayed.
+            if pooled is None or not pooled.timing.reused_session or pooled.timing.command_seconds:
+                raise
+            stale_reason = str(error)
+        with self.acquire(owner) as retry:
+            retry.timing.stale_session_retry = stale_reason
+            results = retry.run_commands(commands)
+            return results, retry.timing
 
     def _acquire(self, owner: str) -> PooledSshSession:
         with self._lock:

@@ -400,7 +400,7 @@ def test_prepare_ont_inventory_reuses_existing_is_service_without_creating_profi
     assert result == "#Formal"
     assert template_factory_calls == []
     assert not any(call[0] == "upsert" for call in inventory.calls)
-    assert ("inventory", "session-2", "#Formal", 240) in inventory.calls
+    assert ("inventory", "session-2", "#Formal", 600) in inventory.calls
     assert session_manager.events == [
         ("open", "session-1"),
         ("close", "session-1"),
@@ -433,7 +433,7 @@ def test_prepare_ont_inventory_waits_for_cli_is_then_rest_sync_after_workflow_po
     assert template_factory_calls == []
     assert len(cli_wait_calls) == 1
     assert cli_wait_calls[0]["timeout"] == 180
-    assert ("inventory", "session-2", "#Temporary", 240) in inventory.calls
+    assert ("inventory", "session-2", "#Temporary", 600) in inventory.calls
     assert state.inventory_ready is True
 
 
@@ -586,7 +586,7 @@ def test_prepare_ont_inventory_creates_only_when_service_missing_and_cli_unregis
     assert template_factory_calls == [True]
     assert provision.calls == []
     assert ("upsert", "session-2", "#Temporary") in inventory.calls
-    assert ("inventory", "session-3", "#Temporary", 240) in inventory.calls
+    assert ("inventory", "session-3", "#Temporary", 600) in inventory.calls
     assert len(cli_wait_calls) == 1
     assert session_manager.events == [
         ("open", "session-1"),
@@ -645,3 +645,71 @@ def test_prepared_ge_service_does_not_create_seed_for_read_only_flow():
             request=None,
             ge_service_workflow_state=GeServiceWorkflowState(),
         )
+
+
+def _inventory_sync_service(monkeypatch, ready_after: int, total: int):
+    import services.inventory.service as inventory_module
+    import utils.reporting as reporting
+
+    responses = [
+        ApiResponse(200, {"retstatus": "Success", "ready": index >= ready_after}, "", 0, "id", "GET", "url")
+        for index in range(total)
+    ]
+    attachments = []
+    monkeypatch.setattr(inventory_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(inventory_module, "find_ont_item", lambda payload, env, name: payload)
+
+    def assert_fields(item, env, ont_template=None):
+        if not item["ready"]:
+            raise AssertionError("template not synced")
+
+    monkeypatch.setattr(inventory_module, "_assert_ont_fields", assert_fields)
+    monkeypatch.setattr(inventory_module, "attach_json", lambda name, value: attachments.append((name, value)))
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState())
+    service = InventoryService(FakeApiClient(responses), ont_diagnostic_env())
+    return service, attachments, reporting
+
+
+def test_wait_for_ont_inventory_flags_sync_slower_than_threshold(monkeypatch):
+    service, attachments, reporting = _inventory_sync_service(monkeypatch, ready_after=15, total=17)
+
+    assert service.wait_for_ont_inventory(
+        "session", ont_template="#T", timeout=600, interval=15, consecutive_successes=2, slow_after_polls=16
+    )
+
+    names = [name for name, _value in attachments]
+    assert names == ["ONT inventory sync timing", "ONT inventory sync slow"]
+    assert attachments[0][1]["polls"] == 17
+    assert reporting.REPORT_STATE.report_notes["ONT Inventory Sync"].startswith("SLOW ")
+    assert "(17 polls, over threshold 16)" in reporting.REPORT_STATE.report_notes["ONT Inventory Sync"]
+
+
+def test_wait_for_ont_inventory_does_not_flag_fast_sync(monkeypatch):
+    service, attachments, reporting = _inventory_sync_service(monkeypatch, ready_after=0, total=2)
+
+    assert service.wait_for_ont_inventory(
+        "session", ont_template="#T", timeout=600, interval=15, consecutive_successes=2, slow_after_polls=16
+    )
+
+    assert [name for name, _value in attachments] == ["ONT inventory sync timing"]
+    assert reporting.REPORT_STATE.report_notes == {}
+
+
+def test_wait_for_ont_inventory_timeout_reports_polls(monkeypatch):
+    import services.inventory.service as inventory_module
+
+    service, _attachments, _reporting = _inventory_sync_service(monkeypatch, ready_after=99, total=3)
+    clock = iter([0.0, 0.0, 1.0, 2.0, 999.0])
+    monkeypatch.setattr(inventory_module.time, "monotonic", lambda: next(clock))
+
+    with pytest.raises(AssertionError, match=r"within 600s \(3 polls\)"):
+        service.wait_for_ont_inventory("session", ont_template="#T", timeout=600, interval=15, slow_after_polls=16)
+
+
+def test_report_notes_appear_in_txt_header_lines(monkeypatch):
+    import utils.reporting as reporting
+
+    monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState())
+    reporting.record_report_note("ONT Inventory Sync", "SLOW 312s (21 polls, over threshold 16)")
+
+    assert reporting._report_note_lines() == ["ONT Inventory Sync: SLOW 312s (21 polls, over threshold 16)"]

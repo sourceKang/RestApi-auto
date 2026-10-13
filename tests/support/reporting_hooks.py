@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import threading
 import time
 
@@ -8,9 +9,12 @@ import pytest
 from clients.ssh_cli import close_ssh_session_pools
 from tests.support.options import option_or_env
 from config_loader import load_environment
+from config_loader.auth import AuthConfigError, load_auth_config
+from utils.redaction import mask_values
 from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result, write_reports
 
 
+_SECRET_VALUES_KEY = pytest.StashKey[tuple]()
 _HEARTBEAT_STOP: threading.Event | None = None
 _HEARTBEAT_THREAD: threading.Thread | None = None
 
@@ -28,6 +32,44 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         return
     if _neox_xdist_heartbeat_enabled(session.config):
         _start_neox_xdist_heartbeat(session.config)
+
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    # trylast makes this the innermost wrapper, so the masked text is what Allure,
+    # the terminal and the txt/log reports read. Tracebacks show argument reprs of
+    # the failing frame (for example SSH credentials or paramiko.connect's password).
+    report = (yield).get_result()
+    if not report.failed or report.longrepr is None:
+        return
+    text = report.longreprtext
+    masked = mask_values(text, _known_secret_values(item.config))
+    if masked != text:
+        report.longrepr = masked
+
+
+def _known_secret_values(config: pytest.Config) -> tuple[str, ...]:
+    cached = config.stash.get(_SECRET_VALUES_KEY, None)
+    if cached is not None:
+        return cached
+    values: set[str] = {
+        value for name, value in os.environ.items() if name.upper().endswith("PASSWORD") and value
+    }
+    try:
+        values.update(load_auth_config().password_values())
+    except AuthConfigError:
+        pass
+    try:
+        env_config = load_environment(
+            node=config.getoption("--ems-node"),
+            auth_profile=config.getoption("--auth-profile"),
+        )
+        values.update({env_config.dut.ssh_password, env_config.dut.ont_password})
+    except Exception:
+        pass
+    secrets = tuple(value for value in values if value)
+    config.stash[_SECRET_VALUES_KEY] = secrets
+    return secrets
+
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if report.when == "call":

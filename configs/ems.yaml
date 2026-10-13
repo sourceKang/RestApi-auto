@@ -25,5 +25,5 @@ ems:
     # The RedHat build currently supports NeoX series devices only.
     redhat:
       rest_api_url: "https://192.168.128.100:9116/netatlasemsapi"
-      version: "03.00.11 (AAVV.221) b12"
+      version: "03.00.11 (AAVV.221) b13"
       platform: "RedHat 9 (HA)"

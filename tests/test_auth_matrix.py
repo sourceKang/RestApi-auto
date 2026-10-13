@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.support.options import option_or_full_testcases
+
 
 
 
@@ -17,8 +19,12 @@ def auth_matrix_seed_data(request, env_config, prepared_ont_inventory):
 
 @pytest.mark.authmatrix
 @pytest.mark.readwrite
-def test_rad_external_readwrite_summary(services, rad_env_config, rad_readwrite_session, auth_matrix_seed_data):
-    services.auth_matrix.verify_rad_readwrite_summary(rad_env_config, rad_readwrite_session)
+def test_rad_external_readwrite_summary(services, rad_env_config, rad_readwrite_session, auth_matrix_seed_data, request):
+    services.auth_matrix.verify_rad_readwrite_summary(
+        rad_env_config,
+        rad_readwrite_session,
+        include_remote=option_or_full_testcases(request.config, "--run-remote"),
+    )
 
 
 @pytest.mark.authmatrix

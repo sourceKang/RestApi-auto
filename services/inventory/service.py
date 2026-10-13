@@ -12,6 +12,7 @@ from models.api import EndpointCase
 from utils.allure_helpers import allure_step, attach_json
 from utils.assertions import assert_api_success
 from utils.diagnostics import format_response_summary, format_value_summary
+from utils.reporting import record_report_note
 
 
 ONTOLOGY_PATH_CASE_NAMES = {"ont_by_device", "ont_by_slot", "ont_by_port", "ont_by_id"}
@@ -315,15 +316,19 @@ class InventoryService:
         initial_delay: int = 0,
         consecutive_successes: int = 1,
         raise_on_timeout: bool = True,
+        slow_after_polls: int | None = None,
     ) -> bool:
         path = f"/ont/sn/{self.env_config.dut.ont_sn}"
         if initial_delay > 0:
             time.sleep(initial_delay)
-        deadline = time.monotonic() + timeout
+        started = time.monotonic()
+        deadline = started + timeout
         last = None
         stable_hits = 0
+        polls = 0
         while time.monotonic() <= deadline:
             response = self.api_client.request("GET", path, session=session_id)
+            polls += 1
             last = response
             if response.retstatus == "Success":
                 try:
@@ -337,12 +342,21 @@ class InventoryService:
                 else:
                     stable_hits += 1
                     if stable_hits >= consecutive_successes:
+                        _report_ont_inventory_sync(
+                            polls,
+                            time.monotonic() - started,
+                            slow_after_polls,
+                            ont_template,
+                        )
                         return True
             else:
                 stable_hits = 0
             time.sleep(interval)
         if raise_on_timeout:
-            raise AssertionError(f"ONT inventory did not become readable. Last status: {_ont_inventory_status(last, self.env_config)}")
+            raise AssertionError(
+                f"ONT inventory did not become readable within {timeout}s ({polls} polls). "
+                f"Last status: {_ont_inventory_status(last, self.env_config)}"
+            )
         return False
 
     def wait_for_ge_port_inventory(
@@ -780,6 +794,30 @@ def _assert_any_field(actual, keys, expected_value, label):
 
 def _response_summary(response):
     return format_response_summary(response) if response is not None else "None"
+
+
+def _report_ont_inventory_sync(
+    polls: int,
+    elapsed_seconds: float,
+    slow_after_polls: int | None,
+    ont_template: str | None,
+) -> None:
+    slow = slow_after_polls is not None and polls > slow_after_polls
+    summary = {
+        "polls": polls,
+        "elapsed_seconds": round(elapsed_seconds, 1),
+        "slow_after_polls": slow_after_polls,
+        "slow": slow,
+        "ont_template": str(ont_template) if ont_template else None,
+    }
+    attach_json("ONT inventory sync timing", summary)
+    if not slow:
+        return
+    attach_json("ONT inventory sync slow", summary)
+    record_report_note(
+        "ONT Inventory Sync",
+        f"SLOW {elapsed_seconds:.0f}s ({polls} polls, over threshold {slow_after_polls})",
+    )
 
 
 def _ont_inventory_status(response, env_config):

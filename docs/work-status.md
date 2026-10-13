@@ -858,9 +858,10 @@
 0a. .100 連線中斷已判定為 server 資源不足；GET／HEAD 重送與報表連線錯誤記錄已加入
    （ADR 0002）。下次完整測試確認報表開頭的 `EMS Connection Errors` 行與重送恢復情形；
    若仍頻繁，再以報表中的時間點查 .100 log。
-0b. 決定上述未納入版控的變更是否收進版控（qa_bug_drafts、sop、已 staged 的
-   刪除）。ems-version-regression skill 已於 2026-10-07 收進版控；主 checkout
-   合併預設分支前需先移開同路徑的未追蹤 skill 檔。
+0b. 2026-10-13 已提交刪除 tools/update_testlink_multi_node_notes.py，並將 docs/handoff/、
+   docs/qa_bug_drafts/（內部 Redmine／bug 資料，repo 為 Public）加入 .gitignore，保留本機。
+   docs/sop/ 的 SOP docx（9/22 版）仍未納入：若要給同事使用，先改寫為 Markdown 並更新到
+   EMS server 切換與 qa-integration-agent 回填流程。
 
 1. ONT SFU 間歇 `Wait`／teardown HTTP 500：測試期間持續以 CLI 記錄 ONT
    狀態，確認 provision template 套用／還原是否觸發 ONT 重新註冊。

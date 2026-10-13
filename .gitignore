@@ -43,6 +43,10 @@ Desktop.ini
 # Local analysis scratch files
 tmp/
 
+# Internal Redmine/QA material kept out of the public repo
+docs/handoff/
+docs/qa_bug_drafts/
+
 # Claude Code machine-local instructions and permissions
 CLAUDE.local.md
 .claude/settings.local.json

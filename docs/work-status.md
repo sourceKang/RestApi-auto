@@ -827,6 +827,26 @@
   且輸出含 version）。工具 verification_status verified，get_test_case 讀回內容一致。
   名稱、優先度、執行類型未改。audit：local/testlink_audit/testcase_update/。
 
+### 2026-10-13 第七次完整測試與 GET 連線錯誤重送（Claude Code）
+
+- 分支 codex/neox-profile-read-path-fix，基準 `cd6609b`（PR #12 已合併為 `84495f2`）。
+- 第 7 次完整測試（reports/multi_node/2026-10-13_10-28-01，b13、.100）：pytest 288 passed、
+  5 failed、23 skipped（1:43:25）；TestLink 237 Pass／5 Fail／11 Skip。5 筆失敗全是 .100 連線層
+  錯誤（ConnectTimeout、讀取逾時、ConnectionReset、RemoteDisconnected），無斷言失敗：EMS1-6666、
+  7162、7116（live Swagger）、6911、7110（noaccess 登入）。11 筆 Skip 為 6666 失敗連帶 Blocked。
+- 單獨重跑（..._2026-10-13_12-13-15_NODE3_run7_rerun）：其餘 4 筆 Pass；EMS1-6666 再次失敗——POST
+  成功，但 300 秒狀態 polling 中一次 GET /ontservice/{sn} 斷線即讓 case 失敗。
+- 修正（ADR 0002）：EmsApiClient 對 GET／HEAD 在 ConnectionError／Timeout 後等 5、15 秒重送（共 3 次）；
+  POST／PUT／PATCH／DELETE 不重送。每次連線錯誤（含重送後恢復）記錄 nodeid、method、path、嘗試次數、
+  錯誤摘要與結果，附到 Allure「EMS connection error」，並列在 txt／HTML 報表開頭
+  （`EMS Connection Errors: N (recovered by retry R, not recovered U)` 與逐筆，最多 30 行）。
+  依使用者要求：斷線即使已恢復也要留在報表。live Swagger 讀取（EMS1-7116）不在涵蓋範圍。
+- 驗證：compileall exit 0；collect 705；新增 tests/test_ems_api_client_transport_retry.py 與
+  client／reporting 相關測試 44 passed；離線 215 筆中 1 筆失敗為既有的
+  test_hardware_config（NODE3 韌體 `V1.02(ACKG.1)` 與設定 `_260604c` 後綴不一致，與本次無關）。
+- NODE3 重跑 EMS1-6666 與相依 case（..._2026-10-13_13-42-17_NODE3_run7_rerun2）：31 Pass／0 Fail
+  （pytest 78 passed）；本次 .100 未斷線，報表無連線錯誤行，重送路徑尚未在實機觸發。
+
 ## 下一步
 
 0. b13_redhat：SSH／密碼遮罩／inventory 等待／EMS1-7056 Remote Control 已提交；決定是否清理既有報表中的明文密碼；
@@ -835,8 +855,9 @@
    b13 版本。
 0-1. 是否讓 teardown 失敗（cleanup 未收斂）反映到 txt／TestLink 結果，待決定。
 0-2. b12_redhat 回歸、TestLink 回填與合併都已完成。
-0a. .100 連線中斷已判定為 server 資源不足；若 server 資源調整後仍出現，再以報表中
-   的時間點查 .100 log，並評估 client 改用共用連線或限定範圍的重試。
+0a. .100 連線中斷已判定為 server 資源不足；GET／HEAD 重送與報表連線錯誤記錄已加入
+   （ADR 0002）。下次完整測試確認報表開頭的 `EMS Connection Errors` 行與重送恢復情形；
+   若仍頻繁，再以報表中的時間點查 .100 log。
 0b. 決定上述未納入版控的變更是否收進版控（qa_bug_drafts、sop、已 staged 的
    刪除）。ems-version-regression skill 已於 2026-10-07 收進版控；主 checkout
    合併預設分支前需先移開同路徑的未追蹤 skill 檔。

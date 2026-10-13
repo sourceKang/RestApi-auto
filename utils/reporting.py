@@ -45,6 +45,19 @@ class ReportState:
     results: list[CaseResult] = field(default_factory=list)
     session_metrics: dict[str, Any] = field(default_factory=dict)
     report_notes: dict[str, str] = field(default_factory=dict)
+    connection_events: list["ConnectionEvent"] = field(default_factory=list)
+
+
+@dataclass
+class ConnectionEvent:
+    nodeid: str
+    method: str
+    path: str
+    error: str
+    attempt: int
+    max_attempts: int
+    action: str  # "retried" or "raised"
+    recovered: bool = False
 
 
 REPORT_STATE = ReportState()
@@ -53,6 +66,29 @@ REPORT_STATE = ReportState()
 def record_report_note(label: str, value: str) -> None:
     """Add a run-level note shown in the txt and HTML report headers (e.g. a slow EMS sync)."""
     REPORT_STATE.report_notes[label] = value
+
+
+def record_connection_event(
+    method: str,
+    path: str,
+    error: str,
+    *,
+    attempt: int,
+    max_attempts: int,
+    action: str,
+) -> ConnectionEvent:
+    """Record an EMS transport error (connect/read timeout, reset) for the report header."""
+    event = ConnectionEvent(
+        nodeid=os.environ.get("PYTEST_CURRENT_TEST", "").split(" ", 1)[0],
+        method=method,
+        path=path,
+        error=error,
+        attempt=attempt,
+        max_attempts=max_attempts,
+        action=action,
+    )
+    REPORT_STATE.connection_events.append(event)
+    return event
 
 SESSION_METRIC_FIELDS = (
     "login_requests",
@@ -394,7 +430,43 @@ def _split_label_value(line: str) -> tuple[str, str]:
 
 
 def _report_note_lines() -> list[str]:
-    return [f"{label}: {value}" for label, value in REPORT_STATE.report_notes.items()]
+    lines = [f"{label}: {value}" for label, value in REPORT_STATE.report_notes.items()]
+    return lines + _connection_event_lines()
+
+
+MAX_CONNECTION_EVENT_LINES = 30
+
+
+def _connection_event_lines() -> list[str]:
+    events = REPORT_STATE.connection_events
+    if not events:
+        return []
+    recovered = sum(1 for event in events if event.recovered)
+    lines = [
+        f"EMS Connection Errors: {len(events)} "
+        f"(recovered by retry {recovered}, not recovered {len(events) - recovered})"
+    ]
+    for index, event in enumerate(events[:MAX_CONNECTION_EVENT_LINES], start=1):
+        case_ids = ",".join(
+            item.case_id for item in REPORT_STATE.case_registry.get(event.nodeid, [])
+        )
+        where = f"{case_ids} {event.nodeid}".strip() or "(outside test)"
+        if event.recovered:
+            outcome = "recovered by retry"
+        elif event.action == "retried":
+            outcome = "retried, not recovered"
+        else:
+            outcome = "raised"
+        lines.append(
+            f"EMS Connection Error #{index}: {where} | {event.method} {event.path} | "
+            f"attempt {event.attempt}/{event.max_attempts} | {event.error} | {outcome}"
+        )
+    if len(events) > MAX_CONNECTION_EVENT_LINES:
+        lines.append(
+            f"EMS Connection Error (more): {len(events) - MAX_CONNECTION_EVENT_LINES} "
+            "further events in Allure attachments"
+        )
+    return lines
 
 
 def _session_metric_lines() -> list[str]:

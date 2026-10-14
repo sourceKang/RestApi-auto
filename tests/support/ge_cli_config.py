@@ -8,6 +8,7 @@ from typing import Callable
 from clients.ssh_cli import SshCliSession
 from tests.support.ont_cli_status import ssh_credentials
 from utils.allure_helpers import attach_json
+from config_loader.settings import scaled_wait
 
 
 @dataclass(frozen=True)
@@ -211,6 +212,7 @@ def wait_for_ge_cli_config(
 ) -> GeCliConfigResult:
     if consecutive_stable_successes < 1:
         raise ValueError("consecutive_stable_successes must be at least 1")
+    timeout = scaled_wait(env_config, timeout)
     deadline = time.monotonic() + timeout
     last = None
     stable_signature = None
@@ -314,6 +316,7 @@ def monitor_ge_patch_transition(
             raise AssertionError("PUT CLI baseline does not contain the expected PortName and Telephone.")
 
         patch_action()
+        timeout = scaled_wait(env_config, timeout)
         deadline = time.monotonic() + timeout
         while time.monotonic() <= deadline:
             service = state_reader()

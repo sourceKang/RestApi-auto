@@ -10,6 +10,7 @@ from clients.legacy_ssh_cli import LegacyOpenSshCliClient
 from clients.ssh_cli import SshCliClient
 from config_loader import load_environment
 from utils.allure_helpers import attach_json
+from config_loader.settings import scaled_wait
 
 
 ONT_SERVICE_STATES = ("IS", "OOS-LO", "OOS-SB", "OOS-DG", "OOS-LS", "OOS-NR", "OOS-CD", "OOS-NP", "OOS-PF")
@@ -108,6 +109,7 @@ def wait_for_ont_cli_config_absent(
     interval: int = 15,
 ) -> str:
     expected_absent = f"interface remote xont {remote_xont}"
+    timeout = scaled_wait(env_config, timeout)
     deadline = time.monotonic() + timeout
     last_output = ""
     while True:
@@ -154,6 +156,7 @@ def wait_for_ont_cli_config_tokens(
     if consecutive_successes < 1:
         raise ValueError("consecutive_successes must be at least 1")
 
+    timeout = scaled_wait(env_config, timeout)
     deadline = time.monotonic() + timeout
     stable_hits = 0
     last_output = ""
@@ -231,6 +234,7 @@ def wait_for_ont_cli_state(
     timeout: int = 120,
     interval: int = 15,
 ) -> OntCliStatus:
+    timeout = scaled_wait(env_config, timeout)
     deadline = time.monotonic() + timeout
     last = None
     while True:

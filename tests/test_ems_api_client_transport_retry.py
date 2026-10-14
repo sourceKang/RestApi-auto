@@ -236,3 +236,60 @@ def test_fast_request_is_not_marked_slow(monkeypatch, fresh_report_state):
     client.request("GET", "/device")
 
     assert fresh_report_state.slow_requests == []
+
+
+def test_retry_waits_come_from_ems_target_profile(monkeypatch, fresh_report_state):
+    client, calls, sleeps = transport_client(
+        monkeypatch, [requests.ConnectTimeout("t1"), requests.ConnectTimeout("t2"), requests.ConnectTimeout("t3"), FakeRaw()]
+    )
+    client.retry_delays = (10, 30, 60)
+
+    client.request("GET", "/device")
+
+    assert calls == ["GET"] * 4
+    assert sleeps == [10, 30, 60]
+    assert [event.max_attempts for event in fresh_report_state.connection_events] == [4, 4, 4]
+
+
+def test_min_request_interval_spaces_request_starts(monkeypatch, fresh_report_state):
+    client, calls, sleeps = transport_client(monkeypatch, [FakeRaw(), FakeRaw()])
+    client.min_request_interval = 0.3
+    now = iter([100.0, 100.0, 100.1, 100.3])
+    monkeypatch.setattr(client_module.time, "monotonic", lambda: next(now))
+    monkeypatch.setattr(client_module, "_last_request_started", 0.0)
+
+    client.request("GET", "/device")
+    client.request("GET", "/device")
+
+    assert calls == ["GET", "GET"]
+    assert sleeps == [pytest.approx(0.2)]
+
+
+def test_no_pacing_without_min_request_interval(monkeypatch, fresh_report_state):
+    client, _, sleeps = transport_client(monkeypatch, [FakeRaw(), FakeRaw()])
+
+    client.request("GET", "/device")
+    client.request("GET", "/device")
+
+    assert sleeps == []
+
+
+def test_report_header_shows_non_default_timing_profile():
+    env = SimpleNamespace(
+        ems_target="redhat",
+        ems_platform="RedHat 9 (HA)",
+        wait_scale=1.5,
+        transport_retry_delays=(10.0, 30.0, 60.0),
+        min_request_interval=0.3,
+    )
+
+    assert ("EMS Timing", "wait_scale 1.5, transport retry delays 10/30/60 s, min request interval 0.3 s") in (
+        reporting._ems_server_metadata(env)
+    )
+
+
+def test_report_header_omits_default_timing_profile():
+    env = SimpleNamespace(ems_target="ubuntu", ems_platform="Ubuntu", wait_scale=1.0,
+                          transport_retry_delays=(5.0, 15.0), min_request_interval=0.0)
+
+    assert [label for label, _ in reporting._ems_server_metadata(env)] == ["EMS Target", "EMS Platform"]

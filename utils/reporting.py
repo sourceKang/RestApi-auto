@@ -720,9 +720,23 @@ def _ems_server_metadata(env_config: Any) -> list[tuple[str, str]]:
         for label, value in (
             ("EMS Target", str(getattr(env_config, "ems_target", "") or "")),
             ("EMS Platform", str(getattr(env_config, "ems_platform", "") or "")),
+            ("EMS Timing", _ems_timing(env_config)),
         )
         if value
     ]
+
+
+def _ems_timing(env_config: Any) -> str:
+    """Describe a non-default per-target timing profile; empty when the defaults apply."""
+    wait_scale = float(getattr(env_config, "wait_scale", 1.0) or 1.0)
+    delays = tuple(getattr(env_config, "transport_retry_delays", (5.0, 15.0)))
+    interval = float(getattr(env_config, "min_request_interval", 0.0) or 0.0)
+    if wait_scale == 1.0 and delays == (5.0, 15.0) and interval == 0.0:
+        return ""
+    return (
+        f"wait_scale {wait_scale:g}, transport retry delays {'/'.join(f'{d:g}' for d in delays)} s, "
+        f"min request interval {interval:g} s"
+    )
 
 
 def _ems_heading(env_config: Any) -> str:

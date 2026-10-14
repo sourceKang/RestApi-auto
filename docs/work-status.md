@@ -46,6 +46,12 @@
     模組耗時第 8 次 550 s、第 9 次 529 s（已接近上限），第 10 次因請求間隔變為 618 s，578 s 起回
     `Not authorized.`：EMS1-6922、6914、6920 失敗，其後 14 筆 invalid-param case Skip，workspace
     cleanup ERROR（暫時 profile 可能殘留在 EMS）。
+- 修正：`profile_workspace` 改用 `shared_role_session(READWRITE)`（ADR 0001 補充）。第 11 次
+  （reports/multi_node/2026-10-14_13-22-42，2:08:41）：pytest 316 passed、0 failed、0 error；
+  TestLink **254 Pass／0 Fail**，首次一次全過。連線錯誤 6 筆全部重送恢復（POST、DELETE、PATCH
+  ConnectTimeout 各 1，GET 3）；慢請求 10 筆（5 筆重送造成、5 筆 ONTUNIProfile POST 約 35 s）；
+  Proactive Session Refreshes 9、Authorization Session Refreshes 0；SFU teardown 本次收斂。
+  總時間較第 8／9 次多約 20 分鐘（請求間隔 0.3 s）。
 - 發現遮罩缺口（未修，既有問題）：ONT password 以 `registid` 送入 NeoX ONT config payload，
   redaction 未涵蓋此 key，request 附件與 integrated HTML 可見明文；teardown 失敗訊息中的 EMS 回應
   `password` 欄位也出現在 Allure statusDetails。txt／HTML 簡易報表與 pytest log 無明文。

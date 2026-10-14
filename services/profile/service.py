@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import pytest
 
+from config_loader.settings import scaled_wait
 from cases.case_catalog import (
     catalog_profile_data,
     profile_definition_by_name,
@@ -485,6 +486,7 @@ class ProfileService:
         timeout: float = 30,
         interval: float = 1,
     ) -> None:
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -508,6 +510,7 @@ class ProfileService:
         interval: float = 1,
         exact: bool = False,
     ):
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         last_error = None
@@ -559,6 +562,7 @@ class ProfileService:
         timeout: float = 30,
         interval: float = 1,
     ) -> None:
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -914,6 +918,7 @@ class ProfileService:
                 f"Cannot inspect temporary profile before cleanup: {format_response_summary(existing)}"
             )
 
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         deleted = None
         while time.monotonic() <= deadline:

@@ -32,6 +32,7 @@ The EMS invalidates a session 600 seconds after login even when the session call
 - Expected readonly mutation denials and noaccess denials do not churn the cache.
 - Explicit fresh-session flows invalidate the matching cached role first to avoid same-account session conflicts.
 - Cache reuse is the normal test-run policy; disabling it for rollback requires no code change.
+- A fixture that keeps a session for longer than one test must use the shared refreshable session, not a fixed fresh login. 2026-10-14: the module-scoped `profile_workspace` in `tests/test_profiles.py` held one fresh readwrite login for the whole module (529–550 s on the RedHat .100 EMS); once the module took 618 s the session expired at the 600 s limit and later profile cases got `Not authorized.`. It now uses `shared_role_session(READWRITE)`; with the cache turned off it still falls back to one fresh login.
 
 ## Validation
 

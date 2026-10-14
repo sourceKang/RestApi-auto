@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from config_loader import load_environment
-from config_loader.settings import ConfigError, load_ems_settings
+from config_loader.settings import ConfigError, load_ems_settings, scaled_wait
 from config_loader.hardware import load_hardware_config
 from tests.support.fixtures import temporary_ge_template
 
@@ -201,3 +201,48 @@ def test_environment_exposes_selected_ems_target_and_platform(tmp_path, monkeypa
     assert env.base_url == "https://redhat.invalid/netatlasemsapi"
     assert env.ems_target == "redhat"
     assert env.ems_platform == "RedHat 9 (HA)"
+
+
+def test_environment_reads_per_target_timing_profile(tmp_path, monkeypatch):
+    monkeypatch.delenv("EMS_TARGET", raising=False)
+    body = TWO_TARGET_EMS_YAML + (
+        "      wait_scale: 1.5\n"
+        "      transport_retry_delays: [10, 30, 60]\n"
+        "      min_request_interval: 0.3\n"
+    )
+    env = load_environment(_write_ems_yaml(tmp_path, body), node="NODE1")
+
+    assert env.wait_scale == 1.5
+    assert env.transport_retry_delays == (10.0, 30.0, 60.0)
+    assert env.min_request_interval == 0.3
+    assert scaled_wait(env, 120) == 180
+
+
+def test_environment_timing_defaults_keep_original_behaviour(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_TARGET", "ubuntu")
+    env = load_environment(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML), node="NODE1")
+
+    assert env.wait_scale == 1.0
+    assert env.transport_retry_delays == (5.0, 15.0)
+    assert env.min_request_interval == 0.0
+    assert scaled_wait(env, 120) == 120
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        "      wait_scale: 0\n",
+        "      min_request_interval: -1\n",
+        "      transport_retry_delays: 10\n",
+        "      transport_retry_delays: [10, -5]\n",
+    ],
+)
+def test_invalid_timing_profile_is_rejected(tmp_path, monkeypatch, extra):
+    monkeypatch.delenv("EMS_TARGET", raising=False)
+
+    with pytest.raises(ConfigError):
+        load_environment(_write_ems_yaml(tmp_path, TWO_TARGET_EMS_YAML + extra), node="NODE1")
+
+
+def test_scaled_wait_defaults_to_unscaled_without_profile():
+    assert scaled_wait(object(), 90) == 90

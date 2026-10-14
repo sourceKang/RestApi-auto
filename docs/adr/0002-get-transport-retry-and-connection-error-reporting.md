@@ -13,7 +13,12 @@ On the RedHat EMS (192.168.128.100, b13) the server intermittently refuses or dr
 - A request whose total time (all attempts and waits) exceeds 30 s is flagged as `EMS Slow Requests` in the report header and attached to Allure (`EMS slow request`), even when it succeeds. In run 8, 5 of 4013 responses took over 30 s and none over 45 s; 99 % finished within 9 s.
 - Every transport error, recovered or not, is recorded with the test nodeid, method, path, attempt, error summary and outcome. It is attached to Allure (`EMS connection error`) and listed in the txt/HTML report header (`EMS Connection Errors: N (recovered by retry R, not recovered U)` plus one line per event, capped at 30 lines).
 - The error summary is written in plain words with host:port, configured timeout and time spent, and says whether the request reached EMS (for example `ConnectTimeout: could not connect to 192.168.128.100:9116; connect timed out after 21.0 s (client limit 60.0 s); connection not established, request not sent`; the OS may give up before the client limit, so the time actually spent comes first). urllib3's "Max retries exceeded" wording is dropped because it is unrelated to these retries.
-- Polling loops are unchanged; they keep their own deadlines and assertions.
+- Polling loops keep their own deadlines and assertions.
+- Per-target timing profile (added 2026-10-14 for the resource-limited RedHat .100 EMS), set under `ems.targets.<name>` in `configs/ems.yaml`; defaults keep the original behaviour, so the Ubuntu .8 target is unchanged:
+  - `wait_scale` multiplies every state-polling time limit through `config_loader.settings.scaled_wait` (services, `tests/support` CLI waits and the NeoX REST token wait). Poll intervals are not scaled, so a state reached early still returns early; only slow cases wait longer. RedHat uses 1.5.
+  - `transport_retry_delays` replaces the default 5/15 s resend waits. RedHat uses 10/30/60 s (4 attempts).
+  - `min_request_interval` keeps at least this many seconds between request starts, process-wide, to ease server load. RedHat uses 0.3 s; whether it reduces dropped connections is to be measured by the `EMS Connection Errors` count.
+  - A non-default profile is printed as `EMS Timing` in the txt/HTML report header.
 
 ## Alternatives
 

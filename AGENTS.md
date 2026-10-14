@@ -135,3 +135,9 @@ tests
 - 有 Allure raw results 時解析重點。每個 testcase 至少可查到 nodeid、TestLink case ID、title、status、duration、request、EMS response、CLI 驗證、failure/traceback/contract diff 與附件摘要。
 - 大型 request/response、CLI output、traceback 另存檔案；報表只放摘要與連結。
 - 保留原始 txt、HTML、Allure raw、log 的回查連結；所有內容先完成 redaction。
+
+## 回報格式
+
+- 改檔或跑測試前：先列「主目標 → 子目標」（5 行內），每個子目標寫完成條件，接著直接做。
+- 完成回報 10 行內，三段：結論（附「子目標完成 X／Y」）→ 重點最多 3 點 → 下一步 2～3 步。測試只寫「通過 X／失敗 Y」，有失敗才列原因；不重貼程式碼。
+- 測試／QA 報表依上方「Report 輸出」。另外的任務總結頁只在修改 3 個以上檔案、測試有失敗或使用者要求時產生：存 `reports/summary/YYYYMMDD-HHMM-<任務名>.html`，單檔、手機好讀，依序列結論、目標 Checklist（✅／⚠️／❌／⏭️＋證據或原因）、修改檔案、測試結果、風險、下一步。

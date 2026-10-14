@@ -52,6 +52,10 @@
   ConnectTimeout 各 1，GET 3）；慢請求 10 筆（5 筆重送造成、5 筆 ONTUNIProfile POST 約 35 s）；
   Proactive Session Refreshes 9、Authorization Session Refreshes 0；SFU teardown 本次收斂。
   總時間較第 8／9 次多約 20 分鐘（請求間隔 0.3 s）。
+- PR #16 已合併（`0527eca`）。formal_runs.yaml：b13_redhat NODE3 final 改為
+  `2026-10-14_13-22-44_NODE3`（第 6 次判定版保留、final: false）。TestLink build 20644 以
+  operation `b13-redhat-node3-run11-20261014` 再回填 254 筆 p、0 錯誤（2026-10-14 15:41，每個 case
+  多一筆 execution）；get_last_result 抽查 EMS1-6640、7056、7120 皆為本次 p。
 - 發現遮罩缺口（未修，既有問題）：ONT password 以 `registid` 送入 NeoX ONT config payload，
   redaction 未涵蓋此 key，request 附件與 integrated HTML 可見明文；teardown 失敗訊息中的 EMS 回應
   `password` 欄位也出現在 Allure statusDetails。txt／HTML 簡易報表與 pytest log 無明文。

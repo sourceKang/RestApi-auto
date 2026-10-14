@@ -46,6 +46,7 @@ class ReportState:
     session_metrics: dict[str, Any] = field(default_factory=dict)
     report_notes: dict[str, str] = field(default_factory=dict)
     connection_events: list["ConnectionEvent"] = field(default_factory=list)
+    slow_requests: list["SlowRequest"] = field(default_factory=list)
 
 
 @dataclass
@@ -58,6 +59,17 @@ class ConnectionEvent:
     max_attempts: int
     action: str  # "retried" or "raised"
     recovered: bool = False
+
+
+@dataclass
+class SlowRequest:
+    nodeid: str
+    method: str
+    path: str
+    elapsed: float
+    attempts: int
+    status_code: int
+    threshold: float
 
 
 REPORT_STATE = ReportState()
@@ -79,7 +91,7 @@ def record_connection_event(
 ) -> ConnectionEvent:
     """Record an EMS transport error (connect/read timeout, reset) for the report header."""
     event = ConnectionEvent(
-        nodeid=os.environ.get("PYTEST_CURRENT_TEST", "").split(" ", 1)[0],
+        nodeid=_current_nodeid(),
         method=method,
         path=path,
         error=error,
@@ -89,6 +101,33 @@ def record_connection_event(
     )
     REPORT_STATE.connection_events.append(event)
     return event
+
+
+def record_slow_request(
+    method: str,
+    path: str,
+    elapsed: float,
+    *,
+    attempts: int,
+    status_code: int,
+    threshold: float,
+) -> None:
+    """Record an EMS request whose total time (all attempts and waits) exceeded the slow threshold."""
+    REPORT_STATE.slow_requests.append(
+        SlowRequest(
+            nodeid=_current_nodeid(),
+            method=method,
+            path=path,
+            elapsed=elapsed,
+            attempts=attempts,
+            status_code=status_code,
+            threshold=threshold,
+        )
+    )
+
+
+def _current_nodeid() -> str:
+    return os.environ.get("PYTEST_CURRENT_TEST", "").split(" ", 1)[0]
 
 SESSION_METRIC_FIELDS = (
     "login_requests",
@@ -431,10 +470,34 @@ def _split_label_value(line: str) -> tuple[str, str]:
 
 def _report_note_lines() -> list[str]:
     lines = [f"{label}: {value}" for label, value in REPORT_STATE.report_notes.items()]
-    return lines + _connection_event_lines()
+    return lines + _connection_event_lines() + _slow_request_lines()
 
 
 MAX_CONNECTION_EVENT_LINES = 30
+
+
+def _event_location(nodeid: str) -> str:
+    case_ids = ",".join(item.case_id for item in REPORT_STATE.case_registry.get(nodeid, []))
+    return f"{case_ids} {nodeid}".strip() or "(outside test)"
+
+
+def _slow_request_lines() -> list[str]:
+    slow = REPORT_STATE.slow_requests
+    if not slow:
+        return []
+    lines = [f"EMS Slow Requests: {len(slow)} (total time over {slow[0].threshold:g} s)"]
+    for index, item in enumerate(slow[:MAX_CONNECTION_EVENT_LINES], start=1):
+        retried = f", {item.attempts} attempts" if item.attempts > 1 else ""
+        lines.append(
+            f"EMS Slow Request #{index}: {_event_location(item.nodeid)} | {item.method} {item.path} | "
+            f"SLOW {item.elapsed:.1f} s{retried} | HTTP {item.status_code}"
+        )
+    if len(slow) > MAX_CONNECTION_EVENT_LINES:
+        lines.append(
+            f"EMS Slow Request (more): {len(slow) - MAX_CONNECTION_EVENT_LINES} "
+            "further requests in Allure attachments"
+        )
+    return lines
 
 
 def _connection_event_lines() -> list[str]:
@@ -447,10 +510,7 @@ def _connection_event_lines() -> list[str]:
         f"(recovered by retry {recovered}, not recovered {len(events) - recovered})"
     ]
     for index, event in enumerate(events[:MAX_CONNECTION_EVENT_LINES], start=1):
-        case_ids = ",".join(
-            item.case_id for item in REPORT_STATE.case_registry.get(event.nodeid, [])
-        )
-        where = f"{case_ids} {event.nodeid}".strip() or "(outside test)"
+        where = _event_location(event.nodeid)
         if event.recovered:
             outcome = "recovered by retry"
         elif event.action == "retried":

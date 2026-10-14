@@ -847,6 +847,48 @@
 - NODE3 重跑 EMS1-6666 與相依 case（..._2026-10-13_13-42-17_NODE3_run7_rerun2）：31 Pass／0 Fail
   （pytest 78 passed）；本次 .100 未斷線，報表無連線錯誤行，重送路徑尚未在實機觸發。
 
+### 2026-10-13 第八次完整測試：GET 重送實機驗證（Claude Code）
+
+- 基準 `3df408a`（PR #13、#14 已合併）。reports/multi_node/2026-10-13_14-56-08：pytest 314 passed、
+  2 failed（1:47:57）；TestLink 252 Pass／2 Fail，無 Skip。
+- txt／HTML 開頭 `EMS Connection Errors: 5 (recovered by retry 3, not recovered 2)`，與 Allure
+  「EMS connection error」附件一致：GET 第 1/3 次 ConnectTimeout 後重送恢復 3 筆（EMS1-7153
+  ONTMulticastProfile、EMS1-7189 RateLimitProfile、EMS1-6908），case 皆 Pass。
+- 失敗 2 筆皆為 PATCH ConnectTimeout（不重送，1/1 raised）：EMS1-6834（ONTBandwidthProfile 主 PATCH；
+  其後還原 PATCH／GET 成功）、EMS1-6930（GETemplateProfile 無效參數 PATCH）。
+- 依使用者同意後續修改（未提交）：
+  - 錯誤摘要改為白話完整敘述（host:port、逾時設定、實際耗時、請求是否送到 EMS），移除 urllib3
+    「Max retries exceeded」字樣。
+  - POST／PUT／PATCH／DELETE（含登入）僅在 ConnectTimeout（連線未建立）時重送；ReadTimeout、
+    reset、dropped 仍不重送。影響範圍：第 8 次 316 筆結果中 205 筆（193 個 TestLink case）測試本體
+    送出 mutating request，另含所有 fixture 的建立／清除與登入。第一次失敗照樣記錄並標記
+    （retried／recovered by retry／raised）。
+  - 依使用者要求「等太久要在報表看到標記」：單一請求總耗時（含重送與等待）超過 30 秒，即使成功也列在
+    報表開頭 `EMS Slow Requests`（逐筆 SLOW 秒數、嘗試次數、HTTP 狀態）並附 Allure「EMS slow request」。
+    門檻依第 8 次 4013 個回應：99% 在 9 秒內、超過 30 秒 5 個、最大 37.3 秒。
+  - 驗證：compileall、collect 通過；client／reporting／service bundle 相關 59 passed；NODE3 單獨重跑
+    EMS1-6834、6930（..._2026-10-13_16-59-33_NODE3_run8_rerun）2 Pass，本次無連線錯誤與慢請求。
+
+### 2026-10-13 第九次完整測試：慢請求標記與錯誤摘要實機驗證（Claude Code）
+
+- 以未提交的上述修改執行（reports/multi_node/2026-10-13_17-08-09）：pytest 314 passed、2 failed、
+  1 error（1:44:56）；TestLink 252 Pass／2 Fail。
+- 報表開頭 `EMS Connection Errors: 5 (recovered by retry 3, not recovered 2)`、
+  `EMS Slow Requests: 5 (total time over 30 s)`，txt／HTML 與 Allure 附件一致。
+  - GET 重送恢復 3 次（ConnectTimeout 2、Connection reset 1）。
+  - EMS1-6900、6908 失敗：PATCH 送出後 .100 切斷連線（Connection dropped，19.2 s），依規則不重送。
+  - mutating request 遇 ConnectTimeout 的重送本次未觸發（PATCH 皆為 dropped）。
+  - 慢請求 5 筆皆為 POST `/configNeoXSeries/profile/.../ONTUNIProfile/RestUNI`（34.5～36.5 s，HTTP 200，
+    EMS1-7172／7173），其他 endpoint 無；ONTUNIProfile 建立固定偏慢，待確認是否回報。
+- 實機發現 Windows 約 21 秒即放棄建立連線（早於 client 60 秒上限），摘要改為
+  「connect timed out after 21.0 s (client limit 60 s)」，以實際耗時為主。
+- ERROR：test_ont_config_apply_provision_template_sfu_readwrite 本體 PASSED，teardown 還原 ONT baseline
+  未收斂（第 1 次 GET /ont/sn HTTP 500＋CLI UnReg；第 2 次 REST 連續穩定 2/4）；同既有事項
+  「ONT SFU 間歇 teardown HTTP 500」。之後 ONT 查詢類 case 皆 Pass。
+- 發現遮罩缺口（未修，既有問題）：ONT password 以 `registid` 送入 NeoX ONT config payload，
+  redaction 未涵蓋此 key，request 附件與 integrated HTML 可見明文；teardown 失敗訊息中的 EMS 回應
+  `password` 欄位也出現在 Allure statusDetails。txt／HTML 簡易報表與 pytest log 無明文。
+
 ## 下一步
 
 0. b13_redhat：SSH／密碼遮罩／inventory 等待／EMS1-7056 Remote Control 已提交；決定是否清理既有報表中的明文密碼；

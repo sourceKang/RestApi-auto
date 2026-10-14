@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from uuid import uuid4
 
 import requests
@@ -13,16 +13,45 @@ from config_loader.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
 from utils.allure_helpers import allure_step, attach_json
 from utils.redaction import redact
-from utils.reporting import record_connection_event
+from utils.reporting import record_connection_event, record_slow_request
 
-# Waits before resending a GET/HEAD after a connect/read timeout or dropped connection.
+# Waits before resending a request after a transport error (see ADR 0002).
 TRANSPORT_RETRY_DELAYS: tuple[int, ...] = (5, 15)
+# GET/HEAD are resent after any transport error; other methods only after a connect
+# timeout, when the connection was never established and EMS cannot have seen the request.
 SAFE_TRANSPORT_RETRY_METHODS = frozenset({"GET", "HEAD"})
+# A request whose total time (all attempts and waits) exceeds this is flagged in the report.
+SLOW_REQUEST_SECONDS = 30.0
 
 
-def _transport_error_summary(exc: Exception) -> str:
-    reason = str(exc).replace("\n", " ")
-    return f"{type(exc).__name__}: {reason[:160]}"
+def _transport_error_summary(exc: Exception, host: str, timeout: Any, elapsed: float) -> str:
+    """Describe a transport error in plain words, without urllib3's internal retry wording."""
+    after = f"after {elapsed:.1f} s"
+    if isinstance(exc, requests.ConnectTimeout):
+        return (
+            f"ConnectTimeout: could not connect to {host}; connect timed out {after} "
+            f"(client limit {timeout} s); connection not established, request not sent"
+        )
+    if isinstance(exc, requests.ReadTimeout):
+        return (
+            f"ReadTimeout: {host} accepted the request but sent no response; read timed out {after} "
+            f"(client limit {timeout} s); EMS may have processed the request"
+        )
+    detail = str(exc)
+    if "RemoteDisconnected" in detail:
+        return (
+            f"Connection dropped: {host} closed the connection without sending a response ({after}); "
+            "EMS may have processed the request"
+        )
+    if "ConnectionResetError" in detail or "10054" in detail:
+        return (
+            f"Connection reset: {host} forcibly closed the connection ({after}); "
+            "EMS may have processed the request"
+        )
+    if "NewConnectionError" in detail or "refused" in detail.lower() or "10061" in detail:
+        return f"Connection refused: {host} rejected the connection ({after}); request not sent"
+    reason = detail.replace("\n", " ")
+    return f"{type(exc).__name__}: {host} ({after}): {reason[:160]}"
 
 
 class EmsApiClient:
@@ -109,7 +138,7 @@ class EmsApiClient:
             },
         )
 
-        raw = self._request_with_transport_retry(
+        raw, attempts = self._request_with_transport_retry(
             method.upper(),
             path,
             url,
@@ -118,6 +147,8 @@ class EmsApiClient:
             json=json,
         )
         elapsed = time.perf_counter() - started
+        if elapsed > SLOW_REQUEST_SECONDS:
+            self._record_slow_request(method.upper(), path, elapsed, attempts, raw.status_code)
         parsed = self._parse_response(raw)
         response = ApiResponse(
             status_code=raw.status_code,
@@ -148,16 +179,19 @@ class EmsApiClient:
         headers: dict[str, str] | None,
         params: dict[str, Any] | None,
         json: dict[str, Any] | None,
-    ) -> requests.Response:
-        """Send one request; resend only GET/HEAD after a transport error (see ADR 0002).
+    ) -> tuple[requests.Response, int]:
+        """Send one request and resend it after a safe transport error (see ADR 0002).
 
-        Every transport error is recorded for the report header and Allure. Mutating
-        requests are never resent because EMS may already have applied them.
+        GET/HEAD are resent after any connection error or timeout. POST/PUT/PATCH/DELETE
+        are resent only after a connect timeout; after a read timeout, reset or dropped
+        connection EMS may already have applied them, so they are not resent. Every
+        transport error is recorded for the report header and Allure.
+        Returns the response and the number of attempts used.
         """
-        retry_delays = TRANSPORT_RETRY_DELAYS if method in SAFE_TRANSPORT_RETRY_METHODS else ()
-        max_attempts = len(retry_delays) + 1
+        max_attempts = len(TRANSPORT_RETRY_DELAYS) + 1
         events = []
         for attempt in range(1, max_attempts + 1):
+            attempt_started = time.perf_counter()
             try:
                 raw = requests.request(
                     method,
@@ -169,13 +203,19 @@ class EmsApiClient:
                     timeout=self.timeout,
                 )
             except (requests.ConnectionError, requests.Timeout) as exc:
-                will_retry = attempt < max_attempts
+                retryable = method in SAFE_TRANSPORT_RETRY_METHODS or isinstance(exc, requests.ConnectTimeout)
+                will_retry = retryable and attempt < max_attempts
                 event = record_connection_event(
                     method,
                     path,
-                    _transport_error_summary(exc),
+                    _transport_error_summary(
+                        exc,
+                        self._host_label(),
+                        self.timeout,
+                        time.perf_counter() - attempt_started,
+                    ),
                     attempt=attempt,
-                    max_attempts=max_attempts,
+                    max_attempts=max_attempts if retryable else attempt,
                     action="retried" if will_retry else "raised",
                 )
                 events.append(event)
@@ -185,20 +225,45 @@ class EmsApiClient:
                         "method": method,
                         "path": path,
                         "attempt": attempt,
-                        "max_attempts": max_attempts,
+                        "max_attempts": event.max_attempts,
                         "error": event.error,
                         "action": event.action,
-                        "retry_delay_seconds": retry_delays[attempt - 1] if will_retry else None,
+                        "retry_delay_seconds": TRANSPORT_RETRY_DELAYS[attempt - 1] if will_retry else None,
                     },
                 )
                 if not will_retry:
                     raise
-                time.sleep(retry_delays[attempt - 1])
+                time.sleep(TRANSPORT_RETRY_DELAYS[attempt - 1])
                 continue
             for event in events:
                 event.recovered = True
-            return raw
+            return raw, attempt
         raise AssertionError("unreachable: transport retry loop exited without a response")
+
+    def _record_slow_request(self, method: str, path: str, elapsed: float, attempts: int, status_code: int) -> None:
+        record_slow_request(
+            method,
+            path,
+            elapsed,
+            attempts=attempts,
+            status_code=status_code,
+            threshold=SLOW_REQUEST_SECONDS,
+        )
+        attach_json(
+            "EMS slow request",
+            {
+                "method": method,
+                "path": path,
+                "elapsed_seconds": round(elapsed, 1),
+                "threshold_seconds": SLOW_REQUEST_SECONDS,
+                "attempts": attempts,
+                "status_code": status_code,
+            },
+        )
+
+    def _host_label(self) -> str:
+        parsed = urlsplit(self.base_url)
+        return parsed.netloc or self.base_url
 
     def login(self, credentials: Credentials) -> ApiResponse:
         return self.request(

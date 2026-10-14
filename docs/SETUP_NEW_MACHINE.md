@@ -98,14 +98,32 @@ ems:
       rest_api_url: "https://192.168.128.8:9116/netatlasemsapi"
       version: "03.00.11 (AAVV.221) b13"
       platform: "Ubuntu"
+    # The RedHat build currently supports NeoX series devices only.
     redhat:
       rest_api_url: "https://192.168.128.100:9116/netatlasemsapi"
-      version: "03.00.11 (AAVV.221) b12"
+      version: "03.00.11 (AAVV.221) b13"
       platform: "RedHat 9 (HA)"
+      wait_scale: 1.5
+      transport_retry_delays: [10, 30, 60]
+      min_request_interval: 0.3
 ```
 
 選擇順序：`EMS_TARGET` 環境變數 → `default_target`。兩台 server 不會同時
-納管同一個 node，測試前先把 node 移到要測的 server。
+納管同一個 node，測試前先把 node 移到要測的 server。RedHat 版目前只支援
+NeoX 系列設備。
+
+各 target 可另設時間參數，給資源較少、回應較慢的 server 使用；不設時用預設值
+（ubuntu 即是如此）：
+
+| 設定 | 預設 | 作用 |
+| --- | --- | --- |
+| `wait_scale` | 1 | 等待狀態變化的時限乘上此倍數；查詢間隔不變，狀態到了就繼續，正常情況不會變慢 |
+| `transport_retry_delays` | `[5, 15]` | 連線錯誤後重送前的等待秒數，個數加 1 即最多嘗試次數 |
+| `min_request_interval` | 0 | 每個請求之間至少間隔的秒數，降低 server 負載（會讓整輪測試變長） |
+
+設定不是預設值時，報表開頭會出現 `EMS Timing` 一行；連線錯誤與超過 30 秒的請求
+另列在 `EMS Connection Errors`、`EMS Slow Requests`。設計說明見
+[ADR 0002](adr/0002-get-transport-retry-and-connection-error-reporting.md)。
 
 ```powershell
 $env:EMS_TARGET = "ubuntu"

@@ -3,7 +3,7 @@
 ## Codex 與 Claude Code 共用協作
 
 - 本檔是兩個工具共用的規範來源；CLAUDE.md 引入本檔，只補 Claude 專用入口。
-- 開始工作先讀 docs/project-context.md 與 docs/work-status.md，再確認目前 Git 分支、HEAD、未提交變更及相關子目錄指引；文件中的進度只是快照，以當下程式與驗證證據為準。
+- 開始工作先讀 docs/project-context.md 與 docs/work-status.md（只含最近狀態與下一步；需要查舊紀錄時才讀 docs/work-history/<YYYY-MM>.md），再確認目前 Git 分支、HEAD、未提交變更及相關子目錄指引；文件中的進度只是快照，以當下程式與驗證證據為準。
 - 輪流接手時保留前一位的未提交變更，不逕自還原、覆蓋或納入提交。同時修改時使用各自獨立的 worktree 與分支；worktree 不會隔離 EMS 帳號或設備，外部測試仍需協調資源及授權。
 - 完成實質工作或交接前，更新 docs/work-status.md 的負責工具、分支／基準 commit、修改範圍、驗證結果、未完成事項與下一步。不要記錄密碼、token 或未經證實的 Root Cause。
 - 在不同 worktree 接續前先整合相關程式與進度文件；聊天記憶、個人工具設定和未提交檔案不會自動同步。
@@ -135,3 +135,9 @@ tests
 - 有 Allure raw results 時解析重點。每個 testcase 至少可查到 nodeid、TestLink case ID、title、status、duration、request、EMS response、CLI 驗證、failure/traceback/contract diff 與附件摘要。
 - 大型 request/response、CLI output、traceback 另存檔案；報表只放摘要與連結。
 - 保留原始 txt、HTML、Allure raw、log 的回查連結；所有內容先完成 redaction。
+
+## 回報格式
+
+- 改檔或跑測試前：先列「主目標 → 子目標」（5 行內），每個子目標寫完成條件，接著直接做。
+- 完成回報 10 行內，三段：結論（附「子目標完成 X／Y」）→ 重點最多 3 點 → 下一步 2～3 步。測試只寫「通過 X／失敗 Y」，有失敗才列原因；不重貼程式碼。
+- 測試／QA 報表依上方「Report 輸出」。另外的任務總結頁只在修改 3 個以上檔案、測試有失敗或使用者要求時產生：存 `reports/summary/YYYYMMDD-HHMM-<任務名>.html`，單檔、手機好讀，依序列結論、目標 Checklist（✅／⚠️／❌／⏭️＋證據或原因）、修改檔案、測試結果、風險、下一步。

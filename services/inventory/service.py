@@ -13,6 +13,7 @@ from utils.allure_helpers import allure_step, attach_json
 from utils.assertions import assert_api_success
 from utils.diagnostics import format_response_summary, format_value_summary
 from utils.reporting import record_report_note
+from config_loader.settings import scaled_wait
 
 
 ONTOLOGY_PATH_CASE_NAMES = {"ont_by_device", "ont_by_slot", "ont_by_port", "ont_by_id"}
@@ -209,7 +210,7 @@ class InventoryService:
             if "already exists" not in create.retresult.lower():
                 assert_api_success(create)
 
-            deadline = time.monotonic() + 60
+            deadline = time.monotonic() + scaled_wait(self.env_config, 60)
             last = create
             while time.monotonic() <= deadline:
                 existing = self.api_client.request("GET", path, session=session_id)
@@ -264,6 +265,7 @@ class InventoryService:
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         if initial_delay > 0:
             time.sleep(initial_delay)
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -292,6 +294,7 @@ class InventoryService:
         raise_on_timeout: bool = True,
     ):
         path = f"/ont/sn/{self.env_config.dut.ont_sn}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -322,6 +325,7 @@ class InventoryService:
         if initial_delay > 0:
             time.sleep(initial_delay)
         started = time.monotonic()
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = started + timeout
         last = None
         stable_hits = 0
@@ -368,6 +372,7 @@ class InventoryService:
     ) -> bool:
         dut = self.env_config.dut
         path = f"/port/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:

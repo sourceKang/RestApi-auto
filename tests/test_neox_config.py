@@ -54,6 +54,7 @@ from tests.support.options import option_or_full_testcases
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
 from utils.redaction import redact
+from config_loader.settings import scaled_wait
 
 
 pytestmark = [
@@ -1956,6 +1957,7 @@ def wait_for_rest_tokens(
 ):
     if consecutive_successes < 1:
         raise ValueError("consecutive_successes must be at least 1")
+    timeout = scaled_wait(getattr(api_client, "env", None), timeout)
     deadline = clock() + timeout
     last_response = None
     last_missing = expected_tokens

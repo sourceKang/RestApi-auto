@@ -27,3 +27,10 @@ ems:
       rest_api_url: "https://192.168.128.100:9116/netatlasemsapi"
       version: "03.00.11 (AAVV.221) b13"
       platform: "RedHat 9 (HA)"
+      # The .100 server is short of resources (slow responses, dropped connections).
+      # wait_scale multiplies state-polling time limits (poll intervals unchanged);
+      # transport_retry_delays are the waits before resending after a connection error;
+      # min_request_interval spaces request starts to ease the server load. See ADR 0002.
+      wait_scale: 1.5
+      transport_retry_delays: [10, 30, 60]
+      min_request_interval: 0.3

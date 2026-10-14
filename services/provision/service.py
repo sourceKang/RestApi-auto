@@ -13,6 +13,7 @@ from utils.allure_helpers import allure_step
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.case_metadata import attach_case_id
 from utils.diagnostics import format_response_summary, format_value_summary
+from config_loader.settings import scaled_wait
 
 
 class ProvisionOwnershipPreconditionError(AssertionError):
@@ -361,6 +362,7 @@ class ProvisionService:
     ):
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         expected_template = expected_template or str(payload["ontservice"]["data"]["templateprof"])
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -415,6 +417,7 @@ class ProvisionService:
     def post_ge_service_with_retry(self, session_id: str, payload, timeout: int = 180, interval: int = 5):
         dut = self.env_config.dut
         path = f"/geservice/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -476,6 +479,7 @@ class ProvisionService:
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         if initial_delay > 0:
             time.sleep(initial_delay)
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -495,6 +499,7 @@ class ProvisionService:
     def wait_for_ge_service_state(self, session_id: str, expected_states: set[str], timeout: int = 120, interval: int = 5):
         dut = self.env_config.dut
         path = f"/geservice/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -513,6 +518,7 @@ class ProvisionService:
 
     def wait_for_ont_service_removed(self, session_id: str, timeout: int = 60, interval: int = 3) -> None:
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -528,6 +534,7 @@ class ProvisionService:
     def wait_for_ge_service_removed(self, session_id: str, timeout: int = 60, interval: int = 3) -> None:
         dut = self.env_config.dut
         path = f"/geservice/{dut.device_name}/{dut.ge_slot_id}/{dut.ge_port_id}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:

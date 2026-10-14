@@ -11,6 +11,7 @@ from cases.payloads import ge_service_payload, ont_service_payload
 from utils.allure_helpers import allure_step
 from utils.case_metadata import attach_case_id
 from utils.diagnostics import format_response_summary, format_value_summary
+from config_loader.settings import scaled_wait
 
 
 class InvalidParamsService:
@@ -57,6 +58,7 @@ class InvalidParamsService:
         initial_interval: int = 5,
         max_interval: int = 15,
     ):
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         interval = initial_interval
         response = self.api_client.request("POST", path, session=session_id, json=payload)
@@ -190,6 +192,7 @@ class InvalidParamsService:
 
     def wait_for_ont_service_removed(self, session_id: str, timeout: int = 180, interval: int = 15) -> None:
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -212,6 +215,7 @@ class InvalidParamsService:
         if not service_id:
             return
         self.api_client.request("DELETE", f"/geservice/{service_id}", session=session_id)
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         while time.monotonic() <= deadline:
             response = self.api_client.request("GET", port_path, session=session_id)

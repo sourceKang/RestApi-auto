@@ -7,6 +7,7 @@ import pytest
 
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.case_metadata import attach_case_id
+from config_loader.settings import scaled_wait
 
 
 OLT140X_CHASSIS = {"OLT1404", "OLT1408", "OLT1408A-C", "OLT1408B", "OLT1408B-IA"}
@@ -166,6 +167,7 @@ class AlarmService:
         interval: int = 5,
     ):
         logid, sublogid = expected_ids
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:
@@ -248,6 +250,7 @@ class AlarmService:
         return logid, sublogid
 
     def wait_for_matching_active_alarm(self, session_id: str, timeout: int = 60, interval: int = 5):
+        timeout = scaled_wait(self.env_config, timeout)
         deadline = time.monotonic() + timeout
         last = None
         while time.monotonic() <= deadline:

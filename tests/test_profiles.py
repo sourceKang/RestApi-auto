@@ -21,7 +21,9 @@ pytestmark = pytest.mark.ems_scoped
 
 @pytest.fixture(scope="module")
 def profile_workspace(services, session_manager, env_config):
-    with session_manager.role_session(SessionRole.READWRITE) as session_id:
+    # The module can outlive the 600 s EMS session lifetime, so use the refreshable
+    # shared readwrite session (ADR 0001) instead of one fixed login.
+    with session_manager.shared_role_session(SessionRole.READWRITE) as session_id:
         workspace = ProfileWorkspace(services.profile, session_id)
         try:
             yield workspace

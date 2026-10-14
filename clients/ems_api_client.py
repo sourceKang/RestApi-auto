@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -15,13 +16,18 @@ from utils.allure_helpers import allure_step, attach_json
 from utils.redaction import redact
 from utils.reporting import record_connection_event, record_slow_request
 
-# Waits before resending a request after a transport error (see ADR 0002).
-TRANSPORT_RETRY_DELAYS: tuple[int, ...] = (5, 15)
+# Default waits before resending a request after a transport error (see ADR 0002);
+# an EMS target can override them with ems.transport_retry_delays.
+TRANSPORT_RETRY_DELAYS: tuple[float, ...] = (5, 15)
 # GET/HEAD are resent after any transport error; other methods only after a connect
 # timeout, when the connection was never established and EMS cannot have seen the request.
 SAFE_TRANSPORT_RETRY_METHODS = frozenset({"GET", "HEAD"})
 # A request whose total time (all attempts and waits) exceeds this is flagged in the report.
 SLOW_REQUEST_SECONDS = 30.0
+
+# Process-wide pacing so that every client honours ems.min_request_interval together.
+_PACING_LOCK = threading.Lock()
+_last_request_started = 0.0
 
 
 def _transport_error_summary(exc: Exception, host: str, timeout: Any, elapsed: float) -> str:
@@ -60,6 +66,8 @@ class EmsApiClient:
         self.base_url = env.base_url.rstrip("/")
         self.timeout = env.timeout
         self.verify_tls = env.verify_tls
+        self.retry_delays = tuple(getattr(env, "transport_retry_delays", TRANSPORT_RETRY_DELAYS))
+        self.min_request_interval = float(getattr(env, "min_request_interval", 0.0) or 0.0)
         if not self.verify_tls:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -182,15 +190,18 @@ class EmsApiClient:
     ) -> tuple[requests.Response, int]:
         """Send one request and resend it after a safe transport error (see ADR 0002).
 
+        Retry waits come from the EMS target (ems.transport_retry_delays).
+
         GET/HEAD are resent after any connection error or timeout. POST/PUT/PATCH/DELETE
         are resent only after a connect timeout; after a read timeout, reset or dropped
         connection EMS may already have applied them, so they are not resent. Every
         transport error is recorded for the report header and Allure.
         Returns the response and the number of attempts used.
         """
-        max_attempts = len(TRANSPORT_RETRY_DELAYS) + 1
+        max_attempts = len(self.retry_delays) + 1
         events = []
         for attempt in range(1, max_attempts + 1):
+            self._pace()
             attempt_started = time.perf_counter()
             try:
                 raw = requests.request(
@@ -228,17 +239,28 @@ class EmsApiClient:
                         "max_attempts": event.max_attempts,
                         "error": event.error,
                         "action": event.action,
-                        "retry_delay_seconds": TRANSPORT_RETRY_DELAYS[attempt - 1] if will_retry else None,
+                        "retry_delay_seconds": self.retry_delays[attempt - 1] if will_retry else None,
                     },
                 )
                 if not will_retry:
                     raise
-                time.sleep(TRANSPORT_RETRY_DELAYS[attempt - 1])
+                time.sleep(self.retry_delays[attempt - 1])
                 continue
             for event in events:
                 event.recovered = True
             return raw, attempt
         raise AssertionError("unreachable: transport retry loop exited without a response")
+
+    def _pace(self) -> None:
+        """Keep at least min_request_interval seconds between request starts to ease a loaded EMS."""
+        global _last_request_started
+        if self.min_request_interval <= 0:
+            return
+        with _PACING_LOCK:
+            wait = self.min_request_interval - (time.monotonic() - _last_request_started)
+            if wait > 0:
+                time.sleep(wait)
+            _last_request_started = time.monotonic()
 
     def _record_slow_request(self, method: str, path: str, elapsed: float, attempts: int, status_code: int) -> None:
         record_slow_request(

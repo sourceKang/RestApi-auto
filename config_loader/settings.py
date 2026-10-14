@@ -70,6 +70,10 @@ class EnvironmentConfig:
     node_target: dict[str, Any] = field(repr=False)
     ems_target: str = ""
     ems_platform: str = ""
+    # Per-target timing for a slower EMS (see ADR 0002); defaults keep the original behaviour.
+    wait_scale: float = 1.0
+    transport_retry_delays: tuple[float, ...] = (5.0, 15.0)
+    min_request_interval: float = 0.0
 
     def credentials_for(self, role: SessionRole) -> Credentials:
         if role is SessionRole.READWRITE:
@@ -127,7 +131,43 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
         node_target=selected_node,
         ems_target=str(ems.get("target", "")),
         ems_platform=str(ems.get("platform", "")),
+        wait_scale=_positive_float(ems.get("wait_scale", 1.0), "ems.wait_scale"),
+        transport_retry_delays=_retry_delays(ems.get("transport_retry_delays", (5, 15))),
+        min_request_interval=_non_negative_float(ems.get("min_request_interval", 0.0), "ems.min_request_interval"),
     )
+
+
+def scaled_wait(env_config: Any, seconds: float) -> float:
+    """Return a state-polling time limit scaled by the selected EMS target's wait_scale.
+
+    Only the time limit grows; poll intervals stay the same, so a state that is
+    reached early still returns early.
+    """
+    scale = float(getattr(env_config, "wait_scale", 1.0) or 1.0)
+    if scale == 1.0:
+        return seconds
+    scaled = seconds * scale
+    return int(scaled) if float(scaled).is_integer() else scaled
+
+
+def _positive_float(value: Any, name: str) -> float:
+    number = float(value)
+    if number <= 0:
+        raise ConfigError(f"{name} must be greater than 0, got {value!r}")
+    return number
+
+
+def _non_negative_float(value: Any, name: str) -> float:
+    number = float(value)
+    if number < 0:
+        raise ConfigError(f"{name} must not be negative, got {value!r}")
+    return number
+
+
+def _retry_delays(value: Any) -> tuple[float, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ConfigError(f"ems.transport_retry_delays must be a list of seconds, got {value!r}")
+    return tuple(_non_negative_float(item, "ems.transport_retry_delays item") for item in value)
 
 
 def load_ems_settings(path: str | Path | None = None, target: str | None = None) -> dict[str, Any]:

@@ -120,3 +120,119 @@ def test_report_header_lists_connection_errors_with_case_id(monkeypatch, fresh_r
 
 def test_report_header_has_no_connection_lines_without_errors(fresh_report_state):
     assert reporting._report_note_lines() == []
+
+
+HOST = "ems:9116"
+
+
+@pytest.mark.parametrize(
+    ("exc", "expected"),
+    [
+        (
+            requests.ConnectTimeout("HTTPSConnectionPool(...): Max retries exceeded ... timed out"),
+            "ConnectTimeout: could not connect to ems:9116; connect timed out after 21.0 s "
+            "(client limit 60 s); connection not established, request not sent",
+        ),
+        (
+            requests.ReadTimeout("Read timed out. (read timeout=60)"),
+            "ReadTimeout: ems:9116 accepted the request but sent no response; read timed out after 21.0 s "
+            "(client limit 60 s); EMS may have processed the request",
+        ),
+        (
+            requests.ConnectionError(
+                "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+            ),
+            "Connection dropped: ems:9116 closed the connection without sending a response (after 21.0 s); "
+            "EMS may have processed the request",
+        ),
+        (
+            requests.ConnectionError("('Connection aborted.', ConnectionResetError(10054, 'reset'))"),
+            "Connection reset: ems:9116 forcibly closed the connection (after 21.0 s); "
+            "EMS may have processed the request",
+        ),
+        (
+            requests.ConnectionError("NewConnectionError: Failed to establish a new connection: refused"),
+            "Connection refused: ems:9116 rejected the connection (after 21.0 s); request not sent",
+        ),
+    ],
+)
+def test_transport_error_summary_describes_error_without_urllib3_retry_wording(exc, expected):
+    summary = client_module._transport_error_summary(exc, HOST, 60, 21.0)
+
+    assert summary == expected
+    assert "Max retries exceeded" not in summary
+
+
+def test_recorded_event_uses_host_and_plain_summary(monkeypatch, fresh_report_state):
+    client, _, _ = transport_client(monkeypatch, [requests.ConnectTimeout("Max retries exceeded"), FakeRaw()])
+
+    client.request("GET", "/ontservice/SN1")
+
+    [event] = fresh_report_state.connection_events
+    assert event.error.startswith("ConnectTimeout: could not connect to ems; connect timed out after ")
+    assert "(client limit 1 s)" in event.error
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+def test_mutating_request_is_resent_after_connect_timeout_and_first_attempt_is_marked(
+    monkeypatch, fresh_report_state, method
+):
+    client, calls, sleeps = transport_client(monkeypatch, [requests.ConnectTimeout("timed out"), FakeRaw()])
+
+    result = client.request(method, "/profile/ONTBandwidthProfile/p1", json={"a": 1})
+
+    assert result.retstatus == "Success"
+    assert calls == [method, method]
+    assert sleeps == [client_module.TRANSPORT_RETRY_DELAYS[0]]
+    [event] = fresh_report_state.connection_events
+    assert (event.attempt, event.max_attempts, event.action, event.recovered) == (1, 3, "retried", True)
+    assert "connection not established, request not sent" in event.error
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        requests.ReadTimeout("Read timed out"),
+        requests.ConnectionError("RemoteDisconnected('Remote end closed connection without response')"),
+    ],
+)
+def test_mutating_request_is_not_resent_when_ems_may_have_received_it(monkeypatch, fresh_report_state, exc):
+    client, calls, sleeps = transport_client(monkeypatch, [exc])
+
+    with pytest.raises(type(exc)):
+        client.request("PATCH", "/profile/ONTBandwidthProfile/p1", json={"a": 1})
+
+    assert calls == ["PATCH"]
+    assert sleeps == []
+    [event] = fresh_report_state.connection_events
+    assert (event.attempt, event.max_attempts, event.action) == (1, 1, "raised")
+    assert "EMS may have processed the request" in event.error
+
+
+def test_request_over_slow_threshold_is_marked_in_report(monkeypatch, fresh_report_state):
+    monkeypatch.setattr(client_module, "SLOW_REQUEST_SECONDS", -1.0)
+    client, _, _ = transport_client(monkeypatch, [requests.ConnectTimeout("timed out"), FakeRaw()])
+    reporting.register_node_case(current_nodeid(), "EMS1-6834", "test_patch_profile_by_ontbandwidthprofile")
+
+    client.request("PATCH", "/profile/ONTBandwidthProfile/p1", json={"a": 1})
+
+    [slow] = fresh_report_state.slow_requests
+    assert (slow.method, slow.path, slow.attempts, slow.status_code) == (
+        "PATCH",
+        "/profile/ONTBandwidthProfile/p1",
+        2,
+        200,
+    )
+    lines = reporting._report_note_lines()
+    assert "EMS Slow Requests: 1 (total time over -1 s)" in lines
+    [detail] = [line for line in lines if line.startswith("EMS Slow Request #1:")]
+    assert detail.startswith(f"EMS Slow Request #1: EMS1-6834 {current_nodeid()} | PATCH /profile/ONTBandwidthProfile/p1 | SLOW ")
+    assert detail.endswith("s, 2 attempts | HTTP 200")
+
+
+def test_fast_request_is_not_marked_slow(monkeypatch, fresh_report_state):
+    client, _, _ = transport_client(monkeypatch, [FakeRaw()])
+
+    client.request("GET", "/device")
+
+    assert fresh_report_state.slow_requests == []

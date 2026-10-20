@@ -91,7 +91,8 @@ def test_parse_log_reads_xdist_lines():
     assert (selected, last_test, final_line) == (10, "tests/test_b.py::test_two[x]", None)
 
 
-def test_tail_lines_are_redacted(tmp_path):
+def test_tail_lines_are_redacted(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     run_dir = write_run(tmp_path, LOG_HEAD + "request body password=hunter22 registration-id OntPw1\n", minutes_ago=1)
 
     [node] = run_status(run_dir, now=NOW, tail=2)["nodes"]

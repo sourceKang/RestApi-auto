@@ -94,7 +94,8 @@ def _response(payload, text=""):
     return ApiResponse(200, payload, text, 0, "id", "GET", "https://ems/ont/sn/X")
 
 
-def test_masked_response_body_masks_json_and_text_bodies():
+def test_masked_response_body_masks_json_and_text_bodies(monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     json_body = masked_response_body(_response({"retstatus": "Success", "retval": [{"sn": "X", "password": SECRET, "registid": SECRET}]}))
     text_body = masked_response_body(_response(None, f"error: password={SECRET} registration-id {SECRET}"))
 
@@ -102,7 +103,8 @@ def test_masked_response_body_masks_json_and_text_bodies():
     assert SECRET not in text_body and text_body.count("***REDACTED***") == 2
 
 
-def test_rest_polling_timeout_message_is_masked_but_matching_uses_raw_body():
+def test_rest_polling_timeout_message_is_masked_but_matching_uses_raw_body(monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     payload = {"retstatus": "Success", "retresult": "", "retval": {"sn": "X", "password": SECRET}}
 
     class Client:

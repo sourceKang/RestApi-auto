@@ -74,7 +74,7 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 4. 未取得證據前不得寫 Root Cause；以「推測」「未確認」標示。
 5. 依 docs/report-format.md 產出 HTML 報表於 `reports/`（首屏結論、環境、各 node 統計、失敗分類、
    與上次差異、報表連結；與上次差異連到步驟 1 的 `compare_*.html`），
-   內容先完成 redaction。
+   本機報表保留原始資料；要分享給他人時先以 `EMS_REPORT_REDACT=1` 重產或只提供遮罩後的摘要。
 
 ## 6. 回填 TestLink ⏸
 

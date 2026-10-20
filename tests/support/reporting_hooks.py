@@ -10,7 +10,7 @@ from clients.ssh_cli import close_ssh_session_pools
 from tests.support.options import option_or_env
 from config_loader import load_environment
 from config_loader.auth import AuthConfigError, load_auth_config
-from utils.redaction import mask_values
+from utils.redaction import REPORT_REDACT_ENV, report_mask_values
 from tests.support.report_writer import write_reports
 from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result
 
@@ -22,6 +22,9 @@ _HEARTBEAT_THREAD: threading.Thread | None = None
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config: pytest.Config) -> None:
+    if config.getoption("--redact-reports", default=False):
+        # The env var reaches every redaction call, xdist workers and subprocesses alike.
+        os.environ[REPORT_REDACT_ENV] = "1"
     if is_xdist_worker(config):
         ensure_worker_report_dirs(config)
         return
@@ -43,7 +46,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     if not report.failed or report.longrepr is None:
         return
     text = report.longreprtext
-    masked = mask_values(text, _known_secret_values(item.config))
+    masked = report_mask_values(text, _known_secret_values(item.config))
     if masked != text:
         report.longrepr = masked
 

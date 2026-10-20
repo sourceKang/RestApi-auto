@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Iterable
 from typing import Any
 
+
+# Local test reports (Allure attachments, txt/HTML/integrated reports, failure messages, tracebacks)
+# keep original values so test data can be looked up later. Set EMS_REPORT_REDACT=1 (or pytest
+# --redact-reports) to mask them, e.g. before sharing a report. redact/redact_text/mask_values below
+# always mask; use them for anything shared outside (PR text, Redmine, TestLink notes, committed files).
+REPORT_REDACT_ENV = "EMS_REPORT_REDACT"
 
 # registid carries the ONT password in NeoX ONT config payloads.
 SENSITIVE_KEYS = {"password", "passwd", "sessionid", "token", "authorization", "registid"}
@@ -42,4 +49,23 @@ def mask_values(text: str, secrets: Iterable[str]) -> str:
     for secret in sorted({secret for secret in secrets if secret}, key=len, reverse=True):
         text = text.replace(secret, "***REDACTED***")
     return text
+
+
+def report_redaction_enabled() -> bool:
+    return os.environ.get(REPORT_REDACT_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def report_value(value: Any) -> Any:
+    """Value for a local report or attachment: original unless EMS_REPORT_REDACT is on."""
+    return redact(value) if report_redaction_enabled() else value
+
+
+def report_text(text: str) -> str:
+    """Text for a local report, failure message or console output: original unless EMS_REPORT_REDACT is on."""
+    return redact_text(text) if report_redaction_enabled() else text
+
+
+def report_mask_values(text: str, secrets: Iterable[str]) -> str:
+    """Traceback text for a local report: original unless EMS_REPORT_REDACT is on."""
+    return mask_values(text, secrets) if report_redaction_enabled() else text
 

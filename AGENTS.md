@@ -45,7 +45,7 @@ tests
 ## 敏感資料與 EMS target
 
 - EMS server 由 `configs/ems.yaml` 的 `ems.targets` 搭配 `EMS_TARGET` 選擇。連線外部 EMS 前，先確認所選 target 與 node 實際納管的 server 一致；node 搬移由使用者手動進行。
-- request、response、log、attachment、report 一律遮罩 devKey、密碼、token、ONT password 等敏感資料。
+- 本機測試報表（Allure 附件、txt／HTML／integrated、失敗訊息）保留原始資料（含密碼、session id、token、devKey）以便回查；分享報表前以 `EMS_REPORT_REDACT=1`（或 `--redact-reports`）重產。對外內容（PR 描述、Redmine、TestLink notes、提交的檔案與文件、對話回報）一律遮罩。
 - `configs/auth_accounts.yaml` 禁止提交明文密碼、token、devKey 或真實帳號（CI 以 `tools/check_config_secrets.py` 檢查 configs）；commit/push 前檢查 `git status -sb` 與 staged diff。
 
 ## 外部整合與安全

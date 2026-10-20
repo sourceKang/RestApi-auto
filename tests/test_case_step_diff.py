@@ -80,7 +80,8 @@ def test_compare_result_steps_flags_step_with_changed_response_body(tmp_path):
     assert {diff.path for diff in response.diffs if diff.volatile} == {"elapsed", "body.retval.LogTime"}
 
 
-def test_render_case_comparison_shows_side_by_side_without_secrets_or_ip(tmp_path):
+def test_render_case_comparison_shows_side_by_side_without_secrets_or_ip(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     before_dir = _write_run(tmp_path / "a", host="192.168.128.8", elapsed=1.0, retstatus="Success", alarm_time="t1")
     after_dir = _write_run(
         tmp_path / "b", host="192.168.128.100", elapsed=2.0, retstatus="Fail", alarm_time="t2", status="broken"

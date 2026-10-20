@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any
 
-from utils.redaction import redact, redact_text
+from utils.redaction import report_value, report_text
 
 
 FULL_JSON_ENV = "EMS_ATTACH_FULL_JSON"
@@ -37,7 +37,7 @@ def summarize_value(
 
 
 def format_value_summary(value: Any, *, max_length: int = MAX_MESSAGE_LENGTH) -> str:
-    rendered = _to_json(summarize_value(redact(value), max_depth=4, max_list_items=5, max_string_length=240))
+    rendered = _to_json(summarize_value(report_value(value), max_depth=4, max_list_items=5, max_string_length=240))
     if len(rendered) <= max_length:
         return rendered
     return f"{rendered[:max_length]}...<truncated {len(rendered) - max_length} chars>"
@@ -57,15 +57,16 @@ def format_response_summary(response: Any, *, max_length: int = MAX_MESSAGE_LENG
 
 
 def masked_response_body(response: Any) -> str:
-    """Full response body for assertion and failure messages, with secrets masked.
+    """Full response body for assertion and failure messages.
 
     Allure copies exception messages verbatim into statusDetails (test, step and fixture
-    teardown), outside the longrepr masking, so messages must not carry a raw body.
+    teardown), so every message body goes through here: original values by default, masked
+    when EMS_REPORT_REDACT is on (see utils/redaction.py).
     """
     body = getattr(response, "json", None)
     if isinstance(body, (dict, list)):
-        return json.dumps(redact(body), ensure_ascii=False, default=str)
-    return redact_text(str(getattr(response, "text", "") or ""))
+        return json.dumps(report_value(body), ensure_ascii=False, default=str)
+    return report_text(str(getattr(response, "text", "") or ""))
 
 
 def json_for_attachment(value: Any) -> str:

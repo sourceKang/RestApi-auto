@@ -106,8 +106,8 @@ review（含 PR 自我檢查）時逐項確認。以下只列需要判斷的項�
 設定檔明文（`tools/check_config_secrets.py`）、offline 測試不寫正式報表（CI 防護步驟）、
 import 依賴方向（`tests/test_import_layers.py`）、固定 sleep（`tests/test_no_fixed_sleep.py`：只有「迴圈內有讀取狀態」的
 輪詢自動通過；`tests/test_*.py` 不得直接 sleep，helper 放 tests/support；其餘須登記在 `KNOWN_SLEEPS` 並附移除條件）、
-失敗訊息不得嵌入原始回應（`tests/test_no_raw_response_in_messages.py`：assert／raise／`pytest.fail` 的訊息要用
-`utils.diagnostics.masked_response_body()`，因為 Allure 直接把例外字串寫進 statusDetails）。
+失敗訊息的回應本體須經 `utils.diagnostics.masked_response_body()`（`tests/test_no_raw_response_in_messages.py`；
+Allure 直接把例外字串寫進 statusDetails，經由它才能讓 `EMS_REPORT_REDACT` 一致生效）。
 
 - 修正位於最接近原因的責任層，沒有由 testcase 補償底層缺陷。
 - 沒有放寬正確 assertion、吞掉 exception 或忽略錯誤。
@@ -115,7 +115,8 @@ import 依賴方向（`tests/test_import_layers.py`）、固定 sleep（`tests/t
 - NeoX 設定變更附 CLI baseline → REST → CLI 證據；REST-only 結果沒有宣稱為完整驗證。
 - 沒有硬編碼環境、node、slot、port、ONT 或資源 ID；上游資料由 fixture 傳遞並負責 teardown。
 - 破壞性案例使用專屬拋棄式測資；中途失敗也能清理，且可重跑。
-- request、response、log、附件、報表與 PR 內文都已遮罩敏感資料。
+- 本機報表與附件經 `utils.redaction.report_*`（預設保留原值、`EMS_REPORT_REDACT=1` 時遮罩）；PR 內文、Redmine、
+  TestLink notes 與提交的檔案一律遮罩（`redact`／`redact_text`）。
 - 會影響 EMS／設備的新行為預設關閉，需明確 option／marker 才執行。
 - 新增測試檔或 case 前，先確認能否併入既有檔案或資料驅動 case（破壞性案例的專屬測資除外）；
   清理殘留檔案先列清單，經使用者確認後才刪。

@@ -171,6 +171,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Skip the merged HTML evidence report generated from txt report and raw Allure attachments.",
     )
+    parser.addoption(
+        "--redact-reports",
+        action="store_true",
+        default=False,
+        help="Mask passwords, session ids, tokens and devKeys in Allure attachments and reports "
+        "(same as EMS_REPORT_REDACT=1). By default local reports keep original values.",
+    )
 
 
 def neox_parallel_worker_auth_profile(config: pytest.Config) -> str | None:

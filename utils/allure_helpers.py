@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from typing import Any
 
 from utils.diagnostics import json_for_attachment
-from utils.redaction import redact
+from utils.redaction import report_value
 
 
 def attach_json(name: str, value: Any) -> None:
@@ -12,7 +12,7 @@ def attach_json(name: str, value: Any) -> None:
         import allure
 
         allure.attach(
-            json_for_attachment(redact(value)),
+            json_for_attachment(report_value(value)),
             name=name,
             attachment_type=allure.attachment_type.JSON,
         )

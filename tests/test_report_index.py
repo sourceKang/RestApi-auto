@@ -250,7 +250,8 @@ def test_formal_runs_match_parallel_nodes_sharing_a_timestamp(tmp_path):
     assert index.find_run(selector, "Noex-06_202").node_ip == "192.0.2.202"
 
 
-def test_compare_runs_classifies_cases_and_names_first_differing_step(tmp_path):
+def test_compare_runs_classifies_cases_and_names_first_differing_step(tmp_path, monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     reports = _build_reports(tmp_path)
     index = rindex.build_index(reports, tmp_path / "missing.yaml")
     before = index.find_run(B12, "NODE3")

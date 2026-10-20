@@ -13,7 +13,7 @@ from clients.session import RefreshableSession
 from config_loader.settings import Credentials, EnvironmentConfig
 from models.api import ApiResponse
 from utils.allure_helpers import allure_step, attach_json
-from utils.redaction import redact
+from utils.redaction import report_value
 from utils.reporting import record_connection_event, record_slow_request
 
 # Default waits before resending a request after a transport error (see ADR 0002);
@@ -173,7 +173,7 @@ class EmsApiClient:
             {
                 "status_code": response.status_code,
                 "elapsed": response.elapsed,
-                "body": redact(response.json),
+                "body": report_value(response.json),
             },
         )
         return response

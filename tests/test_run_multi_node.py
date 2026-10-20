@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from tests.support.preflight import DutPreflightResult
+from services.preflight import DutPreflightResult
 from tools import run_multi_node
 
 

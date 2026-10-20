@@ -19,9 +19,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from config_loader.auth import AuthConfigError, load_auth_config
 from config_loader.hardware import HardwareConfigError, load_hardware_config
+from config_loader.neox_parallel import validate_neox_parallel_settings, xdist_worker_count
 from config_loader.settings import ConfigError, load_ems_settings
-from tests.support.options import validate_neox_parallel_settings, xdist_worker_count
-from tests.support.preflight import run_startup_preflight
+from services.preflight import run_startup_preflight
 
 
 REPORT_ROOT = PROJECT_ROOT / "reports" / "multi_node"

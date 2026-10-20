@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from models.api import ApiResponse
+from services import preflight as preflight_core
+from services.target_sync import TargetSyncResult
 from tests.support import preflight
-from tests.support.target_sync import TargetSyncResult
 
 
 class FakeItem:
@@ -35,19 +36,19 @@ def test_find_down_reason_detects_device_down_message():
         },
     }
 
-    assert preflight._find_down_reason(payload) == "result=Device 192.168.169.57 is down."
+    assert preflight_core._find_down_reason(payload) == "result=Device 192.168.169.57 is down."
 
 
 def test_find_down_reason_detects_failed_service_state():
     payload = {"retval": {"geserviceinfo": {"state": "Fail"}}}
 
-    assert preflight._find_down_reason(payload) == "state=Fail"
+    assert preflight_core._find_down_reason(payload) == "state=Fail"
 
 
 def test_find_down_reason_ignores_healthy_payload():
     payload = {"retval": {"device": {"OperationStatus": "Up", "state": "Success"}}}
 
-    assert preflight._find_down_reason(payload) is None
+    assert preflight_core._find_down_reason(payload) is None
 
 
 def test_find_unready_devstatus_rejects_status_other_than_one():
@@ -63,7 +64,7 @@ def test_find_unready_devstatus_rejects_status_other_than_one():
     }
 
     assert (
-        preflight._find_unready_devstatus(payload)
+        preflight_core._find_unready_devstatus(payload)
         == "DevStatus=4 DevName=Taiwan_NeoX-03_169.58 IPAddress=192.168.169.58; expected DevStatus=1"
     )
 
@@ -71,7 +72,7 @@ def test_find_unready_devstatus_rejects_status_other_than_one():
 def test_find_unready_devstatus_accepts_status_one():
     payload = {"retval": {"deviceinfo": {"DevStatus": "1"}}}
 
-    assert preflight._find_unready_devstatus(payload) is None
+    assert preflight_core._find_unready_devstatus(payload) is None
 
 
 def test_check_success_fails_device_inventory_when_devstatus_is_not_one():
@@ -89,7 +90,7 @@ def test_check_success_fails_device_inventory_when_devstatus_is_not_one():
         def request(self, method, path, *, session):
             return response
 
-    result = preflight._check_success(FakeClient(), "session", "/device/NODE3", "device inventory")
+    result = preflight_core._check_success(FakeClient(), "session", "/device/NODE3", "device inventory")
 
     assert not result.ok
     assert "DevStatus=4" in result.reason
@@ -114,7 +115,7 @@ def test_skip_unready_dut_items_does_not_ont_preflight_before_prepare(monkeypatc
         called["ont"] = True
         return preflight.DutPreflightResult(False, "ONT is not prepared yet")
 
-    monkeypatch.setattr(preflight, "run_ont_preflight", fail_if_called)
+    monkeypatch.setattr(preflight_core, "run_ont_preflight", fail_if_called)
 
     preflight.skip_unready_dut_items(FakeConfig(), [item])
 
@@ -149,9 +150,9 @@ def test_check_success_retries_device_inventory_until_devstatus_is_one(monkeypat
         def request(self, method, path, *, session):
             return responses.pop(0)
 
-    monkeypatch.setattr(preflight.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(preflight_core.time, "sleep", lambda seconds: sleeps.append(seconds))
 
-    result = preflight._check_success(
+    result = preflight_core._check_success(
         FakeClient(),
         "session",
         "/device/NODE3",
@@ -166,7 +167,7 @@ def test_check_success_retries_device_inventory_until_devstatus_is_one(monkeypat
 
 def test_startup_preflight_stops_when_target_sync_fails(monkeypatch):
     monkeypatch.setattr(
-        preflight,
+        preflight_core,
         "sync_target_data_from_cli",
         lambda node, auth_profile: TargetSyncResult(False, "show lc st failed"),
     )
@@ -174,9 +175,9 @@ def test_startup_preflight_stops_when_target_sync_fails(monkeypatch):
     def fail_if_called(node, auth_profile):
         raise AssertionError("device preflight should not run after target sync failure")
 
-    monkeypatch.setattr(preflight, "run_device_preflight", fail_if_called)
+    monkeypatch.setattr(preflight_core, "run_device_preflight", fail_if_called)
 
-    result = preflight.run_startup_preflight("NODE1", None)
+    result = preflight_core.run_startup_preflight("NODE1", None)
 
     assert not result.ok
     assert result.reason == "show lc st failed"

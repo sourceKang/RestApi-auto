@@ -18,6 +18,15 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-E：run_multi_node 不再依賴 tests.support（Claude Code）
+
+- 分支 claude/pr-e-preflight-services，基準為 PR-D 合併後的預設分支。
+- 純函式 neox_parallel_auth_profile_for_worker／validate_neox_parallel_settings／xdist_worker_count 移到
+  config_loader/neox_parallel.py（tests/support/options.py 重新匯出）；preflight 核心（DutPreflightResult、
+  run_*_preflight 與判讀函式）移到 services/preflight.py；tests/support/target_sync.py 以 git mv 移到 services/。
+  tests/support/preflight.py 只留 pytest skip hook，並由本模組參照 run_startup_preflight，PR-A 的 guard 仍可替換。
+- 搬移程式碼與原檔逐字相同（腳本比對）；KNOWN_VIOLATIONS 刪除 run_multi_node 的 2 筆。
+
 ### 2026-10-20 retro 計畫 PR-D：import 依賴方向測試（Claude Code）
 
 - 分支 claude/pr-d-import-layers，基準為 PR-C 合併後的預設分支。
@@ -27,22 +36,12 @@
 - 順帶修正 tools/check_environment.py docstring 的無效跳脫（改 raw docstring，內容不變），消除 compile 與 AST 掃描的 SyntaxWarning。
 - 驗證：5 passed（1.3 s，無警告）；暫存 worktree 實測「新增 clients→services lazy import」與「修好違規未刪 allowlist」皆會失敗。
 
-### 2026-10-20 retro 計畫 PR-C：pr-description skill（Claude Code）
-
-- 分支 claude/pr-c-pr-description，基準為 PR-B 合併後的預設分支。
-- 新增 .codex/skills/pr-description（SKILL.md、agents/openai.yaml、references/example-pr20.md）與 .claude 入口；
-  內文三段：摘要（最小的圖）、證據（由強到弱，含 dry run 與「未驗證」）、合併風險（door＋blast radius 判準）；
-  流程含對照 Review 檢查清單、預覽後才 `gh pr create/edit`。給 RD／PM 時只把摘要第一句寫成白話，不另做白話版。
-- 新增 .github/pull_request_template.md（只放骨架，網頁建 PR 時才套用）；AGENTS.md、report-format、project-context 加指標。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-E]〔離線〕tools/run_multi_node.py 不再 import tests.support：preflight 核心與 target_sync 移到 services，
-  純函式移到 config_loader（含 `neox_parallel_worker_auth_profile`）。完成後刪除 KNOWN_VIOLATIONS 中 run_multi_node 的 2 筆。
 - [R-F]〔離線〕utils/reporting.py 不再 lazy import tools：整合報表產生器移到 utils。完成後刪除 KNOWN_VIOLATIONS 中 reporting→tools 1 筆。
 - [R-G]〔離線〕固定 sleep 檢查（先搬 wait_for_rest_tokens、合併冷卻延遲、假延遲改 Event）。
 - [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。

@@ -45,14 +45,6 @@ class Known:
 # Existing violations, keyed by (importing file, imported module). Each entry must still
 # match a real import; fixing the import without removing the entry fails the test.
 KNOWN_VIOLATIONS: dict[tuple[str, str], Known] = {
-    ("tools/run_multi_node.py", "tests.support.options"): Known(
-        reason="validate_neox_parallel_settings and xdist_worker_count live in pytest option glue",
-        remove_when="the pure functions move to config_loader (retro plan R-E)",
-    ),
-    ("tools/run_multi_node.py", "tests.support.preflight"): Known(
-        reason="run_startup_preflight lives beside the pytest skip hook",
-        remove_when="preflight core and target_sync move to services (retro plan R-E)",
-    ),
     ("utils/reporting.py", "tools.generate_integrated_evidence_report"): Known(
         reason="the integrated evidence report writer lives in a CLI module",
         remove_when="the writer moves to utils and tools keeps a thin CLI wrapper (retro plan R-F)",

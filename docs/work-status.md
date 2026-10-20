@@ -21,7 +21,20 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
-### 2026-10-20 CI 離線測試、報表外洩修正、設定明文檢查（Claude Code，未提交）
+### 2026-10-20 PR-A：offline 不跑 DUT preflight、registid 遮罩（Claude Code）
+
+- 分支 claude/pr-a-preflight-redaction，基準 d4b1685（#19 合併後）。retro 計畫 A～I 的第一項。
+- DUT preflight（會連 EMS／DUT）原本在 tryfirst 的 `pytest_collection_modifyitems` 執行，早於 `-m`／`-k`
+  篩選，`pytest -m offline` 不加 `--skip-dut-preflight` 仍會連線。改到 `pytest_collection_finish`（篩選後），
+  capability skip 一併移過去以保持在 target sync 之後。tests/test_collection_preflight.py 以子程序實際 collect
+  驗證；同一測試在舊基準會失敗（已在暫存 worktree 確認）。
+- 遮罩：`registid`（NeoX ONT payload 中的 ONT password）加入 SENSITIVE_KEYS；`redact_text` 另遮罩 CLI 的
+  `registration-id <值>`；`redact()` 對字串也套用 `redact_text`；CLI 驗證 JSON（reports/device-verification）寫檔前遮罩。
+- 驗證：compile 通過；`pytest -m offline` 通過 117／失敗 0；collect 751；明文檢查 0 筆；`reports/` 無新增。未連 EMS／DUT。
+- 未做：teardown 失敗訊息中 EMS 回應的 `password` 仍會進 Allure `statusDetails.message`（allure 直接取
+  `call.excinfo.exconly()`，不經 longrepr 遮罩），需在組例外訊息處遮罩，另列工作項；既有 reports/ 明文清理待決策 D1。
+
+### 2026-10-20 CI 離線測試、報表外洩修正、設定明文檢查（Claude Code）
 
 - 基準：73e18c5（AGENTS.md 精簡）之上，分支 codex/neox-profile-read-path-fix。
 - 離線測試寫入正式報表：原因是 tests/test_case_metadata.py 呼叫 `attach_case_metadata`，

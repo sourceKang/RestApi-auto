@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from tests.support.collection import RAD_AUTH_MATRIX_CASES
@@ -9,6 +7,7 @@ from clients.runtime import build_run_context
 from clients.session import SessionManager
 from tests.support.service_bundle import ServiceBundle, build_service_bundle
 from tests.support.options import neox_parallel_worker_auth_profile, session_cache_enabled
+from tests.support.pacing import pause_between_cases
 from tests.support.ge_cli_config import wait_for_ge_cli_config
 from tests.support.ge_workflow import GeServiceWorkflowState
 from tests.support.ont_cli_status import read_ont_cli_status, wait_for_ont_cli_is
@@ -77,19 +76,13 @@ def neox_config_case_delay(env_config, request):
     delay_seconds = request.config.getoption("--neox-config-delay-seconds")
     if delay_seconds < 0:
         pytest.fail("--neox-config-delay-seconds must be greater than or equal to 0")
-    if delay_seconds <= 0:
-        return
-
-    started = time.monotonic()
-    time.sleep(float(delay_seconds))
-    attach_json(
+    pause_between_cases(
         "NeoX config inter-case delay",
+        float(delay_seconds),
         {
             "node": env_config.dut.node_key,
             "device_ip": env_config.dut.device_ip,
             "case": request.node.nodeid,
-            "requested_seconds": float(delay_seconds),
-            "actual_seconds": round(time.monotonic() - started, 3),
         },
     )
 

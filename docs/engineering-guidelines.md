@@ -103,7 +103,8 @@ Ground Truth：
 
 review（含 PR 自我檢查）時逐項確認。以下只列需要判斷的項目；能由機器檢查的規則已由 CI 強制：
 設定檔明文（`tools/check_config_secrets.py`）、offline 測試不寫正式報表（CI 防護步驟）、
-import 依賴方向（`tests/test_import_layers.py`）。
+import 依賴方向（`tests/test_import_layers.py`）、固定 sleep（`tests/test_no_fixed_sleep.py`：只有「迴圈內有讀取狀態」的
+輪詢自動通過；`tests/test_*.py` 不得直接 sleep，helper 放 tests/support；其餘須登記在 `KNOWN_SLEEPS` 並附移除條件）。
 
 - 修正位於最接近原因的責任層，沒有由 testcase 補償底層缺陷。
 - 沒有放寬正確 assertion、吞掉 exception 或忽略錯誤。

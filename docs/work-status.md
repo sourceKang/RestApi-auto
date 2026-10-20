@@ -18,6 +18,17 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-G：固定 sleep 檢查（Claude Code）
+
+- 分支 claude/pr-g-fixed-sleep-check，基準為 PR-F 合併後的預設分支。
+- 新增 tests/test_no_fixed_sleep.py（offline、AST）：迴圈可結束且迴圈內有讀取狀態的呼叫才算輪詢、自動通過；
+  `sleeper=time.sleep` 預設引數視為注入；tests/test_*.py 不得直接 sleep；其餘 10 處登記在 KNOWN_SLEEPS（次數、類型、
+  理由、移除條件），次數不符或已刪除未清單都會失敗。
+- 小重構：wait_for_rest_tokens 逐字移到 tests/support/rest_polling.py（test_neox_config 以同名匯入，monkeypatch 路徑不變）；
+  兩份 NeoX 案例冷卻延遲合併為 tests/support/pacing.py 的 pause_between_cases。test_session_manager 的假延遲
+  找不到不靠時間的重疊做法，保留並登記為 fake-latency（偏離原計畫）。
+- ACL 設定後固定等待 2 處（test_neox_config.py）與輪詢前 initial_delay 3 處登記為待實機（R-SLP）。
+
 ### 2026-10-20 retro 計畫 PR-F：整合報表產生器移到 utils（Claude Code）
 
 - 分支 claude/pr-f-evidence-report-utils，基準為 PR-E 合併後的預設分支。
@@ -26,28 +37,18 @@
   tools/case_step_diff.py、tests/test_reporting.py 改從 utils 匯入；KNOWN_VIOLATIONS 剩 reporting→cases 1 筆（R-I）。
 - 驗證：以 b13_redhat NODE3 第 11 次正式執行（254 cases、316 Allure 結果）分別跑舊版與新版 CLI，輸出 HTML 逐位元組相同（10.4 MB）。
 
-### 2026-10-20 retro 計畫 PR-E：run_multi_node 不再依賴 tests.support（Claude Code）
-
-- 分支 claude/pr-e-preflight-services，基準為 PR-D 合併後的預設分支。
-- 純函式 neox_parallel_auth_profile_for_worker／validate_neox_parallel_settings／xdist_worker_count 移到
-  config_loader/neox_parallel.py（tests/support/options.py 重新匯出）；preflight 核心（DutPreflightResult、
-  run_*_preflight 與判讀函式）移到 services/preflight.py；tests/support/target_sync.py 以 git mv 移到 services/。
-  tests/support/preflight.py 只留 pytest skip hook，並由本模組參照 run_startup_preflight，PR-A 的 guard 仍可替換。
-- 搬移程式碼與原檔逐字相同（腳本比對）；KNOWN_VIOLATIONS 刪除 run_multi_node 的 2 筆。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-G]〔離線〕固定 sleep 檢查（先搬 wait_for_rest_tokens、合併冷卻延遲、假延遲改 Event）。
 - [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。
 - [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。完成後刪除 KNOWN_VIOLATIONS 中 reporting→cases 1 筆。
 - [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
   （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。
 - [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；
-  inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。
+  inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。
 - [R-REG]〔需實機〕registid 遮罩於實機報表確認。
 
 使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：

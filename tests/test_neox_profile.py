@@ -25,6 +25,7 @@ from services.neox_config.service import (
 from services.neox_config.profile_api import delete_profile_if_exists, profile_read_path
 from tests.support.neox_cli_verification import neox_cli_credentials, run_neox_cli_commands, write_neox_cli_verify_report
 from tests.support.connectivity import assert_ping_reachable
+from tests.support.pacing import pause_between_cases
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
 
@@ -584,19 +585,14 @@ def neox_profile_delay_seconds(request) -> float:
 
 
 def delay_between_neox_profile_cases(env_config, profile_type: str, case_name: str, delay_seconds: float) -> None:
-    if delay_seconds <= 0:
-        return
-    started = time.monotonic()
-    time.sleep(delay_seconds)
-    attach_json(
+    pause_between_cases(
         "NeoX profile inter-case delay",
+        delay_seconds,
         {
             "node": env_config.dut.node_key,
             "device_ip": env_config.dut.device_ip,
             "profile_type": profile_type,
             "case": case_name,
-            "requested_seconds": delay_seconds,
-            "actual_seconds": round(time.monotonic() - started, 3),
         },
     )
 

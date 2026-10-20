@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from tests.support import report_writer
 from utils import reporting
 
 
@@ -88,7 +89,7 @@ def test_txt_report_aggregates_permission_cases_and_suppresses_internal_tests(mo
 
     reporting.record_result("tests/test_hardware_config.py::test_node1_report_cards_are_yaml_targeted", "passed", 0.01)
 
-    rendered = reporting._render_txt_report(_fake_env())
+    rendered = report_writer._render_txt_report(_fake_env())
     case_lines = [line for line in rendered.splitlines() if line.startswith("[")]
 
     assert all("NO_CASE_ID" not in line for line in case_lines)
@@ -109,7 +110,7 @@ def test_permission_summary_treats_skip_as_non_blocking_when_other_cases_pass(mo
     reporting.register_permission_role("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "readonly")
     reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[device_list]", "passed", 0.07)
 
-    rendered = reporting._render_txt_report(_fake_env())
+    rendered = report_writer._render_txt_report(_fake_env())
     case_lines = [line for line in rendered.splitlines() if line.startswith("[")]
 
     assert any("[EMS1-7109][readonly_permission_summary] Result Pass" in line for line in case_lines)
@@ -130,7 +131,7 @@ def test_permission_summary_breakdown_lists_failed_members(monkeypatch):
     ]
     reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readonly[ont_by_id]", "failed", 0.12)
 
-    breakdown = reporting.permission_summary_breakdown("readonly")
+    breakdown = report_writer.permission_summary_breakdown("readonly")
 
     assert breakdown["case_id"] == "EMS1-7109"
     assert breakdown["outcome"] == "failed"
@@ -152,7 +153,7 @@ def test_html_report_summarizes_results_and_failed_cases(monkeypatch):
     ]
     reporting.record_result("tests/test_inventory.py::test_inventory_read_endpoints_readwrite[ont_by_id]", "failed", 0.12)
 
-    rendered = reporting._render_html_report(_fake_env())
+    rendered = report_writer._render_html_report(_fake_env())
 
     assert "<title>Web_Ems_Rest_Api_demo_IES4204_MSC1240QB_report_2026-05-01_12-00-00</title>" in rendered
     assert '<strong class="status status-failed">FAIL</strong>' in rendered
@@ -173,7 +174,7 @@ def test_html_report_escapes_metadata_and_case_names(monkeypatch):
     env = _fake_env()
     env.dut.device_name = "<NODE3>"
 
-    rendered = reporting._render_html_report(env)
+    rendered = report_writer._render_html_report(env)
 
     assert "&lt;NODE3&gt;" in rendered
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered
@@ -195,8 +196,8 @@ def test_session_metrics_are_allowlisted_and_rendered_without_sensitive_values(m
         }
     )
 
-    txt = reporting._render_txt_report(_fake_env())
-    html = reporting._render_html_report(_fake_env())
+    txt = report_writer._render_txt_report(_fake_env())
+    html = report_writer._render_html_report(_fake_env())
 
     assert "Session Cache Mode: on" in txt
     assert "Session Cache Hits: 7" in txt
@@ -254,7 +255,7 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
         ),
     )
 
-    txt_path, html_summary, allure_results, allure_html, integrated_html = reporting.write_reports(config, _fake_env())
+    txt_path, html_summary, allure_results, allure_html, integrated_html = report_writer.write_reports(config, _fake_env())
 
     assert txt_path.exists()
     assert html_summary.exists()
@@ -335,22 +336,22 @@ def test_write_reports_skips_sessions_without_testlink_cases(monkeypatch, tmp_pa
     config = _report_config(tmp_path)
 
     # --collect-only: nothing ran at all.
-    assert reporting.has_reportable_cases() is False
-    assert reporting.write_reports(config, _fake_env()) is None
+    assert report_writer.has_reportable_cases() is False
+    assert report_writer.write_reports(config, _fake_env()) is None
 
     # Offline unit tests: results exist but none is registered to a TestLink case.
     reporting.record_result("tests/test_reporting.py::test_something", "passed", 0.01)
     reporting.record_result("tests/test_report_index.py::test_other", "failed", 0.02)
-    assert reporting.has_reportable_cases() is False
-    assert reporting.write_reports(config, _fake_env()) is None
+    assert report_writer.has_reportable_cases() is False
+    assert report_writer.write_reports(config, _fake_env()) is None
     assert sorted(path.name for path in (tmp_path / "reports").iterdir()) == [".allure-results-current"]
 
     reporting.REPORT_STATE.case_registry["tests/test_inventory.py::test_x"] = [
         reporting.CaseRegistration(case_id="EMS1-6643", name="test_get_device_all")
     ]
     reporting.record_result("tests/test_inventory.py::test_x", "passed", 0.11)
-    assert reporting.has_reportable_cases() is True
-    txt_path, *_ = reporting.write_reports(config, _fake_env())
+    assert report_writer.has_reportable_cases() is True
+    txt_path, *_ = report_writer.write_reports(config, _fake_env())
     assert "[EMS1-6643][test_get_device_all] Result Pass" in txt_path.read_text(encoding="utf-8")
 
 
@@ -395,7 +396,7 @@ def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):
     env.ems_target = "redhat"
     env.ems_platform = "RedHat 9 (HA)"
 
-    txt_path, html_summary, _, _, integrated_html = reporting.write_reports(config, env)
+    txt_path, html_summary, _, _, integrated_html = report_writer.write_reports(config, env)
 
     assert txt_path.parent.name == "03.00.11 (AAVV.221) b12_redhat"
     txt = txt_path.read_text(encoding="utf-8")
@@ -408,9 +409,9 @@ def test_write_reports_records_ems_target_and_platform(monkeypatch, tmp_path):
 def test_report_without_ems_target_keeps_version_directory_and_metadata():
     env = _fake_env()
 
-    assert reporting._report_dir_name(env) == "demo"
-    assert reporting._ems_server_metadata(env) == []
-    assert reporting._ems_heading(env) == "demo"
+    assert report_writer._report_dir_name(env) == "demo"
+    assert report_writer._ems_server_metadata(env) == []
+    assert report_writer._ems_heading(env) == "demo"
 
 
 def test_write_reports_can_skip_integrated_evidence_report(monkeypatch, tmp_path):
@@ -432,7 +433,7 @@ def test_write_reports_can_skip_integrated_evidence_report(monkeypatch, tmp_path
         ),
     )
 
-    txt_path, html_summary, *_, integrated_html = reporting.write_reports(config, _fake_env())
+    txt_path, html_summary, *_, integrated_html = report_writer.write_reports(config, _fake_env())
 
     assert txt_path.exists()
     assert html_summary.exists()
@@ -521,8 +522,8 @@ def test_html_and_txt_reports_show_report_notes(monkeypatch):
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState(timestamp="2026-10-12_12-00-00"))
     reporting.record_report_note("ONT Inventory Sync", "SLOW 312s (21 polls, over threshold 16)")
 
-    html = reporting._render_html_report(_fake_env())
-    txt = reporting._render_txt_report(_fake_env())
+    html = report_writer._render_html_report(_fake_env())
+    txt = report_writer._render_txt_report(_fake_env())
 
     assert "ONT Inventory Sync" in html
     assert "SLOW 312s (21 polls, over threshold 16)" in html

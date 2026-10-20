@@ -8,6 +8,7 @@ import requests
 
 import clients.ems_api_client as client_module
 from clients.ems_api_client import EmsApiClient
+from tests.support import report_writer
 from utils import reporting
 
 
@@ -110,7 +111,7 @@ def test_report_header_lists_connection_errors_with_case_id(monkeypatch, fresh_r
         "POST", "/usersession", "ConnectTimeout: timed out", attempt=1, max_attempts=1, action="raised"
     )
 
-    lines = reporting._report_note_lines()
+    lines = report_writer._report_note_lines()
 
     assert lines[0] == "EMS Connection Errors: 2 (recovered by retry 1, not recovered 1)"
     assert lines[1] == (
@@ -122,7 +123,7 @@ def test_report_header_lists_connection_errors_with_case_id(monkeypatch, fresh_r
 
 
 def test_report_header_has_no_connection_lines_without_errors(fresh_report_state):
-    assert reporting._report_note_lines() == []
+    assert report_writer._report_note_lines() == []
 
 
 HOST = "ems:9116"
@@ -226,7 +227,7 @@ def test_request_over_slow_threshold_is_marked_in_report(monkeypatch, fresh_repo
         2,
         200,
     )
-    lines = reporting._report_note_lines()
+    lines = report_writer._report_note_lines()
     assert "EMS Slow Requests: 1 (total time over -1 s)" in lines
     [detail] = [line for line in lines if line.startswith("EMS Slow Request #1:")]
     assert detail.startswith(f"EMS Slow Request #1: EMS1-6834 {current_nodeid()} | PATCH /profile/ONTBandwidthProfile/p1 | SLOW ")
@@ -287,7 +288,7 @@ def test_report_header_shows_non_default_timing_profile():
     )
 
     assert ("EMS Timing", "wait_scale 1.5, transport retry delays 10/30/60 s, min request interval 0.3 s") in (
-        reporting._ems_server_metadata(env)
+        report_writer._ems_server_metadata(env)
     )
 
 
@@ -295,4 +296,4 @@ def test_report_header_omits_default_timing_profile():
     env = SimpleNamespace(ems_target="ubuntu", ems_platform="Ubuntu", wait_scale=1.0,
                           transport_retry_delays=(5.0, 15.0), min_request_interval=0.0)
 
-    assert [label for label, _ in reporting._ems_server_metadata(env)] == ["EMS Target", "EMS Platform"]
+    assert [label for label, _ in report_writer._ems_server_metadata(env)] == ["EMS Target", "EMS Platform"]

@@ -708,8 +708,9 @@ def test_wait_for_ont_inventory_timeout_reports_polls(monkeypatch):
 
 def test_report_notes_appear_in_txt_header_lines(monkeypatch):
     import utils.reporting as reporting
+    from tests.support import report_writer
 
     monkeypatch.setattr(reporting, "REPORT_STATE", reporting.ReportState())
     reporting.record_report_note("ONT Inventory Sync", "SLOW 312s (21 polls, over threshold 16)")
 
-    assert reporting._report_note_lines() == ["ONT Inventory Sync: SLOW 312s (21 polls, over threshold 16)"]
+    assert report_writer._report_note_lines() == ["ONT Inventory Sync: SLOW 312s (21 polls, over threshold 16)"]

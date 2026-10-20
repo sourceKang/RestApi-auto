@@ -95,7 +95,8 @@ Ground Truth：
 - 大檔（如 tests/test_neox_config.py、utils/reporting.py）先搜尋 test／函式名稱，再讀需要的行範圍；
   測試 log 只看尾端與失敗段落。
 - 離線驗證固定用 `pytest -m offline -q --skip-dut-preflight`。
-- 完整回歸超過 30 分鐘時以獨立程序執行（見 project-context「EMS server 切換」），不要用短間隔反覆輪詢。
+- 完整回歸超過 30 分鐘時以獨立程序執行（見 project-context「EMS server 切換」）；進度只用
+  `tools/run_status.py` 查詢，間隔至少 5 分鐘，不自行撰寫輪詢腳本。
 - 回報 EMS 版本、target 或 server 前，以 `configs/ems.yaml`、`summary.json` 與報表表頭核對，不憑對話記憶。
 - 一個 session 聚焦一個主題；主題完成先更新 work-status，再換 session 或壓縮 context。
 

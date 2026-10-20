@@ -18,6 +18,17 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-H：唯讀 tools/run_status.py（Claude Code）
+
+- 分支 claude/pr-h-run-status，基準為 PR-G 合併後的預設分支。
+- 新增 tools/run_status.py：只讀 reports/multi_node/<timestamp> 的 <NODE>.log、<NODE>_allure-current 與 summary.json，
+  輸出各 node 完成數／總數、pass／fail 數、最後完成的 test、log 最後更新時間、遮罩後的 log 尾端；超過
+  --stale-minutes（預設 15）未更新標示 stale。不啟動、不停止、不連線任何東西。不改 run_multi_node。
+- tests/test_run_status.py（offline）涵蓋執行中、stale、完成、runner 跳過、xdist 行格式、尾端遮罩、最新目錄選擇。
+- 實際目錄 2026-10-14_13-22-42 試跑：NODE3 finished returncode=0、316/316 passed、Allure 316 筆，與紀錄一致（0.4 s）。
+  xdist 行格式只有測試樣本，尚無實際 log 驗證。
+- project-context、engineering-guidelines 與 ems-version-regression 步驟 4 改為以 run_status 查進度（間隔至少 5 分鐘）。
+
 ### 2026-10-20 retro 計畫 PR-G：固定 sleep 檢查（Claude Code）
 
 - 分支 claude/pr-g-fixed-sleep-check，基準為 PR-F 合併後的預設分支。
@@ -29,21 +40,12 @@
   找不到不靠時間的重疊做法，保留並登記為 fake-latency（偏離原計畫）。
 - ACL 設定後固定等待 2 處（test_neox_config.py）與輪詢前 initial_delay 3 處登記為待實機（R-SLP）。
 
-### 2026-10-20 retro 計畫 PR-F：整合報表產生器移到 utils（Claude Code）
-
-- 分支 claude/pr-f-evidence-report-utils，基準為 PR-E 合併後的預設分支。
-- tools/generate_integrated_evidence_report.py 以 git mv 移為 utils/integrated_evidence_report.py（只移除 CLI 的 main 與
-  argparse）；tools 端留薄 CLI wrapper（參數與輸出不變）。utils/reporting.py、tools/build_report_index.py、
-  tools/case_step_diff.py、tests/test_reporting.py 改從 utils 匯入；KNOWN_VIOLATIONS 剩 reporting→cases 1 筆（R-I）。
-- 驗證：以 b13_redhat NODE3 第 11 次正式執行（254 cases、316 Allure 結果）分別跑舊版與新版 CLI，輸出 HTML 逐位元組相同（10.4 MB）。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。
 - [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。完成後刪除 KNOWN_VIOLATIONS 中 reporting→cases 1 筆。
 - [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
   （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。

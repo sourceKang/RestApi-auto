@@ -109,6 +109,9 @@ EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定�
   server 資源不足，2026-10-02）。這類失敗先單獨重跑確認，不列為 API bug。
 - 完整測試約 1.5 小時，超過 agent 背景工作的時間上限（30 分鐘）；需要長時間執行時
   改用獨立程序（例如 PowerShell `Start-Process`）並另外監看結果。
+  進度用唯讀的 `tools/run_status.py [reports/multi_node/<timestamp>]` 查詢（各 node 已完成數／總數、
+  pass／fail 數、最後完成的 test、log 最後更新時間與遮罩後的尾端），間隔至少 5 分鐘；
+  log 超過 `--stale-minutes`（預設 15）未更新會標示 stale，先查 EMS 與 pytest 程序再處理。
 
 ### 報表保存
 

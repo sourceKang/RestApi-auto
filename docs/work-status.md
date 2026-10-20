@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-13（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-20（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -20,6 +20,23 @@
 ## 最近一次工作
 
 較早的紀錄見 docs/work-history/（依月份）。
+
+### 2026-10-20 AGENTS.md 精簡（Claude Code，未提交）
+
+- 起因：依 retro 復盤，AGENTS.md（143 行）每個 session 都會載入，其中大半只在設計／review／產報表時需要。
+- AGENTS.md 縮為約 68 行，保留協作、核心原則、依賴方向、NeoX CLI → REST → CLI、EMS target／redaction、
+  外部整合與安全、驗證、回報格式；其餘原文搬到新檔 docs/engineering-guidelines.md（第一性原理、目錄責任、
+  ADR、API／測試、設定與規格、Git 與 config 提交）與 docs/report-format.md（報表與任務總結頁）。規則只搬移、未刪除。
+- CLAUDE.md：開工只讀 work-status；接手、連線 EMS／設備或跑回歸時才讀 project-context。
+- project-context.md：文件表加入兩份新文件；移除 SETUP_NEW_MACHINE、openapi_contract、check_environment
+  的「未提交」過時備註（三檔皆已在版控且無變更）；補回「worktree 接續前先整合」。
+- .codex/skills/ems-version-regression/SKILL.md：失敗分層、報表格式、Git 規則改指向新文件。
+- 驗證：逐條比對舊 AGENTS.md 每行皆可在新位置找到；相對連結全部可開啟。只改 Markdown，未跑 pytest。
+- 另外：retro 驗證離線測試時，於 `reports/03.00.11 (AAVV.221) b13_redhat/` 產生 `*_2026-10-20_09-49-25*`
+  報表與 allure-results（非正式執行），待使用者決定是否刪除；也代表離線單元測試會寫入正式報表目錄，
+  與 project-context 描述不符，待修。
+- 下一步：使用者審閱後 commit；之後處理 retro 高嚴重度項目（CI 擴大離線測試、離線測試不寫正式報表、
+  auth_accounts 明文自動檢查）。
 
 ### 2026-10-13 第九次完整測試：慢請求標記與錯誤摘要實機驗證（Claude Code）
 

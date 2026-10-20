@@ -8,20 +8,22 @@
 
 | 來源 | 用途 |
 | --- | --- |
-| [AGENTS.md](../AGENTS.md) | 共用工程、安全、驗證及報表規範；Codex 入口 |
+| [AGENTS.md](../AGENTS.md) | 每次都需遵守的共用安全、驗證與回報規範；Codex 入口 |
+| [工程分析與設計準則](engineering-guidelines.md) | 第一性原理、目錄責任、ADR、API／測試細則、config 提交 |
+| [報表輸出格式](report-format.md) | 測試／QA 報表與任務總結頁 |
 | [CLAUDE.md](../CLAUDE.md) | Claude Code 入口，以 @AGENTS.md 載入共用規範 |
 | [README.md](../README.md) | 安裝、runner、測試與報表使用方式 |
 | [新增測試指南](ADDING_TESTS.md) | services fixture 與測試分層 |
 | [YAML 設定說明](yaml_configuration.md) | 設定結構 |
 | [OpenAPI 版本防護](openapi_version_guard.md) | 規格來源與版本比對 |
-| [新機建置指南](SETUP_NEW_MACHINE.md) | 本機建置；本次接手時仍屬既有未提交文件，須另行審閱 |
+| [新機建置指南](SETUP_NEW_MACHINE.md) | 本機建置 |
 | [ADR](adr/0001-session-cache-and-safe-auth-retry.md) | Session cache 與 auth retry 決策 |
 | [工作進度](work-status.md) | 可更新的接續快照，不代表測試結果永久有效 |
 
 ## 架構與查找入口
 
 本專案是 Python／pytest 的 NetAtlas EMS REST API 自動化框架。
-依賴方向與目錄責任見 AGENTS.md；具體入口如下：
+依賴方向見 AGENTS.md，目錄責任見 [工程分析與設計準則](engineering-guidelines.md)；具體入口如下：
 
 - conftest.py：匯出 tests/support 下的 fixtures 與 hooks。
 - tests/support/options.py：pytest CLI options 與環境選項。
@@ -46,7 +48,7 @@
 | 帳號 | EMS_AUTH_ACCOUNTS_FILE → configs/auth_accounts.local.yaml → configs/auth_accounts.yaml |
 | DUT | EMS_TEST_TARGETS_FILE → configs/test_targets.local.yaml → configs/test_targets.yaml |
 | dotenv | EMS_ENV_FILE 或根目錄 .env；既有程序環境變數不被覆蓋 |
-| OpenAPI | 由 cases/openapi_contract.py 解析 EMS_OPENAPI_YAML_FILE、EMS_OPENAPI_ROOT 與 ems.openapi_root；該檔目前有既有未提交變更，接手時再確認版本與可用性 |
+| OpenAPI | 由 cases/openapi_contract.py 解析 EMS_OPENAPI_YAML_FILE、EMS_OPENAPI_ROOT 與 ems.openapi_root |
 
 實際帳密留在被忽略的本機檔案或環境變數。不要把整份私有 config、.env、
 request／response 或 MCP 設定原文放進交接文件。
@@ -160,8 +162,7 @@ Allure 的暫存目錄，下次執行開始時會清空。
 這只是基礎檢查，不代表所有 service、API 或設備測試通過。
 
 既有 tools/check_environment.py 支援 --no-network，可供本機環境診斷；
-本次未對其完整正確性背書。未加此選項會執行網路檢查。
-該工具在本次交接前已是未提交檔案，後續需隨新機指南一起審閱。
+未加此選項會執行網路檢查。
 
 **不要把 pytest --collect-only、-m smoke 或 -m openapi 視為離線保證。**
 collection hook 在收集階段會依 DUT markers 執行 preflight；
@@ -195,6 +196,8 @@ task-name 與目標路徑需依任務調整，建立前先確認沒有同名分�
 Codex 新分支預設使用 codex/ 前綴；Claude 可使用 claude/ 前綴。
 worktree 不會複製目前未提交變更或被忽略的本機設定；需要的程式應先經審閱，
 以 commit／整合流程帶到新分支，再配置該 worktree 的本機環境。
+在不同 worktree 接續前先整合相關程式與進度文件；聊天記憶、個人工具設定和
+未提交檔案不會自動同步。
 
 worktree 只隔離檔案，不隔離 EMS／DUT。兩個工具不得同時使用衝突的帳號 session、
 相同可變測資或同一設備做破壞性測試。依獨立 auth profile 與資源配置協調，

@@ -53,12 +53,6 @@ KNOWN_SLEEPS: dict[tuple[str, str], Known] = {
     ("tests/support/pacing.py", "pause_between_cases"): Known(
         1, "rate-limit-pacing", "opt-in --neox-*-delay-seconds cooldown between cases", "never; default 0"
     ),
-    ("tests/test_neox_config.py", "settle_ge_acl_profile_mode_if_needed"): Known(
-        1, "known-violation", "fixed 2 s wait after ACL profile setup, no state check", "poll `show acl-profile` after a CLI baseline on a device (R-SLP)"
-    ),
-    ("tests/test_neox_config.py", "settle_ge_acl_mode_switch"): Known(
-        1, "known-violation", "fixed 3 s wait after ACL mode switch, then one read", "poll `Acl-profile mode` after a CLI baseline on a device (R-SLP)"
-    ),
     ("tests/test_session_manager.py", "FakeApiClient.login"): Known(
         1, "fake-latency", "keeps concurrent cache misses overlapping so single-login is exercised", "a deterministic overlap without timing is found"
     ),

@@ -28,17 +28,20 @@
 - AGENTS.md、engineering-guidelines、report-format、project-context、ems-version-regression 規則改為「本機報表保留原值、
   分享前以開關重產；PR、Redmine、TestLink notes、提交的檔案一律遮罩」。txt 報表（TestLink 回填來源）不含回應本體或帳密。
 
-### 2026-10-20 R-T2：失敗訊息遮罩（Claude Code）
+### 2026-10-20 R-SLP（ACL 輪詢）與 R-REG 實機驗證（Claude Code）
 
-- 分支 claude/r-t2-mask-failure-messages，基準為 PR-I 合併後的預設分支。
-- 原因：Allure 的 statusDetails.message 直接取例外字串（test 用 `excinfo.exconly()`、fixture teardown 與 step 用
-  例外物件），不經 reporting_hooks 的 longrepr 遮罩；19 處 assert／`pytest.fail` 訊息嵌入原始回應
-  （rest_polling 3、test_neox_config 9、test_neox_profile 7），teardown 還原 ONT baseline 時 password 因此進入報表。
-- 新增 `utils.diagnostics.masked_response_body()`（JSON 經 redact、文字經 redact_text，內容不截斷），19 處訊息改用它；
-  比對 token 用的原始字串不變。services/invalid_params 那處原本已經 format_value_summary 遮罩，不需修改。
-- 新增 tests/test_no_raw_response_in_messages.py：AST 檢查 assert／raise／pytest.fail 訊息不得含未遮罩的
-  `<response>.text`、`json.dumps(<x>.json)`、`body`／`response_text`；另含 helper 與 rest_polling 逾時訊息的行為測試。
-- 驗證：反例（service 內加 `{response.text}`）被擋；舊基準上行為測試失敗（密碼出現在訊息中），新版通過。
+- 分支 claude/r-slp-acl-polling，基準為 #30 合併後的預設分支；實機 NODE3（redhat .100，b13），使用者授權。
+- 新增 tests/support/ge_acl_profile.py：以 `show acl-profile mode`／`show acl-profile` 輪詢（30 秒、間隔 1 秒，
+  scaled_wait），取代 test_neox_config.py ACL 模式切換與 profile 建立後的固定 sleep；mode 輪詢逾時才重送一次
+  `acl-profile mode <mode>`，並附 Allure「GE ACL profile mode retry」。刪除 KNOWN_SLEEPS 兩個 ACL 條目，
+  新增離線測試 tests/test_ge_acl_profile.py（5 項）。
+- CLI baseline：模式切換、建立 RestApiGeAcl、切回 port 都在第一次 show 即可見（約 3.4 秒）。REST 回歸
+  test_ge_config_max_create／max_variant：通過 9／失敗 0，8 個 ACL 案例皆 polls=1、約 3.4 秒，未觸發重送；
+  結束後 NODE3 為 port mode，profile 與執行前相同。
+- R-REG：預設跑法保留 password 與 session id 原值；`--redact-reports` 下 password、session id 全數遮罩。
+  registid、CLI registration-id、teardown statusDetails 在唯讀案例未出現，僅由離線測試涵蓋。
+- D0：PR #18 已關閉並留言；兩個殘留 worktree（皆乾淨）已移除，分支保留。
+- 離線 `pytest -m offline`：通過 158／失敗 0。
 
 ## 下一步
 
@@ -46,13 +49,13 @@
 
 retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
 
-- [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；
-  inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。
-- [R-REG]〔需實機〕下次回歸以 `--redact-reports` 跑一次，確認 registid、CLI registration-id 與 teardown statusDetails 都會遮罩；預設跑法則確認原值保留。
+- [R-SLP]〔需實機〕（ACL 部分已完成）inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測，
+  完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。
+- [R-REG]〔需實機〕（password／session id 已驗證）registid、CLI registration-id、teardown statusDetails
+  待有寫入／teardown 失敗的回歸時以 `--redact-reports` 確認。
 
 使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：
 
-- [D0]〔需決定〕PR #18（claude/record-pr10-history）與兩個殘留 worktree 的去留。
 - [D1]〔需決定〕（2026-10-20 使用者已定：本機報表保留原值）既有 reports/ 不需清理明文；此項可關閉。
 - [D3]〔需決定〕reports/ 約 153 萬檔，是否以 tools/archive_reports.py 歸檔 b1–b9。
 - [D4]〔需決定〕曾貼入對話或整檔讀出的測試帳密是否輪替。

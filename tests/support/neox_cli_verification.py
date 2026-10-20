@@ -141,7 +141,9 @@ def write_neox_cli_verify_report(
         },
     }
     if metadata:
-        data["metadata"] = redact(metadata)
+        data["metadata"] = metadata
+    # CLI output and expected tokens carry `registration-id <ONT password>`.
+    data = redact(data)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     attach_json(f"NeoX CLI verification {feature}/{case_name}", data)
     return path

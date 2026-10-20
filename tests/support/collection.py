@@ -49,8 +49,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     _deselect_internal_tests_from_full_suite(config, items)
     _validate_neox_parallel_collection(config, items)
     run_auth_matrix = option_or_full_testcases(config, "--auth-matrix")
-    skip_unready_dut_items(config, items)
-    _apply_node_capability_skips(config, items)
     if not option_or_full_testcases(config, "--run-remote"):
         skip_remote = pytest.mark.skip(reason="remote console tests require --run-remote")
         for item in items:
@@ -96,6 +94,15 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         _register_neox_case(item)
         register_permission_role(item.nodeid, role)
     _apply_ont_workflow_order(items)
+
+
+def pytest_collection_finish(session: pytest.Session) -> None:
+    # The modifyitems hook above runs tryfirst, before pytest applies -m/-k deselection.
+    # The DUT preflight connects to EMS and the DUT, so run it only on the final item
+    # set: `pytest -m offline` must not reach the lab. Capability skips stay after it
+    # because the preflight target sync can refresh the slot data they read.
+    skip_unready_dut_items(session.config, session.items)
+    _apply_node_capability_skips(session.config, session.items)
 
 
 def _deselect_internal_tests_from_full_suite(config: pytest.Config, items: list[pytest.Item]) -> None:

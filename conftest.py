@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tests.support.collection import RAD_AUTH_MATRIX_CASES, pytest_collection_modifyitems
+from tests.support.collection import RAD_AUTH_MATRIX_CASES, pytest_collection_finish, pytest_collection_modifyitems
 from tests.support.fixtures import (
     allure_node_context,
     alarm_service,
@@ -64,6 +64,7 @@ __all__ = [
     "prepared_ont_inventory",
     "provision_service",
     "pytest_addoption",
+    "pytest_collection_finish",
     "pytest_collection_modifyitems",
     "pytest_configure",
     "pytest_runtest_logreport",

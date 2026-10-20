@@ -37,7 +37,7 @@ from tools.case_step_diff import (  # noqa: E402
     render_case_comparison,
     step_entries,
 )
-from tools.generate_integrated_evidence_report import TxtCase, parse_txt_report  # noqa: E402
+from utils.integrated_evidence_report import TxtCase, parse_txt_report  # noqa: E402
 from utils.redaction import redact_text  # noqa: E402
 
 

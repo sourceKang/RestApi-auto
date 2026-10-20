@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from tools.generate_integrated_evidence_report import index_results_by_case, load_allure_results
+from utils.integrated_evidence_report import index_results_by_case, load_allure_results
 from utils.redaction import redact, redact_text
 
 

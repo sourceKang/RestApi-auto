@@ -18,6 +18,14 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-F：整合報表產生器移到 utils（Claude Code）
+
+- 分支 claude/pr-f-evidence-report-utils，基準為 PR-E 合併後的預設分支。
+- tools/generate_integrated_evidence_report.py 以 git mv 移為 utils/integrated_evidence_report.py（只移除 CLI 的 main 與
+  argparse）；tools 端留薄 CLI wrapper（參數與輸出不變）。utils/reporting.py、tools/build_report_index.py、
+  tools/case_step_diff.py、tests/test_reporting.py 改從 utils 匯入；KNOWN_VIOLATIONS 剩 reporting→cases 1 筆（R-I）。
+- 驗證：以 b13_redhat NODE3 第 11 次正式執行（254 cases、316 Allure 結果）分別跑舊版與新版 CLI，輸出 HTML 逐位元組相同（10.4 MB）。
+
 ### 2026-10-20 retro 計畫 PR-E：run_multi_node 不再依賴 tests.support（Claude Code）
 
 - 分支 claude/pr-e-preflight-services，基準為 PR-D 合併後的預設分支。
@@ -27,22 +35,12 @@
   tests/support/preflight.py 只留 pytest skip hook，並由本模組參照 run_startup_preflight，PR-A 的 guard 仍可替換。
 - 搬移程式碼與原檔逐字相同（腳本比對）；KNOWN_VIOLATIONS 刪除 run_multi_node 的 2 筆。
 
-### 2026-10-20 retro 計畫 PR-D：import 依賴方向測試（Claude Code）
-
-- 分支 claude/pr-d-import-layers，基準為 PR-C 合併後的預設分支。
-- 新增 tests/test_import_layers.py（offline、純 AST、不執行 import）：允許依賴表涵蓋 models、config_loader、utils、
-  cases、clients、services、tests.support、tools、tests、conftest；計入 lazy import、略過 TYPE_CHECKING、禁止相對 import、
-  新頂層套件須登記。既有 4 筆違規列入 KNOWN_VIOLATIONS（附移除條件），修好卻未刪除也會失敗。
-- 順帶修正 tools/check_environment.py docstring 的無效跳脫（改 raw docstring，內容不變），消除 compile 與 AST 掃描的 SyntaxWarning。
-- 驗證：5 passed（1.3 s，無警告）；暫存 worktree 實測「新增 clients→services lazy import」與「修好違規未刪 allowlist」皆會失敗。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-F]〔離線〕utils/reporting.py 不再 lazy import tools：整合報表產生器移到 utils。完成後刪除 KNOWN_VIOLATIONS 中 reporting→tools 1 筆。
 - [R-G]〔離線〕固定 sleep 檢查（先搬 wait_for_rest_tokens、合併冷卻延遲、假延遲改 Event）。
 - [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。
 - [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。完成後刪除 KNOWN_VIOLATIONS 中 reporting→cases 1 筆。

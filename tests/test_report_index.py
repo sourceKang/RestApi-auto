@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 
+import pytest
 import yaml
 
 from tools import build_report_index as rindex
 from utils.redaction import redact_text
+
+
+pytestmark = pytest.mark.offline
 
 
 NODE3_IP = "192.168.169.58"

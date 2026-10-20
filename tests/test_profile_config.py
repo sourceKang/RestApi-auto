@@ -7,6 +7,9 @@ import pytest
 from config_loader.profile import ProfileConfigError, load_profile_definitions
 
 
+pytestmark = pytest.mark.offline
+
+
 def _profile_yaml(config_key: str, profile_name: str) -> str:
     payload = json.dumps({"enabled": "1"})
     return (

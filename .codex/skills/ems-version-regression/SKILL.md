@@ -6,6 +6,7 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 # EMS 版本回歸
 
 共用規範以 AGENTS.md 為準；本 skill 只定義流程順序與確認點。
+失敗分層見 docs/engineering-guidelines.md，報表格式見 docs/report-format.md。
 ⏸ 表示必須先向使用者預覽並取得明確同意，同意只涵蓋該步驟。
 
 ## 0. 輸入
@@ -60,7 +61,7 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
       需指定特定執行時用 `<build 目錄>/<run_id>`。跨 EMS target（例如 .8 與
       .100）比對時在報表中註明。
    4. 比對結果只是差異清單，作為下一步分類的輸入，不等於 Root Cause。
-2. 每個失敗依 AGENTS 分層歸類，並附證據：
+2. 每個失敗依 docs/engineering-guidelines.md 的問題層級歸類，並附證據：
    - 測資／設定過期（例：fw_version 與 CLI 不符）
    - 設備／環境前置條件（例：FEC、port disable、帳號）
    - 疑似 API bug
@@ -68,7 +69,7 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 3. NeoX 設定失敗須先做 CLI baseline；CLI baseline 失敗屬設備／環境，不列 API bug。
    會改設備的 CLI 操作 ⏸。
 4. 未取得證據前不得寫 Root Cause；以「推測」「未確認」標示。
-5. 產出 HTML 報表於 `reports/`（首屏結論、環境、各 node 統計、失敗分類、
+5. 依 docs/report-format.md 產出 HTML 報表於 `reports/`（首屏結論、環境、各 node 統計、失敗分類、
    與上次差異、報表連結；與上次差異連到步驟 1 的 `compare_*.html`），
    內容先完成 redaction。
 
@@ -94,4 +95,4 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 
 - 更新 `docs/work-status.md`：版本、node、結果、分類、未解事項、下一步。
 - 確認設備已還原（NeoX config、ONT／GE service、alarm）與 idempotency。
-- 設定或測試有修改時，依 AGENTS 的 Git 規則處理；提交前確認 staged 清單。
+- 設定或測試有修改時，依 docs/engineering-guidelines.md「Git 與 config 提交」處理；提交前確認 staged 清單。

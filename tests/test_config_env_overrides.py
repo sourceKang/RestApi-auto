@@ -9,6 +9,9 @@ from config_loader import hardware as hardware_module
 from config_loader.simple_yaml import SimpleYamlError, load_local_env, load_simple_yaml
 
 
+pytestmark = pytest.mark.offline
+
+
 AUTH_YAML = """version: 1
 profiles:
   default:

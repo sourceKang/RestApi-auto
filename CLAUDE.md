@@ -4,9 +4,9 @@
 
 共用規範由上面的 AGENTS.md 載入；請勿在本檔維護第二份規則。
 
-開始工作先閱讀：
-- [專案脈絡與操作方式](docs/project-context.md)
-- [目前進度與接續事項](docs/work-status.md)
+開始工作先讀 [目前進度與接續事項](docs/work-status.md) 的最近狀態。
+接手交接、連線 EMS／設備或跑回歸時，再讀
+[專案脈絡與操作方式](docs/project-context.md)。
 
 只在需要本機偏好時，參考 CLAUDE.local.md.example 建立已忽略的
 CLAUDE.local.md；檔案中只記錄設定位置，不放帳密，也不視為設備操作授權。

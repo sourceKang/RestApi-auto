@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from config_loader.hardware import load_hardware_config
+
+
+pytestmark = pytest.mark.offline
 
 
 def test_default_topology_v2_node1_normalizes_to_runtime_target_shape():

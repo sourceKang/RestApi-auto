@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from tests.support.target_sync import LineCardInfo, parse_show_lc_status, update_topology_v2_target_slots
+
+
+pytestmark = pytest.mark.offline
 
 
 SHOW_LC_ST = """

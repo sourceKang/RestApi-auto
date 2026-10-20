@@ -3,7 +3,21 @@ from __future__ import annotations
 import sys
 from types import SimpleNamespace
 
-from utils import case_metadata
+import pytest
+
+from utils import case_metadata, reporting
+
+
+pytestmark = pytest.mark.offline
+
+
+@pytest.fixture(autouse=True)
+def fresh_report_state(monkeypatch):
+    # attach_case_* registers case IDs in the session-wide report state; a leaked ID makes
+    # an offline run write a formal report under reports/<version>/.
+    state = reporting.ReportState()
+    monkeypatch.setattr(reporting, "REPORT_STATE", state)
+    return state
 
 
 def test_format_case_title_matches_txt_report_prefix():

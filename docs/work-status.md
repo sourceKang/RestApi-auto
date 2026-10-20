@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-13（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-20（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -20,6 +20,44 @@
 ## 最近一次工作
 
 較早的紀錄見 docs/work-history/（依月份）。
+
+### 2026-10-20 CI 離線測試、報表外洩修正、設定明文檢查（Claude Code，未提交）
+
+- 基準：73e18c5（AGENTS.md 精簡）之上，分支 codex/neox-profile-read-path-fix。
+- 離線測試寫入正式報表：原因是 tests/test_case_metadata.py 呼叫 `attach_case_metadata`，
+  其 `register_case` 把 EMS1-6666／6647 登記到全域 `REPORT_STATE` 且未清除，報表 hook 因此判定
+  有 TestLink case 而寫入 `reports/<version>/`。修正：該檔以 autouse fixture 換成全新 `ReportState`。
+  先前誤產生的 b13_redhat `*_2026-10-20_09-49-25*` 報表與 allure-results 已依使用者同意刪除。
+- pytest.ini 新增 `offline` marker；18 個不需 EMS／DUT／網路的測試檔加 module 層 `pytestmark`
+  （排除 test_zzz_permission_summaries 與含 live_swagger 的 test_openapi_yaml）。
+- 新增 tools/check_config_secrets.py 與 tests/test_config_secrets.py：掃描版控 configs/**/*.yaml 的
+  password／token／devKey／secret 欄位，只允許空值、`${ENV}` 或 placeholder 預設值；不輸出值。
+  目前 17 檔、24 個密碼欄位，0 筆。
+- CI：改跑設定明文檢查 → `pytest -m offline` → 確認 `reports/` 無 txt 報表。
+- 驗證：compile 通過；`pytest -m offline` 通過 108／失敗 0（6.4 s），執行前後 `reports/` 新增檔案 0；
+  ci.yml YAML 解析正常。
+- 已提交 7612602 並 push。GitHub CI run 39357545144：明文檢查與 `pytest -m offline` 通過，但
+  「確認無正式報表」步驟誤判失敗——遞迴掃描到 `reports/.allure-results-current/*-attachment.txt`
+  （Allure 附件，非正式報表）。已在本機修正為只檢查 `reports/<非 . 開頭目錄>/*.txt`，並以暫存目錄
+  驗證三種情境（只有 Allure 附件→通過、有正式報表→失敗、無 reports→通過）；此修正尚未提交。
+- 下一步：提交並 push 防護步驟修正，確認 GitHub CI 全綠。
+
+### 2026-10-20 AGENTS.md 精簡（Claude Code）
+
+- 起因：依 retro 復盤，AGENTS.md（143 行）每個 session 都會載入，其中大半只在設計／review／產報表時需要。
+- AGENTS.md 縮為約 68 行，保留協作、核心原則、依賴方向、NeoX CLI → REST → CLI、EMS target／redaction、
+  外部整合與安全、驗證、回報格式；其餘原文搬到新檔 docs/engineering-guidelines.md（第一性原理、目錄責任、
+  ADR、API／測試、設定與規格、Git 與 config 提交）與 docs/report-format.md（報表與任務總結頁）。規則只搬移、未刪除。
+- CLAUDE.md：開工只讀 work-status；接手、連線 EMS／設備或跑回歸時才讀 project-context。
+- project-context.md：文件表加入兩份新文件；移除 SETUP_NEW_MACHINE、openapi_contract、check_environment
+  的「未提交」過時備註（三檔皆已在版控且無變更）；補回「worktree 接續前先整合」。
+- .codex/skills/ems-version-regression/SKILL.md：失敗分層、報表格式、Git 規則改指向新文件。
+- 驗證：逐條比對舊 AGENTS.md 每行皆可在新位置找到；相對連結全部可開啟。只改 Markdown，未跑 pytest。
+- 另外：retro 驗證離線測試時，於 `reports/03.00.11 (AAVV.221) b13_redhat/` 產生 `*_2026-10-20_09-49-25*`
+  報表與 allure-results（非正式執行），待使用者決定是否刪除；也代表離線單元測試會寫入正式報表目錄，
+  與 project-context 描述不符，待修。
+- 下一步：使用者審閱後 commit；之後處理 retro 高嚴重度項目（CI 擴大離線測試、離線測試不寫正式報表、
+  auth_accounts 明文自動檢查）。
 
 ### 2026-10-13 第九次完整測試：慢請求標記與錯誤摘要實機驗證（Claude Code）
 

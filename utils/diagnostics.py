@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any
 
-from utils.redaction import redact
+from utils.redaction import redact, redact_text
 
 
 FULL_JSON_ENV = "EMS_ATTACH_FULL_JSON"
@@ -54,6 +54,18 @@ def format_response_summary(response: Any, *, max_length: int = MAX_MESSAGE_LENG
         "body": summarize_value(body, max_depth=4, max_list_items=5, max_string_length=240),
     }
     return format_value_summary(summary, max_length=max_length)
+
+
+def masked_response_body(response: Any) -> str:
+    """Full response body for assertion and failure messages, with secrets masked.
+
+    Allure copies exception messages verbatim into statusDetails (test, step and fixture
+    teardown), outside the longrepr masking, so messages must not carry a raw body.
+    """
+    body = getattr(response, "json", None)
+    if isinstance(body, (dict, list)):
+        return json.dumps(redact(body), ensure_ascii=False, default=str)
+    return redact_text(str(getattr(response, "text", "") or ""))
 
 
 def json_for_attachment(value: Any) -> str:

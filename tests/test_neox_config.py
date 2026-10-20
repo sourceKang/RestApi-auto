@@ -53,6 +53,7 @@ from tests.support.ont_cli_status import wait_for_ont_cli_config_tokens
 from tests.support.options import option_or_full_testcases
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
+from utils.diagnostics import masked_response_body
 from utils.redaction import redact
 from tests.support.rest_polling import wait_for_rest_tokens
 
@@ -1142,7 +1143,7 @@ def assert_invalid_config_post_did_not_succeed(feature: str, negative_case: dict
     if response.retstatus == "Success" and response.status_code < 400:
         pytest.fail(
             f"{feature} {negative_case['name']} invalid POST unexpectedly succeeded: "
-            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={response.text}"
+            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={masked_response_body(response)}"
         )
 
 
@@ -1432,7 +1433,7 @@ def assert_neox_config_error_response(negative_case: dict[str, Any], response) -
     assert_failure_response(negative_case, response)
     failure_message = response_failure_message(response)
     assert failure_message, (
-        f"{negative_case['name']} expected a non-empty device/API failure message, got response: {response.text}"
+        f"{negative_case['name']} expected a non-empty device/API failure message, got response: {masked_response_body(response)}"
     )
 
 
@@ -1440,7 +1441,7 @@ def assert_expected_error_status(negative_case: dict[str, Any], response) -> Non
     expected_status_code = negative_case.get("expected_status_code")
     if expected_status_code is not None:
         assert response.status_code == int(expected_status_code), (
-            f"{negative_case['name']} expected HTTP {expected_status_code}, got {response.status_code}: {response.text}"
+            f"{negative_case['name']} expected HTTP {expected_status_code}, got {response.status_code}: {masked_response_body(response)}"
         )
 
     assert_failure_response(negative_case, response)
@@ -1450,12 +1451,12 @@ def assert_failure_response(negative_case: dict[str, Any], response) -> None:
     expected_retstatus = negative_case.get("expected_retstatus")
     if expected_retstatus:
         assert response.retstatus == expected_retstatus, (
-            f"{negative_case['name']} expected retstatus {expected_retstatus!r}, got {response.retstatus!r}: {response.text}"
+            f"{negative_case['name']} expected retstatus {expected_retstatus!r}, got {response.retstatus!r}: {masked_response_body(response)}"
         )
         return
 
     assert response.retstatus == "Fail" or response.status_code >= 400, (
-        f"{negative_case['name']} expected failure response, got HTTP={response.status_code}: {response.text}"
+        f"{negative_case['name']} expected failure response, got HTTP={response.status_code}: {masked_response_body(response)}"
     )
 
 
@@ -1464,14 +1465,14 @@ def assert_expected_error_message(negative_case: dict[str, Any], response) -> No
     if not expected_message:
         failure_message = response_failure_message(response)
         assert failure_message, (
-            f"{negative_case['name']} expected a non-empty failure message, got response: {response.text}"
+            f"{negative_case['name']} expected a non-empty failure message, got response: {masked_response_body(response)}"
         )
         return
 
     expected_messages = [expected_message] if isinstance(expected_message, str) else list(expected_message)
     response_text = json.dumps(response.json, ensure_ascii=False, default=str)
     missing = [message for message in expected_messages if str(message).lower() not in response_text.lower()]
-    assert not missing, f"{negative_case['name']} missing expected error text {missing}: {response_text}"
+    assert not missing, f"{negative_case['name']} missing expected error text {missing}: {masked_response_body(response)}"
 
 
 def infer_error_layer(negative_case: dict[str, Any]) -> str:
@@ -1506,7 +1507,7 @@ def assert_invalid_ont_post_did_not_succeed(negative_case: dict[str, Any], respo
     if response.retstatus == "Success" and response.status_code < 400:
         pytest.fail(
             f"{negative_case['name']} invalid ONT POST unexpectedly succeeded: "
-            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={response.text}"
+            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={masked_response_body(response)}"
         )
 
 
@@ -1945,7 +1946,7 @@ def assert_response_contains_tokens(response, expected_tokens: list[str]) -> Non
     assert_api_success(response)
     body = json.dumps(response.json, ensure_ascii=False)
     missing = [token for token in expected_tokens if token not in body]
-    assert not missing, f"Missing expected REST response tokens {missing}: {body}"
+    assert not missing, f"Missing expected REST response tokens {missing}: {masked_response_body(response)}"
 
 
 def verify_clear_restores_cli_output(

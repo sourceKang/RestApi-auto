@@ -18,6 +18,18 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 R-T2：失敗訊息遮罩（Claude Code）
+
+- 分支 claude/r-t2-mask-failure-messages，基準為 PR-I 合併後的預設分支。
+- 原因：Allure 的 statusDetails.message 直接取例外字串（test 用 `excinfo.exconly()`、fixture teardown 與 step 用
+  例外物件），不經 reporting_hooks 的 longrepr 遮罩；19 處 assert／`pytest.fail` 訊息嵌入原始回應
+  （rest_polling 3、test_neox_config 9、test_neox_profile 7），teardown 還原 ONT baseline 時 password 因此進入報表。
+- 新增 `utils.diagnostics.masked_response_body()`（JSON 經 redact、文字經 redact_text，內容不截斷），19 處訊息改用它；
+  比對 token 用的原始字串不變。services/invalid_params 那處原本已經 format_value_summary 遮罩，不需修改。
+- 新增 tests/test_no_raw_response_in_messages.py：AST 檢查 assert／raise／pytest.fail 訊息不得含未遮罩的
+  `<response>.text`、`json.dumps(<x>.json)`、`body`／`response_text`；另含 helper 與 rest_polling 逾時訊息的行為測試。
+- 驗證：反例（service 內加 `{response.text}`）被擋；舊基準上行為測試失敗（密碼出現在訊息中），新版通過。
+
 ### 2026-10-20 retro 計畫 PR-I：拆分 utils/reporting.py（Claude Code）
 
 - 分支 claude/pr-i-split-reporting，基準為 PR-H 合併後的預設分支。
@@ -29,28 +41,15 @@
   與新版分別寫出，txt 與 HTML 逐位元組相同。test_hardware_config 的 NODE3 fw_version 失敗為既有本機設定問題
   （基準 6695fd9 同樣失敗，見 [FW]），不在 offline 範圍。
 
-### 2026-10-20 retro 計畫 PR-H：唯讀 tools/run_status.py（Claude Code）
-
-- 分支 claude/pr-h-run-status，基準為 PR-G 合併後的預設分支。
-- 新增 tools/run_status.py：只讀 reports/multi_node/<timestamp> 的 <NODE>.log、<NODE>_allure-current 與 summary.json，
-  輸出各 node 完成數／總數、pass／fail 數、最後完成的 test、log 最後更新時間、遮罩後的 log 尾端；超過
-  --stale-minutes（預設 15）未更新標示 stale。不啟動、不停止、不連線任何東西。不改 run_multi_node。
-- tests/test_run_status.py（offline）涵蓋執行中、stale、完成、runner 跳過、xdist 行格式、尾端遮罩、最新目錄選擇。
-- 實際目錄 2026-10-14_13-22-42 試跑：NODE3 finished returncode=0、316/316 passed、Allure 316 筆，與紀錄一致（0.4 s）。
-  xdist 行格式只有測試樣本，尚無實際 log 驗證。
-- project-context、engineering-guidelines 與 ems-version-regression 步驟 4 改為以 run_status 查進度（間隔至少 5 分鐘）。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
 
-- [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
-  （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。
 - [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；
   inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。
-- [R-REG]〔需實機〕registid 遮罩於實機報表確認。
+- [R-REG]〔需實機〕registid 遮罩於實機報表確認。下次回歸時一併確認 teardown 失敗的 Allure statusDetails 已遮罩（R-T2）。
 
 使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：
 

@@ -28,6 +28,7 @@ from tests.support.connectivity import assert_ping_reachable
 from tests.support.pacing import pause_between_cases
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
+from utils.diagnostics import masked_response_body
 
 
 pytestmark = [
@@ -445,7 +446,7 @@ def assert_invalid_profile_post_did_not_succeed(profile_type: str, negative_case
     if response.retstatus == "Success" and response.status_code < 400:
         pytest.fail(
             f"{profile_type} {negative_case['name']} invalid POST unexpectedly succeeded: "
-            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={response.text}"
+            f"HTTP={response.status_code}, retstatus={response.retstatus!r}, body={masked_response_body(response)}"
         )
 
 
@@ -458,7 +459,7 @@ def assert_neox_profile_error_response(negative_case: dict[str, Any], response) 
     assert_profile_failure_response(negative_case, response)
     failure_message = profile_response_failure_message(response)
     assert failure_message, (
-        f"{negative_case['name']} expected a non-empty device/API failure message, got response: {response.text}"
+        f"{negative_case['name']} expected a non-empty device/API failure message, got response: {masked_response_body(response)}"
     )
 
 
@@ -466,7 +467,7 @@ def assert_expected_profile_error_status(negative_case: dict[str, Any], response
     expected_status_code = negative_case.get("expected_status_code")
     if expected_status_code is not None:
         assert response.status_code == int(expected_status_code), (
-            f"{negative_case['name']} expected HTTP {expected_status_code}, got {response.status_code}: {response.text}"
+            f"{negative_case['name']} expected HTTP {expected_status_code}, got {response.status_code}: {masked_response_body(response)}"
         )
     assert_profile_failure_response(negative_case, response)
 
@@ -475,12 +476,12 @@ def assert_profile_failure_response(negative_case: dict[str, Any], response) -> 
     expected_retstatus = negative_case.get("expected_retstatus")
     if expected_retstatus:
         assert response.retstatus == expected_retstatus, (
-            f"{negative_case['name']} expected retstatus {expected_retstatus!r}, got {response.retstatus!r}: {response.text}"
+            f"{negative_case['name']} expected retstatus {expected_retstatus!r}, got {response.retstatus!r}: {masked_response_body(response)}"
         )
         return
 
     assert response.retstatus == "Fail" or response.status_code >= 400, (
-        f"{negative_case['name']} expected failure response, got HTTP={response.status_code}: {response.text}"
+        f"{negative_case['name']} expected failure response, got HTTP={response.status_code}: {masked_response_body(response)}"
     )
 
 
@@ -489,14 +490,14 @@ def assert_expected_profile_error_message(negative_case: dict[str, Any], respons
     if not expected_message:
         failure_message = profile_response_failure_message(response)
         assert failure_message, (
-            f"{negative_case['name']} expected a non-empty failure message, got response: {response.text}"
+            f"{negative_case['name']} expected a non-empty failure message, got response: {masked_response_body(response)}"
         )
         return
 
     expected_messages = [expected_message] if isinstance(expected_message, str) else list(expected_message)
     response_text = json.dumps(response.json, ensure_ascii=False, default=str)
     missing = [message for message in expected_messages if str(message).lower() not in response_text.lower()]
-    assert not missing, f"{negative_case['name']} missing expected error text {missing}: {response_text}"
+    assert not missing, f"{negative_case['name']} missing expected error text {missing}: {masked_response_body(response)}"
 
 
 def is_profile_api_schema_error_case(negative_case: dict[str, Any]) -> bool:

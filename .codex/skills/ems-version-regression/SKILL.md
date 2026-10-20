@@ -40,8 +40,11 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
 
 ## 4. 執行測試
 
-1. 背景執行 `tools/run_multi_node.py`（與步驟 2 相同參數，不含 `--dry-run`）。
-2. 完成後讀 `reports/multi_node/<timestamp>/summary.json` 與各 node log。
+1. 以獨立程序執行 `tools/run_multi_node.py`（與步驟 2 相同參數，不含 `--dry-run`）；完整測試超過
+   30 分鐘，不要放在會逾時的背景工作裡。
+2. 執行中以 `tools/run_status.py reports/multi_node/<timestamp>` 查進度（唯讀，間隔至少 5 分鐘）；
+   node 標為 stale 時先查 EMS 與 pytest 程序，不要直接重跑。
+3. 完成後讀 `reports/multi_node/<timestamp>/summary.json` 與各 node log。
 
 ## 5. 失敗分類與報表
 

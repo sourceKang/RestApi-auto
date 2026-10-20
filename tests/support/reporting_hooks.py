@@ -11,7 +11,8 @@ from tests.support.options import option_or_env
 from config_loader import load_environment
 from config_loader.auth import AuthConfigError, load_auth_config
 from utils.redaction import mask_values
-from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result, write_reports
+from tests.support.report_writer import write_reports
+from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result
 
 
 _SECRET_VALUES_KEY = pytest.StashKey[tuple]()

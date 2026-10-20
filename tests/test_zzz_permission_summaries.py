@@ -4,7 +4,7 @@ import pytest
 
 from utils.allure_helpers import attach_json, allure_step
 from utils.case_metadata import attach_case_id
-from utils.reporting import permission_summary_breakdown
+from tests.support.report_writer import permission_summary_breakdown
 
 
 @pytest.mark.summary

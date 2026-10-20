@@ -18,6 +18,17 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-I：拆分 utils/reporting.py（Claude Code）
+
+- 分支 claude/pr-i-split-reporting，基準為 PR-H 合併後的預設分支。
+- utils/reporting.py（1,088 行）只留狀態記錄（226 行：dataclass、REPORT_STATE、record_*／register_*、set_session_metrics、
+  Allure 目錄準備），不再 import cases；寫檔、渲染、彙整與權限摘要逐字移到 tests/support/report_writer.py，
+  其中 18 處 REPORT_STATE 改為呼叫時查 `reporting.REPORT_STATE`，測試替換狀態的方式不變。
+- reporting_hooks 與相關測試改從 report_writer 匯入；KNOWN_VIOLATIONS 清空（import 方向已無例外）。
+- 驗證：同一份狀態（40 個 case，含 fail／skip、readonly／noaccess、連線錯誤、慢請求、筆記、session 指標）由舊版
+  與新版分別寫出，txt 與 HTML 逐位元組相同。test_hardware_config 的 NODE3 fw_version 失敗為既有本機設定問題
+  （基準 6695fd9 同樣失敗，見 [FW]），不在 offline 範圍。
+
 ### 2026-10-20 retro 計畫 PR-H：唯讀 tools/run_status.py（Claude Code）
 
 - 分支 claude/pr-h-run-status，基準為 PR-G 合併後的預設分支。
@@ -29,24 +40,12 @@
   xdist 行格式只有測試樣本，尚無實際 log 驗證。
 - project-context、engineering-guidelines 與 ems-version-regression 步驟 4 改為以 run_status 查進度（間隔至少 5 分鐘）。
 
-### 2026-10-20 retro 計畫 PR-G：固定 sleep 檢查（Claude Code）
-
-- 分支 claude/pr-g-fixed-sleep-check，基準為 PR-F 合併後的預設分支。
-- 新增 tests/test_no_fixed_sleep.py（offline、AST）：迴圈可結束且迴圈內有讀取狀態的呼叫才算輪詢、自動通過；
-  `sleeper=time.sleep` 預設引數視為注入；tests/test_*.py 不得直接 sleep；其餘 10 處登記在 KNOWN_SLEEPS（次數、類型、
-  理由、移除條件），次數不符或已刪除未清單都會失敗。
-- 小重構：wait_for_rest_tokens 逐字移到 tests/support/rest_polling.py（test_neox_config 以同名匯入，monkeypatch 路徑不變）；
-  兩份 NeoX 案例冷卻延遲合併為 tests/support/pacing.py 的 pause_between_cases。test_session_manager 的假延遲
-  找不到不靠時間的重疊做法，保留並登記為 fake-latency（偏離原計畫）。
-- ACL 設定後固定等待 2 處（test_neox_config.py）與輪詢前 initial_delay 3 處登記為待實機（R-SLP）。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
-retro 計畫（2026-10-20 核准，依序開 PR）：
+retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
 
-- [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。完成後刪除 KNOWN_VIOLATIONS 中 reporting→cases 1 筆。
 - [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
   （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。
 - [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；

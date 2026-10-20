@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from config_loader import load_environment
 from config_loader.hardware import load_hardware_config
-from utils.reporting import _card_version_lines, _target_summary_lines
+from tests.support.report_writer import _card_version_lines, _target_summary_lines
 
 
 def test_hardware_yaml_loads_and_validates_known_nodes():

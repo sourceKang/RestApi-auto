@@ -36,7 +36,7 @@ Ground Truth：
 ## 目錄責任與設計
 
 依賴方向見 AGENTS.md，由 `tests/test_import_layers.py` 依允許依賴表檢查（含函式內的 lazy import）；
-既有違規列在該檔 `KNOWN_VIOLATIONS`，各附移除條件。各目錄責任：
+`KNOWN_VIOLATIONS` 目前為空；新增例外須附原因與移除條件。各目錄責任：
 
 - `clients/`：REST client、EMS 溝通。
 - `services/`：domain 測試服務、共用 case helper。
@@ -92,7 +92,7 @@ Ground Truth：
   全 repo 搜尋排除 `reports/`、`.claude/worktrees/`、`.codex-validation/`。
 - 不整檔讀取含憑證的檔案（`configs/auth_accounts*.yaml`、`configs/test_targets*.yaml`、`.env`、
   外部工具的 env 檔）。確認欄位時只列 key 名，或執行 `tools/check_config_secrets.py`。
-- 大檔（如 tests/test_neox_config.py、utils/reporting.py）先搜尋 test／函式名稱，再讀需要的行範圍；
+- 大檔（如 tests/test_neox_config.py、tests/support/report_writer.py）先搜尋 test／函式名稱，再讀需要的行範圍；
   測試 log 只看尾端與失敗段落。
 - 離線驗證固定用 `pytest -m offline -q --skip-dut-preflight`。
 - 完整回歸超過 30 分鐘時以獨立程序執行（見 project-context「EMS server 切換」）；進度只用
@@ -135,7 +135,7 @@ import 依賴方向（`tests/test_import_layers.py`）、固定 sleep（`tests/t
    寫一筆 work-status；實機驗證在使用者核准後依序執行；清理 worktree 前先詢問使用者。
 
 不適用：只有一個項目、需要實機重現或調查、等待使用者決定、兩個以上項目要改同一共用熱點
-（如 utils/reporting.py、utils/redaction.py），或涉及需要 CLI baseline 的 configs/neox_config。
+（如 tests/support/report_writer.py、utils/redaction.py），或涉及需要 CLI baseline 的 configs/neox_config。
 若同時出現 3 個以上就緒項目的情形發生 2 次以上（例如 OpenAPI breaking change 要逐一更新 cases/），
 再考慮建立正式 skill。
 

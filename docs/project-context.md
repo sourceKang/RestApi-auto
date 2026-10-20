@@ -30,7 +30,8 @@
 - tests/support/fixtures.py、service_bundle.py：services 聚合 fixture 與 domain service 組裝。
 - tests/support/collection.py、preflight.py：測試收集與 DUT 檢查的 pytest hook；preflight 核心與 CLI 同步在
   services/preflight.py、services/target_sync.py（tools/run_multi_node.py 也用它們）。
-- tests/support/reporting_hooks.py、utils/reporting.py：結果與 HTML／Allure 報表。
+- tests/support/reporting_hooks.py、report_writer.py：結果與 txt／HTML／Allure 報表的產生；
+  utils/reporting.py 只記錄狀態（REPORT_STATE、record_*／register_*），供 clients、services 使用。
 - config_loader/settings.py、auth.py、hardware.py、simple_yaml.py：環境、帳號、設備與變數解析。
 - cases/registry.py、case_catalog.py、neox_case_ids.py：案例與 TestLink ID 對應。
 - services/neox_config/、configs/neox_config/：NeoX 行為與資料；兩者應一起理解。
@@ -46,7 +47,7 @@
 | SSH CLI 連線池與讀取 | clients/ssh_cli.py |
 | 收集、skip、DUT preflight、target sync | tests/support/collection.py、preflight.py（hook）；services/preflight.py、target_sync.py（核心） |
 | NeoX xdist 平行設定 | config_loader/neox_parallel.py、tests/support/options.py |
-| 報表表頭、txt／HTML／integrated | utils/reporting.py、tests/support/reporting_hooks.py |
+| 報表表頭、txt／HTML／integrated | tests/support/report_writer.py、reporting_hooks.py；狀態記錄在 utils/reporting.py |
 | 遮罩規則 | utils/redaction.py |
 | TestLink case ID 對應 | cases/registry.py、cases/neox_case_ids.py |
 | 多 node 執行與 dry-run | tools/run_multi_node.py |

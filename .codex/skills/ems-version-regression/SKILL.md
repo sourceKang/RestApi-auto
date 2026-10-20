@@ -85,6 +85,17 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
    再次執行會新增重複的 execution，先向使用者說明。
 4. MCP 無法使用或 schema 缺 `reports` → 告知使用者（例如在 /mcp 重連），
    不改用其他方式寫入。
+5. 寫入後以 testlink MCP `get_last_result` 抽查數筆（含重跑或判定過的 case），確認結果與 notes。
+
+回填地雷（2026-10 實際遇過，見 docs/work-history/2026-10.md）：
+- preview／operation id 依 `<build>-<target>-<node>[-runN]-<yyyymmdd>[-vN]` 命名（例：
+  `b12-redhat-node3-20261002-v2`、`b13-redhat-node3-run11-20261014`）；重新預覽用新的 `-vN`，
+  不要覆用已執行過的 id。
+- `label` 最多 64 字元；notes 不能逐筆自訂，判定說明寫在 label。
+- 多報表合併規則是「任一份 Fail 即 Fail」且各報表 case 清單須相同，不能直接併入重跑報表；
+  重跑改判時另存 `*_judged.txt`（只改受影響 case、Summary 與檔頭 Judgement 說明，原始 txt 不動）。
+- audit 目錄用絕對路徑並確認可寫；以相對路徑 `local/...` 執行時曾因 MCP 行程 cwd 不可寫而
+  254 筆全部 `TESTLINK_ERROR`（`[WinError 5]`），且未寫入 TestLink。
 
 ## 7. Redmine bug ⏸
 

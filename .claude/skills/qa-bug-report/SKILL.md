@@ -14,6 +14,6 @@ description: 撰寫或修訂 RestApi Auto 的 QA bug、testcase id、subject 與
 [REST／CLI 範例](../../../.codex/skills/qa-bug-report/references/rest-cli-bug-template.md)。
 
 Redmine 內容另依
-[專案 bug 範本](../../../docs/redmine_bug_template.md)。
+[專案 bug 範本](../../../docs/redmine_bug_template.md)；預覽時列出所有欄位，Target version 必須留空。
 缺少對應 MCP 或登入設定時，先完成草稿並說明外部寫入尚未執行；
 不得把撰稿要求當作發送或更新外部系統的授權。

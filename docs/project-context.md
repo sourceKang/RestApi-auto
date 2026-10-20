@@ -34,6 +34,36 @@
 - cases/registry.py、case_catalog.py、neox_case_ids.py：案例與 TestLink ID 對應。
 - services/neox_config/、configs/neox_config/：NeoX 行為與資料；兩者應一起理解。
 
+### 改動目標→檔案
+
+| 要改的東西 | 先看 |
+| --- | --- |
+| EMS target、版本、時間設定 | configs/ems.yaml、config_loader/settings.py |
+| node、slot、DUT 帳號來源 | configs/test_targets.yaml、configs/hardware_matrix.yaml、config_loader/hardware.py |
+| REST 傳輸重試、節流、慢請求 | clients/ems_api_client.py（ADR 0002） |
+| session 快取與重新登入 | clients/session.py（ADR 0001） |
+| SSH CLI 連線池與讀取 | clients/ssh_cli.py |
+| 收集、skip、DUT preflight、target sync | tests/support/collection.py、preflight.py、target_sync.py |
+| 報表表頭、txt／HTML／integrated | utils/reporting.py、tests/support/reporting_hooks.py |
+| 遮罩規則 | utils/redaction.py |
+| TestLink case ID 對應 | cases/registry.py、cases/neox_case_ids.py |
+| 多 node 執行與 dry-run | tools/run_multi_node.py |
+| 歷史結果比對 | tools/build_report_index.py |
+
+### NeoX 測試檔地圖
+
+大檔先以 test 名稱搜尋，再讀需要的行範圍。
+
+| 檔案 | 範圍 | 主要依賴 |
+| --- | --- | --- |
+| tests/test_neox_config.py（約 2,100 行） | GE／NNI／VLAN／ONT 設定 min／max／clear／error（實機） | services/neox_config/service.py、cli_expectations.py、configs/neox_config/{ge,nni,vlan,ont} |
+| tests/test_neox_profile.py | NeoX profile min／max／clear／error（實機） | services/neox_config/profiles.py、profile_expectations.py、configs/neox_config/profiles |
+| tests/test_neox_nni_cli_verify.py | NNI REST 後 CLI 驗證（實機） | tests/support/neox_cli_verification.py |
+| tests/test_neox_rest_polling.py | REST 輪詢與 ONT baseline 還原（離線，monkeypatch） | tests/test_neox_config.py 的 helper |
+| tests/test_neox_config_data_paths.py | 平行分組、auth profile 對應、資料路徑（離線） | tests/support/collection.py、options.py |
+| tests/test_neox_ug_parameters.py | UG 參數與 OpenAPI schema 對照（離線） | configs/neox_config/reference |
+| tests/test_neox_cli_expectations.py、test_neox_cli_verification.py、test_neox_profile_api.py | CLI 正規化、報表欄位、profile 讀寫路徑（離線） | services/neox_config/ |
+
 ## 環境與設定
 
 使用 Python 3.11 以上及 requirements.txt。Windows 專案環境通常是
@@ -205,6 +235,17 @@ worktree 不會複製目前未提交變更或被忽略的本機設定；需要�
 以 commit／整合流程帶到新分支，再配置該 worktree 的本機環境。
 在不同 worktree 接續前先整合相關程式與進度文件；聊天記憶、個人工具設定和
 未提交檔案不會自動同步。
+
+新 worktree 不必另建 venv，也不要複製 .env 或 `*.local.yaml`：離線檢查只需版控中的設定（CI 即如此）。
+在 worktree 根目錄以主 repo 的直譯器執行：
+
+~~~powershell
+& 'D:\RestApi auto\.venv\Scripts\python.exe' -m compileall -q clients cases config_loader configs services tests models utils tools conftest.py
+& 'D:\RestApi auto\.venv\Scripts\python.exe' -m pytest -m offline -q --skip-dut-preflight
+~~~
+
+上面的直譯器路徑以本機 repo 位置為準。平行子代理的規則見
+[工程分析與設計準則](engineering-guidelines.md)「拆解與平行子代理」。
 
 worktree 只隔離檔案，不隔離 EMS／DUT。兩個工具不得同時使用衝突的帳號 session、
 相同可變測資或同一設備做破壞性測試。依獨立 auth profile 與資源配置協調，

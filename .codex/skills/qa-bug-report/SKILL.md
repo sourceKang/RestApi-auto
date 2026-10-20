@@ -15,6 +15,7 @@ linking. Do not let UseTestlink define the Redmine description wording.
 
 Before creating or updating Redmine/TestLink, preview the final Redmine content
 and TestLink write plan to the user, then wait for explicit approval.
+The preview lists every Redmine field value; `Target version` must stay blank.
 
 ## Output Contract
 

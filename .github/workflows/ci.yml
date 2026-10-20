@@ -44,8 +44,11 @@ jobs:
 
       # An offline run must not register a TestLink case; if one leaks, the report hook
       # writes a formal report under reports/<version>/ that skews regression comparisons.
+      # Dot directories such as reports/.allure-results-current hold Allure scratch files.
       - name: Confirm offline tests wrote no formal report
         shell: pwsh
         run: |
-          $leaked = Get-ChildItem -Path reports -Filter *.txt -Recurse -ErrorAction SilentlyContinue
+          $leaked = Get-ChildItem -Path reports -Directory -ErrorAction SilentlyContinue |
+            Where-Object { -not $_.Name.StartsWith('.') } |
+            Get-ChildItem -Filter *.txt -File
           if ($leaked) { $leaked.FullName; throw "Offline tests wrote formal reports." }

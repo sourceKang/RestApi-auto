@@ -35,8 +35,12 @@
   目前 17 檔、24 個密碼欄位，0 筆。
 - CI：改跑設定明文檢查 → `pytest -m offline` → 確認 `reports/` 無 txt 報表。
 - 驗證：compile 通過；`pytest -m offline` 通過 108／失敗 0（6.4 s），執行前後 `reports/` 新增檔案 0；
-  ci.yml YAML 解析正常。CI 尚未在 GitHub 實跑（未 push）；離線判定若有遺漏會在 CI 失敗，屆時移除該檔 marker。
-- 下一步：使用者審閱後 commit／push，確認 GitHub CI 通過。
+  ci.yml YAML 解析正常。
+- 已提交 7612602 並 push。GitHub CI run 39357545144：明文檢查與 `pytest -m offline` 通過，但
+  「確認無正式報表」步驟誤判失敗——遞迴掃描到 `reports/.allure-results-current/*-attachment.txt`
+  （Allure 附件，非正式報表）。已在本機修正為只檢查 `reports/<非 . 開頭目錄>/*.txt`，並以暫存目錄
+  驗證三種情境（只有 Allure 附件→通過、有正式報表→失敗、無 reports→通過）；此修正尚未提交。
+- 下一步：提交並 push 防護步驟修正，確認 GitHub CI 全綠。
 
 ### 2026-10-20 AGENTS.md 精簡（Claude Code）
 

@@ -292,7 +292,7 @@ def _generate_integrated_evidence_report(
     report_dir: Path,
     report_base_name: str,
 ) -> Path:
-    from tools.generate_integrated_evidence_report import write_integrated_evidence_report
+    from utils.integrated_evidence_report import write_integrated_evidence_report
 
     integrated_html = report_dir / f"{report_base_name}_integrated.html"
     return write_integrated_evidence_report(

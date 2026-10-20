@@ -287,7 +287,7 @@ def test_write_reports_generates_integrated_evidence_report_by_default(monkeypat
 
 
 def test_integrated_report_failure_heading_counts_failed_txt_cases(tmp_path):
-    from tools.generate_integrated_evidence_report import write_integrated_evidence_report
+    from utils.integrated_evidence_report import write_integrated_evidence_report
 
     txt = tmp_path / "run.txt"
     txt.write_text(

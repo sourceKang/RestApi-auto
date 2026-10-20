@@ -45,10 +45,6 @@ class Known:
 # Existing violations, keyed by (importing file, imported module). Each entry must still
 # match a real import; fixing the import without removing the entry fails the test.
 KNOWN_VIOLATIONS: dict[tuple[str, str], Known] = {
-    ("utils/reporting.py", "tools.generate_integrated_evidence_report"): Known(
-        reason="the integrated evidence report writer lives in a CLI module",
-        remove_when="the writer moves to utils and tools keeps a thin CLI wrapper (retro plan R-F)",
-    ),
     ("utils/reporting.py", "cases.registry"): Known(
         reason="report rendering needs case names and order and shares the file with ReportState",
         remove_when="rendering moves out of utils, leaving only state recording (retro plan R-I)",

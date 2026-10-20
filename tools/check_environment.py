@@ -1,4 +1,4 @@
-"""Fail-fast environment check for this REST API automation project.
+r"""Fail-fast environment check for this REST API automation project.
 
 Run this before pytest on a new machine. It answers one question only:
 "is this machine able to run the suite, and if not, exactly what is missing?"

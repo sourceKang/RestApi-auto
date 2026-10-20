@@ -5,6 +5,7 @@ import time
 
 from config_loader.settings import scaled_wait
 from utils.assertions import assert_api_success
+from utils.diagnostics import masked_response_body
 
 
 def wait_for_rest_tokens(
@@ -58,13 +59,13 @@ def wait_for_rest_tokens(
     assert last_response is not None
     if last_response.retstatus != "Success":
         assert_api_success(last_response)
-    body = json.dumps(last_response.json, ensure_ascii=False)
-    assert not last_missing, f"Missing expected REST response tokens {last_missing}: {body}"
+    masked_body = masked_response_body(last_response)
+    assert not last_missing, f"Missing expected REST response tokens {last_missing}: {masked_body}"
     assert response_validator is None or response_validator(last_response), (
-        "REST response did not match the required exact baseline fields: " + body
+        "REST response did not match the required exact baseline fields: " + masked_body
     )
     assert stable_hits >= consecutive_successes, (
         f"REST response was not stable for {consecutive_successes} consecutive samples; "
-        f"last stable count={stable_hits}: {body}"
+        f"last stable count={stable_hits}: {masked_body}"
     )
     return last_response

@@ -3,7 +3,7 @@
 本檔是 Codex 與 Claude Code 共用的強制規範，只放每次都需遵守的規則；細節依下列文件按需讀取：
 
 - [專案脈絡與操作](docs/project-context.md)：架構入口、設定來源、EMS server 切換、雙工具工作流程。
-- [工程分析與設計準則](docs/engineering-guidelines.md)：第一性原理、目錄責任、ADR、API／測試細則、config 提交。設計修正、分析失敗或 review 時讀。
+- [工程分析與設計準則](docs/engineering-guidelines.md)：第一性原理、目錄責任、ADR、API／測試細則、config 提交、工具使用與搜尋、Review 檢查清單、平行子代理、Retro。設計修正、分析失敗、review 或搜尋大量檔案前讀。
 - [報表輸出格式](docs/report-format.md)：測試／QA 報表與任務總結頁。產出報表時讀。
 
 ## 協作

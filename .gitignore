@@ -50,3 +50,4 @@ docs/qa_bug_drafts/
 # Claude Code machine-local instructions and permissions
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/worktrees/

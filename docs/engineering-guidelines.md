@@ -83,3 +83,63 @@ Ground Truth：
 ## 完成前檢查
 
 確認 redaction、idempotency、cleanup、相容性，以及是否需更新文件、設定範例或 ADR。
+
+## 工具使用與搜尋
+
+- 搜尋程式碼不要把 `reports/` 當路徑引數（約 150 萬個檔案，全文搜尋會逾時）。查歷史結果用
+  `reports/_index/`（tools/build_report_index.py），或只指定單一 `reports/<version>/` 子目錄；
+  全 repo 搜尋排除 `reports/`、`.claude/worktrees/`、`.codex-validation/`。
+- 不整檔讀取含憑證的檔案（`configs/auth_accounts*.yaml`、`configs/test_targets*.yaml`、`.env`、
+  外部工具的 env 檔）。確認欄位時只列 key 名，或執行 `tools/check_config_secrets.py`。
+- 大檔（如 tests/test_neox_config.py、utils/reporting.py）先搜尋 test／函式名稱，再讀需要的行範圍；
+  測試 log 只看尾端與失敗段落。
+- 離線驗證固定用 `pytest -m offline -q --skip-dut-preflight`。
+- 完整回歸超過 30 分鐘時以獨立程序執行（見 project-context「EMS server 切換」），不要用短間隔反覆輪詢。
+- 回報 EMS 版本、target 或 server 前，以 `configs/ems.yaml`、`summary.json` 與報表表頭核對，不憑對話記憶。
+- 一個 session 聚焦一個主題；主題完成先更新 work-status，再換 session 或壓縮 context。
+
+## Review 檢查清單
+
+review（含 PR 自我檢查）時逐項確認。以下只列需要判斷的項目；能由機器檢查的規則已由 CI 強制：
+設定檔明文（`tools/check_config_secrets.py`）、offline 測試不寫正式報表（CI 防護步驟）。
+
+- 修正位於最接近原因的責任層，沒有由 testcase 補償底層缺陷。
+- 沒有放寬正確 assertion、吞掉 exception 或忽略錯誤。
+- 非同步結果以含 timeout 與退避的 polling 驗證最終狀態，不靠固定 sleep。
+- NeoX 設定變更附 CLI baseline → REST → CLI 證據；REST-only 結果沒有宣稱為完整驗證。
+- 沒有硬編碼環境、node、slot、port、ONT 或資源 ID；上游資料由 fixture 傳遞並負責 teardown。
+- 破壞性案例使用專屬拋棄式測資；中途失敗也能清理，且可重跑。
+- request、response、log、附件、報表與 PR 內文都已遮罩敏感資料。
+- 會影響 EMS／設備的新行為預設關閉，需明確 option／marker 才執行。
+- 新增測試檔或 case 前，先確認能否併入既有檔案或資料驅動 case（破壞性案例的專屬測資除外）；
+  清理殘留檔案先列清單，經使用者確認後才刪。
+- 證據中的數字取自實際指令輸出；未驗證的部分明確寫出。
+- 文件、設定範例或 ADR 是否需要同步更新。
+
+## 拆解與平行子代理
+
+輕量做法，不建立 skill。適用：同時有 2 個以上可離線完成、彼此不改同一檔案的項目。
+
+1. 列出項目，每項寫目標、要改的檔案、完成條件與依賴；標出依賴已完成、可離線、不需使用者決定的「就緒」項目。
+2. 先把計畫給使用者確認。
+3. 每個就緒項目由一個子代理在自己的 worktree 執行（`git worktree add .claude/worktrees/<topic> -b claude/<topic> <整合分支>`）；
+   子代理先寫會失敗的 offline 測試再修到通過，回報 commit、檔案清單與驗證結果。
+4. 子代理只可執行 compileall 與 `pytest -m offline -q --skip-dut-preflight`；不得連 EMS／DUT／TestLink／Redmine、
+   不得執行 tools/run_multi_node.py 或 `--run-*` 選項、不改 work-status.md／project-context.md／AGENTS.md、
+   不刪 reports/、不 push。
+5. 主 agent 依序 dry run 合併到整合分支，跑全量 offline 測試與 `tools/check_config_secrets.py`，
+   寫一筆 work-status；實機驗證在使用者核准後依序執行；清理 worktree 前先詢問使用者。
+
+不適用：只有一個項目、需要實機重現或調查、等待使用者決定、兩個以上項目要改同一共用熱點
+（如 utils/reporting.py、utils/redaction.py），或涉及需要 CLI baseline 的 configs/neox_config。
+若同時出現 3 個以上就緒項目的情形發生 2 次以上（例如 OpenAPI breaking change 要逐一更新 cases/），
+再考慮建立正式 skill。
+
+## Retro
+
+- 時機：每輪 EMS 版本回歸結束後，或每月一次；由使用者發起，不自動執行。
+- 輸入：該期間的 session 紀錄、work-status 與 work-history。
+- 檢查兩部分：
+  - context：找檔案是否費時、AGENTS.md 是否膨脹、是否有不影響行為的指令、缺少哪些資訊。
+  - 防護：固定、可判定對錯的錯誤改為測試、CI 或工具檢查；需要判斷的才加入上方 Review 檢查清單。
+- 輸出依嚴重度排序的提案；每一項都由使用者逐條核准後才修改。結論與基準數字記入 work-history，下次 retro 比較。

@@ -27,7 +27,7 @@ Status: New
 Severity: L2 (Redmine built-in priority_id=5)
 Priority: blank (custom field ID 119; do not set until its allowed values are confirmed)
 Category: current tested EMS build, for example 03.00.11(AAVV.221)b6
-Target version: 03.00.11 (AAVA.221) C0 - Internal
+Target version: blank (do not set; the user asked repeatedly in 2026-06/07 to leave it empty)
 ```
 
 Custom fields:

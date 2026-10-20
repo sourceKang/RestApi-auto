@@ -5,149 +5,88 @@
 
 ## 雙工具協作設定
 
-- 負責工具：Claude Code（2026-09-22 ~ 2026-10-12）；先前由 Codex 建立共用
-  協作入口。
-- 分支：codex/neox-profile-read-path-fix（工作分支）。每批變更先在 scratch
-  worktree 做 `git merge --no-commit --no-ff` dry run，確認零衝突後才合併進
-  codex/prepare-github-upload（GitHub 預設分支）。
-- 共用 skill 以 .codex/skills/<name>/SKILL.md 為來源（qa-bug-report、
-  ems-version-regression），Claude 側 .claude/skills/<name>/SKILL.md 只轉介，
-  未複製業務規則。
+- 負責工具：Claude Code（2026-09-22 起）；先前由 Codex 建立共用協作入口。
+- 分支：每個任務從 codex/prepare-github-upload（GitHub 預設分支）切出 `claude/<topic>` 或
+  `codex/<topic>`。合併前先在 scratch worktree 做 `git merge --no-commit --no-ff` dry run，
+  零衝突才開 PR，由使用者審閱後合併。
+- 共用 skill 以 .codex/skills/<name>/SKILL.md 為來源（qa-bug-report、ems-version-regression），
+  Claude 側 .claude/skills/<name>/SKILL.md 只轉介，未複製業務規則。
 - 未新增全域權限設定、MCP 憑證或設備操作自動化。
-- Repo 公開性：專案負責人已明確決定維持 Public（自動化測試專案，帳密皆為
-  per-person 環境變數，非共用明碼密碼），不需要轉 Private。
+- Repo 公開性：專案負責人已明確決定維持 Public（帳密皆為 per-person 環境變數），不需要轉 Private。
 
 ## 最近一次工作
 
 較早的紀錄見 docs/work-history/（依月份）。
 
-### 2026-10-20 PR-A：offline 不跑 DUT preflight、registid 遮罩（Claude Code）
+### 2026-10-20 retro 計畫 PR-B：文件整併（Claude Code）
 
-- 分支 claude/pr-a-preflight-redaction，基準 d4b1685（#19 合併後）。retro 計畫 A～I 的第一項。
-- DUT preflight（會連 EMS／DUT）原本在 tryfirst 的 `pytest_collection_modifyitems` 執行，早於 `-m`／`-k`
-  篩選，`pytest -m offline` 不加 `--skip-dut-preflight` 仍會連線。改到 `pytest_collection_finish`（篩選後），
-  capability skip 一併移過去以保持在 target sync 之後。tests/test_collection_preflight.py 以子程序實際 collect
-  驗證；同一測試在舊基準會失敗（已在暫存 worktree 確認）。
-- 遮罩：`registid`（NeoX ONT payload 中的 ONT password）加入 SENSITIVE_KEYS；`redact_text` 另遮罩 CLI 的
-  `registration-id <值>`；`redact()` 對字串也套用 `redact_text`；CLI 驗證 JSON（reports/device-verification）寫檔前遮罩。
-- 驗證：compile 通過；`pytest -m offline` 通過 117／失敗 0；collect 751；明文檢查 0 筆；`reports/` 無新增。未連 EMS／DUT。
-- 未做：teardown 失敗訊息中 EMS 回應的 `password` 仍會進 Allure `statusDetails.message`（allure 直接取
-  `call.excinfo.exconly()`，不經 longrepr 遮罩），需在組例外訊息處遮罩，另列工作項；既有 reports/ 明文清理待決策 D1。
+- 分支 claude/pr-b-docs-consolidation，基準為 PR-A 合併後的預設分支。
+- work-status 歸檔回 120 行內，「下一步」改用 ID＋類型標記；新增記帳規則（見文末）。
+- engineering-guidelines 新增「工具使用與搜尋」「Review 檢查清單」「拆解與平行子代理」「Retro」四節；
+  project-context 新增「改動目標→檔案」與 NeoX 測試檔地圖；Redmine 範本 Target version 改為留空；
+  ems-version-regression 補 TestLink 回填範本與地雷；.gitignore 加入 `.claude/worktrees/`。
+- 驗證：只改 Markdown 與 .gitignore；相對連結無斷鏈；AGENTS.md 68 行、本檔 90 行；明文檢查 0 筆；
+  NeoX 地圖標為離線的 6 個測試檔實跑 52 passed（--skip-dut-preflight，未連線）；`.claude/worktrees/` 已被忽略。
+  歸檔的 3 筆條目原文移至 docs/work-history/2026-10.md 末尾。
 
-### 2026-10-20 CI 離線測試、報表外洩修正、設定明文檢查（Claude Code）
+### 2026-10-20 retro 計畫 PR-A：offline 不跑 DUT preflight、registid 遮罩（Claude Code）
 
-- 基準：73e18c5（AGENTS.md 精簡）之上，分支 codex/neox-profile-read-path-fix。
-- 離線測試寫入正式報表：原因是 tests/test_case_metadata.py 呼叫 `attach_case_metadata`，
-  其 `register_case` 把 EMS1-6666／6647 登記到全域 `REPORT_STATE` 且未清除，報表 hook 因此判定
-  有 TestLink case 而寫入 `reports/<version>/`。修正：該檔以 autouse fixture 換成全新 `ReportState`。
-  先前誤產生的 b13_redhat `*_2026-10-20_09-49-25*` 報表與 allure-results 已依使用者同意刪除。
-- pytest.ini 新增 `offline` marker；18 個不需 EMS／DUT／網路的測試檔加 module 層 `pytestmark`
-  （排除 test_zzz_permission_summaries 與含 live_swagger 的 test_openapi_yaml）。
-- 新增 tools/check_config_secrets.py 與 tests/test_config_secrets.py：掃描版控 configs/**/*.yaml 的
-  password／token／devKey／secret 欄位，只允許空值、`${ENV}` 或 placeholder 預設值；不輸出值。
-  目前 17 檔、24 個密碼欄位，0 筆。
-- CI：改跑設定明文檢查 → `pytest -m offline` → 確認 `reports/` 無 txt 報表。
-- 驗證：compile 通過；`pytest -m offline` 通過 108／失敗 0（6.4 s），執行前後 `reports/` 新增檔案 0；
-  ci.yml YAML 解析正常。
-- 已提交 7612602 並 push。GitHub CI run 39357545144：明文檢查與 `pytest -m offline` 通過，但
-  「確認無正式報表」步驟誤判失敗——遞迴掃描到 `reports/.allure-results-current/*-attachment.txt`
-  （Allure 附件，非正式報表）。已在本機修正為只檢查 `reports/<非 . 開頭目錄>/*.txt`，並以暫存目錄
-  驗證三種情境（只有 Allure 附件→通過、有正式報表→失敗、無 reports→通過）；此修正尚未提交。
-- 下一步：提交並 push 防護步驟修正，確認 GitHub CI 全綠。
-
-### 2026-10-20 AGENTS.md 精簡（Claude Code）
-
-- 起因：依 retro 復盤，AGENTS.md（143 行）每個 session 都會載入，其中大半只在設計／review／產報表時需要。
-- AGENTS.md 縮為約 68 行，保留協作、核心原則、依賴方向、NeoX CLI → REST → CLI、EMS target／redaction、
-  外部整合與安全、驗證、回報格式；其餘原文搬到新檔 docs/engineering-guidelines.md（第一性原理、目錄責任、
-  ADR、API／測試、設定與規格、Git 與 config 提交）與 docs/report-format.md（報表與任務總結頁）。規則只搬移、未刪除。
-- CLAUDE.md：開工只讀 work-status；接手、連線 EMS／設備或跑回歸時才讀 project-context。
-- project-context.md：文件表加入兩份新文件；移除 SETUP_NEW_MACHINE、openapi_contract、check_environment
-  的「未提交」過時備註（三檔皆已在版控且無變更）；補回「worktree 接續前先整合」。
-- .codex/skills/ems-version-regression/SKILL.md：失敗分層、報表格式、Git 規則改指向新文件。
-- 驗證：逐條比對舊 AGENTS.md 每行皆可在新位置找到；相對連結全部可開啟。只改 Markdown，未跑 pytest。
-- 另外：retro 驗證離線測試時，於 `reports/03.00.11 (AAVV.221) b13_redhat/` 產生 `*_2026-10-20_09-49-25*`
-  報表與 allure-results（非正式執行），待使用者決定是否刪除；也代表離線單元測試會寫入正式報表目錄，
-  與 project-context 描述不符，待修。
-- 下一步：使用者審閱後 commit；之後處理 retro 高嚴重度項目（CI 擴大離線測試、離線測試不寫正式報表、
-  auth_accounts 明文自動檢查）。
-
-### 2026-10-13 第九次完整測試：慢請求標記與錯誤摘要實機驗證（Claude Code）
-
-- 以未提交的上述修改執行（reports/multi_node/2026-10-13_17-08-09）：pytest 314 passed、2 failed、
-  1 error（1:44:56）；TestLink 252 Pass／2 Fail。
-- 報表開頭 `EMS Connection Errors: 5 (recovered by retry 3, not recovered 2)`、
-  `EMS Slow Requests: 5 (total time over 30 s)`，txt／HTML 與 Allure 附件一致。
-  - GET 重送恢復 3 次（ConnectTimeout 2、Connection reset 1）。
-  - EMS1-6900、6908 失敗：PATCH 送出後 .100 切斷連線（Connection dropped，19.2 s），依規則不重送。
-  - mutating request 遇 ConnectTimeout 的重送本次未觸發（PATCH 皆為 dropped）。
-  - 慢請求 5 筆皆為 POST `/configNeoXSeries/profile/.../ONTUNIProfile/RestUNI`（34.5～36.5 s，HTTP 200，
-    EMS1-7172／7173），其他 endpoint 無；ONTUNIProfile 建立固定偏慢，待確認是否回報。
-- 實機發現 Windows 約 21 秒即放棄建立連線（早於 client 60 秒上限），摘要改為
-  「connect timed out after 21.0 s (client limit 60 s)」，以實際耗時為主。
-- ERROR：test_ont_config_apply_provision_template_sfu_readwrite 本體 PASSED，teardown 還原 ONT baseline
-  未收斂（第 1 次 GET /ont/sn HTTP 500＋CLI UnReg；第 2 次 REST 連續穩定 2/4）；同既有事項
-  「ONT SFU 間歇 teardown HTTP 500」。之後 ONT 查詢類 case 皆 Pass。
-- 第 10 次（2026-10-14，未提交的 redhat 時間設定：wait_scale 1.5、重送 10/30/60 s、請求間隔 0.3 s；
-  reports/multi_node/2026-10-14_10-01-12，1:52:54）：TestLink 237 Pass／3 Fail／14 Skip。
-  - 連線錯誤 4 筆全部重送恢復（含首次實機觸發的 DELETE ConnectTimeout 重送，EMS1-7130）；慢請求 8 筆
-    （3 筆為重送造成、5 筆為 ONTUNIProfile POST 約 36 s）。
-  - 失敗與 Skip 全部來自 session 過期：test_profiles 的 module-scope `profile_workspace` 以
-    `role_session` 取得一次性、不會更新的 readwrite session，整個模組共用；EMS session 600 秒後失效。
-    模組耗時第 8 次 550 s、第 9 次 529 s（已接近上限），第 10 次因請求間隔變為 618 s，578 s 起回
-    `Not authorized.`：EMS1-6922、6914、6920 失敗，其後 14 筆 invalid-param case Skip，workspace
-    cleanup ERROR（暫時 profile 可能殘留在 EMS）。
-- 修正：`profile_workspace` 改用 `shared_role_session(READWRITE)`（ADR 0001 補充）。第 11 次
-  （reports/multi_node/2026-10-14_13-22-42，2:08:41）：pytest 316 passed、0 failed、0 error；
-  TestLink **254 Pass／0 Fail**，首次一次全過。連線錯誤 6 筆全部重送恢復（POST、DELETE、PATCH
-  ConnectTimeout 各 1，GET 3）；慢請求 10 筆（5 筆重送造成、5 筆 ONTUNIProfile POST 約 35 s）；
-  Proactive Session Refreshes 9、Authorization Session Refreshes 0；SFU teardown 本次收斂。
-  總時間較第 8／9 次多約 20 分鐘（請求間隔 0.3 s）。
-- PR #16 已合併（`0527eca`）。formal_runs.yaml：b13_redhat NODE3 final 改為
-  `2026-10-14_13-22-44_NODE3`（第 6 次判定版保留、final: false）。TestLink build 20644 以
-  operation `b13-redhat-node3-run11-20261014` 再回填 254 筆 p、0 錯誤（2026-10-14 15:41，每個 case
-  多一筆 execution）；get_last_result 抽查 EMS1-6640、7056、7120 皆為本次 p。
-- 發現遮罩缺口（未修，既有問題）：ONT password 以 `registid` 送入 NeoX ONT config payload，
-  redaction 未涵蓋此 key，request 附件與 integrated HTML 可見明文；teardown 失敗訊息中的 EMS 回應
-  `password` 欄位也出現在 Allure statusDetails。txt／HTML 簡易報表與 pytest log 無明文。
+- DUT preflight 原在 tryfirst 的 `pytest_collection_modifyitems` 執行，早於 `-m`／`-k` 篩選，
+  `pytest -m offline` 不加 `--skip-dut-preflight` 仍會連 EMS／DUT。改到 `pytest_collection_finish`，
+  capability skip 一併移過去以保持在 target sync 之後；tests/test_collection_preflight.py 以子程序驗證，
+  舊基準會失敗。
+- `registid`（ONT password）加入 SENSITIVE_KEYS；`redact_text` 另遮罩 CLI `registration-id <值>`；
+  `redact()` 對字串也套用 `redact_text`；CLI 驗證 JSON 寫檔前遮罩。
+- 驗證：`pytest -m offline` 通過 117／失敗 0；collect 751；明文檢查 0 筆；`reports/` 無新增。未連 EMS／DUT。
 
 ## 下一步
 
-0. b13_redhat：SSH／密碼遮罩／inventory 等待／EMS1-7056 Remote Control 已提交；決定是否清理既有報表中的明文密碼；
-   確認 RAD external 11:40～15:59 恢復的原因；決定 formal_runs.yaml 的
-   b13_redhat NODE3 正式執行；決定 TestLink 是否建 build／回填；commit configs/ems.yaml 的
-   b13 版本。
-0-1. 是否讓 teardown 失敗（cleanup 未收斂）反映到 txt／TestLink 結果，待決定。
-0-2. b12_redhat 回歸、TestLink 回填與合併都已完成。
-0a. .100 連線中斷已判定為 server 資源不足；GET／HEAD 重送與報表連線錯誤記錄已加入
-   （ADR 0002）。下次完整測試確認報表開頭的 `EMS Connection Errors` 行與重送恢復情形；
-   若仍頻繁，再以報表中的時間點查 .100 log。
-0b. 2026-10-13 已提交刪除 tools/update_testlink_multi_node_notes.py，並將 docs/handoff/、
-   docs/qa_bug_drafts/（內部 Redmine／bug 資料，repo 為 Public）加入 .gitignore，保留本機。
-   docs/sop/ 的 SOP docx（9/22 版）仍未納入：若要給同事使用，先改寫為 Markdown 並更新到
-   EMS server 切換與 qa-integration-agent 回填流程。
+標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
-1. ONT SFU 間歇 `Wait`／teardown HTTP 500：測試期間持續以 CLI 記錄 ONT
-   狀態，確認 provision template 套用／還原是否觸發 ONT 重新註冊。
-2. NNI POST 移除 payload 未帶欄位、回 Fail 仍部分套用：待確認規格後決定
-   是否以 /qa-bug-report 整理。
-3. 決定 `docs/qa_bug_drafts/`、`docs/sop/` 是否收進版控（SOP 為二進位檔，
-   公開前需先解析內容審閱）。
-4. NODE5／NODE7／NODE8 test_targets.local.yaml fw_version 仍帶後綴，需 CLI
-   確認後更新。
-5. 觀察 CI：推送 ab8afb2 到預設分支時觸發了兩個 push run，其中 CI #3 被
-   concurrency 設定取消；原因未確認，若後續推送持續重複再查。對
-   codex/prepare-github-upload 的 PR 流程尚未實際跑過 CI。
-6. 依賴改為手動升級：升級時修改 requirements.txt，並確認 CI 與本機離線
-   檢查通過。
-7. 已由 tools/build_report_index.py `--compare` 取代（2026-10-07）；
-   ems-version-regression 步驟 5.1 已改為呼叫它，不再另做
-   tools/compare_multi_node_runs.py。
+retro 計畫（2026-10-20 核准，依序開 PR）：
+
+- [R-C]〔離線〕PR skill `pr-description`（摘要／證據／合併風險）與 .github PR 範本；流程含對照 Review 檢查清單。
+- [R-D]〔離線〕`tests/test_import_layers.py`：AST 檢查依賴方向，3 組現有違規先列 allowlist（附移除條件）。
+- [R-E]〔離線〕tools/run_multi_node.py 不再 import tests.support：preflight 核心與 target_sync 移到 services，
+  純函式移到 config_loader（含 `neox_parallel_worker_auth_profile`）。
+- [R-F]〔離線〕utils/reporting.py 不再 lazy import tools：整合報表產生器移到 utils。
+- [R-G]〔離線〕固定 sleep 檢查（先搬 wait_for_rest_tokens、合併冷卻延遲、假延遲改 Event）。
+- [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。
+- [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。
+- [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
+  （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。
+- [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；
+  inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。
+- [R-REG]〔需實機〕registid 遮罩於實機報表確認。
+
+使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：
+
+- [D0]〔需決定〕PR #18（claude/record-pr10-history）與兩個殘留 worktree 的去留。
+- [D1]〔需決定〕既有 reports/ 內 registid／password 明文是否清理。
+- [D3]〔需決定〕reports/ 約 153 萬檔，是否以 tools/archive_reports.py 歸檔 b1–b9。
+- [D4]〔需決定〕曾貼入對話或整檔讀出的測試帳密是否輪替。
+- [D5]〔需決定〕Codex 之後是否仍在本 repo 使用（影響 skill 原檔位置）。
+
+既有事項：
+
+- [B13]〔需決定〕b13_redhat：既有報表明文清理（同 D1）；RAD external 11:40～15:59 恢復原因；
+  formal_runs.yaml 正式執行；TestLink build／回填；configs/ems.yaml b13 版本是否已提交需核對。
+- [TD]〔需決定〕teardown 失敗（cleanup 未收斂）是否反映到 txt／TestLink 結果。
+- [EMS100]〔需實機〕.100 連線中斷判定為 server 資源不足（ADR 0002）；下次完整測試確認
+  `EMS Connection Errors` 行與重送恢復，仍頻繁再以報表時間點查 .100 log。
+- [SOP]〔需決定〕docs/sop/ 的 SOP docx（9/22 版）未納入版控；要給同事用需先改寫為 Markdown 並更新
+  EMS server 切換與 qa-integration-agent 回填流程（repo 為 Public）。docs/qa_bug_drafts/ 維持不進版控。
+- [SFU]〔需實機〕ONT SFU 間歇 `Wait`／teardown HTTP 500：測試期間以 CLI 記錄 ONT 狀態，確認
+  provision template 套用／還原是否觸發 ONT 重新註冊。
+- [NNI]〔需決定〕NNI POST 移除 payload 未帶欄位、回 Fail 仍部分套用：待確認規格後決定是否用 /qa-bug-report。
+- [FW]〔需實機〕NODE5／NODE7／NODE8 test_targets.local.yaml fw_version 仍帶後綴，需 CLI 確認後更新。
+- [CI]〔離線〕推送到預設分支曾出現兩個 push run、其一被 concurrency 取消；原因未確認，持續發生再查。
+- [DEP]〔離線〕依賴手動升級：改 requirements.txt 後確認 CI 與本機離線檢查通過。
 
 ## 後續更新方式
 
-每個工作條目至少記錄：日期、負責工具、任務、分支／基準 commit、
-修改範圍、驗證指令與結果、未執行原因、下一步。
-已解決的事項可精簡，尚未完成或缺證據的事項必須保留。
-本檔只保留最近 1～2 筆工作條目，較舊的原文移到 docs/work-history/<YYYY-MM>.md，
-全檔維持在 120 行以內。
+- 每個工作條目記錄：日期、負責工具、任務、分支／基準、修改範圍、驗證指令與結果、未執行原因、下一步。
+- 只在任務完成或交接時更新一次，不逐步記帳。PR 編號、merge commit、CI run id 不寫入本檔，
+  以 GitHub 與 git log 為準。
+- 本檔只保留最近 1～2 筆工作條目，較舊的原文移到 docs/work-history/<YYYY-MM>.md，全檔維持在 120 行以內。
+- 已解決的事項移除或精簡；尚未完成或缺證據的事項保留，並標上 ID 與類型。

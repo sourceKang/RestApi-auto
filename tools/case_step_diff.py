@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from utils.integrated_evidence_report import index_results_by_case, load_allure_results
-from utils.redaction import redact, redact_text
+from utils.redaction import report_value, report_text
 
 
 VOLATILE_TOKEN_RE = re.compile(
@@ -204,10 +204,10 @@ def _display(value: Any) -> str:
     if value is _MISSING or value is None:
         return "(missing)"
     if isinstance(value, (dict, list)):
-        text = json.dumps(redact(value), indent=2, ensure_ascii=False)
+        text = json.dumps(report_value(value), indent=2, ensure_ascii=False)
     else:
         text = str(value)
-    text = IPV4_RE.sub("<ip>", redact_text(text))
+    text = IPV4_RE.sub("<ip>", report_text(text))
     if len(text) > PREVIEW_LIMIT:
         text = text[:PREVIEW_LIMIT] + "\n... (truncated; open the integrated report for full content)"
     return text

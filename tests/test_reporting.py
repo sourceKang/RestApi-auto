@@ -500,6 +500,7 @@ def test_auth_config_password_values_lists_every_resolvable_account(tmp_path):
 
 
 def test_makereport_hook_masks_known_secrets_in_failed_report(monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     from tests.support import reporting_hooks
 
     monkeypatch.setattr(reporting_hooks, "_known_secret_values", lambda config: ("Secret123!",))

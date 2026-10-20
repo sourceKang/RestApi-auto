@@ -12,7 +12,7 @@ import pytest
 from clients.ssh_cli import ssh_session_pool
 from config_loader import load_environment
 from utils.allure_helpers import attach_json
-from utils.redaction import redact
+from utils.redaction import report_value
 
 
 def neox_cli_credentials(env_config, feature: str) -> tuple[str, str]:
@@ -50,7 +50,7 @@ def run_neox_cli_commands(env_config, credentials: tuple[str, str], commands: li
         results, timing = pool.run_commands(commands, owner=owner)
         attach_json(
             "NeoX SSH session pool timing",
-            redact(
+            report_value(
                 {
                     **timing.as_dict(),
                     "command_count": len(commands),
@@ -73,7 +73,7 @@ def run_neox_cli_commands(env_config, credentials: tuple[str, str], commands: li
         }
         if timing is not None:
             diagnostics["timing"] = timing.as_dict()
-        attach_json("NeoX SSH failure diagnostics", redact(diagnostics))
+        attach_json("NeoX SSH failure diagnostics", report_value(diagnostics))
         raise
     return {result.command: result.output for result in results}
 
@@ -123,7 +123,7 @@ def write_neox_cli_verify_report(
         "workflow": "REST API creates the NeoX config. CLI show commands verify device state.",
         "rest_api": {
             "path": api_path,
-            "request": redact(payload),
+            "request": report_value(payload),
             "response": {
                 "status_code": api_response.status_code,
                 "retstatus": api_response.retstatus,
@@ -143,7 +143,7 @@ def write_neox_cli_verify_report(
     if metadata:
         data["metadata"] = metadata
     # CLI output and expected tokens carry `registration-id <ONT password>`.
-    data = redact(data)
+    data = report_value(data)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     attach_json(f"NeoX CLI verification {feature}/{case_name}", data)
     return path

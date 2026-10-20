@@ -18,6 +18,16 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 本機報表保留原值、EMS_REPORT_REDACT 開關（Claude Code）
+
+- 分支 claude/report-redact-switch，基準為 R-T2 合併後的預設分支。使用者決定：Allure 附件與測試報表要保留原始資料
+  （密碼、session id、token、devKey）以便回查。
+- utils/redaction.py 新增 `report_value`／`report_text`／`report_mask_values`：預設回傳原值，`EMS_REPORT_REDACT=1`
+  （或 pytest `--redact-reports`，在 pytest_configure 設定環境變數，xdist worker 與子程序同樣生效）時遮罩。
+  `redact`／`redact_text`／`mask_values` 維持一律遮罩，供對外內容使用。報表路徑 14 處改用 report_*。
+- AGENTS.md、engineering-guidelines、report-format、project-context、ems-version-regression 規則改為「本機報表保留原值、
+  分享前以開關重產；PR、Redmine、TestLink notes、提交的檔案一律遮罩」。txt 報表（TestLink 回填來源）不含回應本體或帳密。
+
 ### 2026-10-20 R-T2：失敗訊息遮罩（Claude Code）
 
 - 分支 claude/r-t2-mask-failure-messages，基準為 PR-I 合併後的預設分支。
@@ -30,17 +40,6 @@
   `<response>.text`、`json.dumps(<x>.json)`、`body`／`response_text`；另含 helper 與 rest_polling 逾時訊息的行為測試。
 - 驗證：反例（service 內加 `{response.text}`）被擋；舊基準上行為測試失敗（密碼出現在訊息中），新版通過。
 
-### 2026-10-20 retro 計畫 PR-I：拆分 utils/reporting.py（Claude Code）
-
-- 分支 claude/pr-i-split-reporting，基準為 PR-H 合併後的預設分支。
-- utils/reporting.py（1,088 行）只留狀態記錄（226 行：dataclass、REPORT_STATE、record_*／register_*、set_session_metrics、
-  Allure 目錄準備），不再 import cases；寫檔、渲染、彙整與權限摘要逐字移到 tests/support/report_writer.py，
-  其中 18 處 REPORT_STATE 改為呼叫時查 `reporting.REPORT_STATE`，測試替換狀態的方式不變。
-- reporting_hooks 與相關測試改從 report_writer 匯入；KNOWN_VIOLATIONS 清空（import 方向已無例外）。
-- 驗證：同一份狀態（40 個 case，含 fail／skip、readonly／noaccess、連線錯誤、慢請求、筆記、session 指標）由舊版
-  與新版分別寫出，txt 與 HTML 逐位元組相同。test_hardware_config 的 NODE3 fw_version 失敗為既有本機設定問題
-  （基準 6695fd9 同樣失敗，見 [FW]），不在 offline 範圍。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
@@ -49,12 +48,12 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 
 - [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；
   inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測。完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。
-- [R-REG]〔需實機〕registid 遮罩於實機報表確認。下次回歸時一併確認 teardown 失敗的 Allure statusDetails 已遮罩（R-T2）。
+- [R-REG]〔需實機〕下次回歸以 `--redact-reports` 跑一次，確認 registid、CLI registration-id 與 teardown statusDetails 都會遮罩；預設跑法則確認原值保留。
 
 使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：
 
 - [D0]〔需決定〕PR #18（claude/record-pr10-history）與兩個殘留 worktree 的去留。
-- [D1]〔需決定〕既有 reports/ 內 registid／password 明文是否清理。
+- [D1]〔需決定〕（2026-10-20 使用者已定：本機報表保留原值）既有 reports/ 不需清理明文；此項可關閉。
 - [D3]〔需決定〕reports/ 約 153 萬檔，是否以 tools/archive_reports.py 歸檔 b1–b9。
 - [D4]〔需決定〕曾貼入對話或整檔讀出的測試帳密是否輪替。
 - [D5]〔需決定〕Codex 之後是否仍在本 repo 使用（影響 skill 原檔位置）。

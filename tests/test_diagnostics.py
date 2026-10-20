@@ -54,7 +54,8 @@ def test_format_value_summary_stays_compact_for_assertion_messages():
     assert "\n" not in rendered
 
 
-def test_format_value_summary_redacts_sensitive_fields():
+def test_format_value_summary_redacts_sensitive_fields(monkeypatch):
+    monkeypatch.setenv("EMS_REPORT_REDACT", "1")
     rendered = format_value_summary(
         {"password": "secret-password", "nested": {"token": "secret-token"}}
     )

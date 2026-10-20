@@ -38,7 +38,7 @@ from tools.case_step_diff import (  # noqa: E402
     step_entries,
 )
 from utils.integrated_evidence_report import TxtCase, parse_txt_report  # noqa: E402
-from utils.redaction import redact_text  # noqa: E402
+from utils.redaction import report_text  # noqa: E402
 
 
 DEFAULT_REPORTS_ROOT = PROJECT_ROOT / "reports"
@@ -462,7 +462,7 @@ def flatten_steps(node: dict[str, Any]) -> list[tuple[tuple[str, ...], str, str]
 
 def _first_line(text: str, limit: int = 300) -> str:
     # The index is for result lookup; addresses stay in the linked raw reports.
-    line = IPV4_RE.sub("<ip>", redact_text(text.strip().splitlines()[0])) if text.strip() else ""
+    line = IPV4_RE.sub("<ip>", report_text(text.strip().splitlines()[0])) if text.strip() else ""
     return line if len(line) <= limit else line[:limit] + "…"
 
 

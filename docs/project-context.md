@@ -48,7 +48,7 @@
 | 收集、skip、DUT preflight、target sync | tests/support/collection.py、preflight.py（hook）；services/preflight.py、target_sync.py（核心） |
 | NeoX xdist 平行設定 | config_loader/neox_parallel.py、tests/support/options.py |
 | 報表表頭、txt／HTML／integrated | tests/support/report_writer.py、reporting_hooks.py；狀態記錄在 utils/reporting.py |
-| 遮罩規則 | utils/redaction.py |
+| 遮罩規則與 `EMS_REPORT_REDACT` 開關 | utils/redaction.py、tests/support/options.py（`--redact-reports`） |
 | TestLink case ID 對應 | cases/registry.py、cases/neox_case_ids.py |
 | 多 node 執行與 dry-run | tools/run_multi_node.py |
 | 歷史結果比對 | tools/build_report_index.py |
@@ -111,7 +111,7 @@ EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定�
 - 完整測試約 1.5 小時，超過 agent 背景工作的時間上限（30 分鐘）；需要長時間執行時
   改用獨立程序（例如 PowerShell `Start-Process`）並另外監看結果。
   進度用唯讀的 `tools/run_status.py [reports/multi_node/<timestamp>]` 查詢（各 node 已完成數／總數、
-  pass／fail 數、最後完成的 test、log 最後更新時間與遮罩後的尾端），間隔至少 5 分鐘；
+  pass／fail 數、最後完成的 test、log 最後更新時間與 log 尾端；`EMS_REPORT_REDACT=1` 時遮罩），間隔至少 5 分鐘；
   log 超過 `--stale-minutes`（預設 15）未更新會標示 stale，先查 EMS 與 pytest 程序再處理。
 
 ### 報表保存
@@ -163,8 +163,8 @@ EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定�
   逐步對齊兩次執行，列出 request／response 欄位差異與兩邊完整 JSON。
   request URL 的 EMS 主機會先去除；耗時、時間、告警流水號、光功率標為
   「可能為動態值」，顯示但不計入差異數（依兩次 NODE3 完整執行實測）。
-- node 以報表的 `Node IP` 對應有 `_NODEx` 標籤的報表；步驟差異的訊息會遮罩
-  敏感值與 IP。
+- node 以報表的 `Node IP` 對應有 `_NODEx` 標籤的報表；步驟差異的訊息會去除 IP；
+  `EMS_REPORT_REDACT=1` 時另遮罩敏感值。
 
 ## 本機檢查與外部驗證
 

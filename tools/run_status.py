@@ -26,7 +26,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.redaction import redact_text  # noqa: E402
+from utils.redaction import report_text  # noqa: E402
 
 MULTI_NODE_ROOT = PROJECT_ROOT / "reports" / "multi_node"
 OUTCOMES = ("PASSED", "FAILED", "ERROR", "SKIPPED", "XFAIL", "XPASS")
@@ -97,7 +97,7 @@ def node_status(run_dir: Path, node: str, summary: dict | None, *, now: float, s
         last_test=last_test,
         allure_results=sum(1 for _ in allure_dir.glob("*-result.json")) if allure_dir.is_dir() else 0,
         final_line=final_line,
-        tail=[redact_text(line) for line in text.splitlines()[-tail:]] if tail > 0 else [],
+        tail=[report_text(line) for line in text.splitlines()[-tail:]] if tail > 0 else [],
     )
     if log_path.exists():
         status.last_update_minutes = round((now - log_path.stat().st_mtime) / 60, 1)

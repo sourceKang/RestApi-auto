@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from utils.diagnostics import format_value_summary, json_for_attachment, summarize_value
+
+
+pytestmark = pytest.mark.offline
 
 
 def test_summarize_value_keeps_scalar_values_at_depth_limit():

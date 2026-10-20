@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import csv
 
+import pytest
+
 from tools import archive_reports as archive
+
+
+pytestmark = pytest.mark.offline
 
 
 def _make_reports(root):

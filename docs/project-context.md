@@ -148,18 +148,25 @@ git diff --stat
 
 上述 path/to/changed_file.py 是佔位，必須替換為實際修改檔案。
 
-小範圍的離線 service 組裝檢查：
+離線單元測試（標記 `offline`，CI 也執行同一組）與設定檔明文檢查：
 
 ~~~powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_service_bundle.py -q
+.\.venv\Scripts\python.exe -m pytest -m offline -q --skip-dut-preflight
+.\.venv\Scripts\python.exe tools/check_config_secrets.py
 ~~~
 
-此案例使用本機 object 組裝 service，不呼叫 EMS；全域 fixture／報表 hook
-仍會讀取本機設定，因此需要可解析的環境設定。沒有任何 TestLink case 結果的
-session（離線單元測試、`--collect-only`）不寫 txt／html／integrated 報表，
-只輸出 `EMS report: skipped; ...`；`reports/.allure-results-current/` 仍是
-Allure 的暫存目錄，下次執行開始時會清空。
+`offline` 只標記不連 EMS／DUT／網路、也不登記 TestLink case 的測試檔（以
+module 層 `pytestmark` 標記）。測試若會呼叫 `attach_case_*` 等登記 case 的函式，
+須以全新 `ReportState` 隔離，否則報表 hook 會把它當成正式執行並寫入
+`reports/<version>/`；CI 在執行後檢查 `reports/` 沒有 txt 報表。
+全域 fixture／報表 hook 仍會讀取本機設定，因此需要可解析的環境設定。沒有任何
+TestLink case 結果的 session 只輸出 `EMS report: skipped; ...`；
+`reports/.allure-results-current/` 仍是 Allure 的暫存目錄，下次執行開始時會清空。
 這只是基礎檢查，不代表所有 service、API 或設備測試通過。
+
+`tools/check_config_secrets.py` 掃描版控中的 `configs/**/*.yaml`：password、token、
+devKey、secret 類欄位必須是空值、`${ENV_VAR}` 或預設值為 placeholder 的
+`${ENV_VAR:-change_me}`；輸出只列檔案、行號與欄位名稱，不列出值。
 
 既有 tools/check_environment.py 支援 --no-network，可供本機環境診斷；
 未加此選項會執行網路檢查。

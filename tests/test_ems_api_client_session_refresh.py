@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from clients.ems_api_client import EmsApiClient
 from models.api import ApiResponse
+
+
+pytestmark = pytest.mark.offline
 
 
 def response(retstatus: str, retresult: str = "") -> ApiResponse:

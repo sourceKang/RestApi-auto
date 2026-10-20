@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from tests.support.options import session_cache_enabled
+
+
+pytestmark = pytest.mark.offline
 
 
 class FakeConfig:

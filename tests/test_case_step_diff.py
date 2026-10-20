@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from tools import case_step_diff as csd
+
+
+pytestmark = pytest.mark.offline
 
 
 def _write_run(directory, *, host, elapsed, retstatus, alarm_time, status="passed"):

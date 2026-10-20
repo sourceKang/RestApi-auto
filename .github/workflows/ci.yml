@@ -35,7 +35,17 @@ jobs:
       - name: Collect the full test suite
         run: python -m pytest --collect-only --skip-dut-preflight -q
 
-      # The one test confirmed to assemble services locally without an EMS connection
-      # (see docs/project-context.md).
-      - name: Run the offline service-bundle test
-        run: python -m pytest tests/test_service_bundle.py -q --skip-dut-preflight
+      - name: Check tracked configs for plaintext secrets
+        run: python tools/check_config_secrets.py
+
+      # Unit tests marked `offline` need no EMS, DUT or network (see pytest.ini).
+      - name: Run offline unit tests
+        run: python -m pytest -m offline -q --skip-dut-preflight
+
+      # An offline run must not register a TestLink case; if one leaks, the report hook
+      # writes a formal report under reports/<version>/ that skews regression comparisons.
+      - name: Confirm offline tests wrote no formal report
+        shell: pwsh
+        run: |
+          $leaked = Get-ChildItem -Path reports -Filter *.txt -Recurse -ErrorAction SilentlyContinue
+          if ($leaked) { $leaked.FullName; throw "Offline tests wrote formal reports." }

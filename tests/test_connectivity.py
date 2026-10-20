@@ -6,6 +6,9 @@ from tests.support import connectivity
 from tests.support.connectivity import PingResult, assert_ping_reachable, ping_attachment
 
 
+pytestmark = pytest.mark.offline
+
+
 def test_ping_attachment_uses_line_arrays_for_readability():
     result = PingResult(
         target="192.0.2.1",

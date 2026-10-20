@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from tools.testlink_backfill import build_backfill_cases
+
+
+pytestmark = pytest.mark.offline
 
 
 def test_ems1_6640_backfill_matches_absolute_session_lifetime_flow():

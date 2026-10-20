@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from services.alarm import AlarmService
 from services.auth_matrix import AuthMatrixService
 from services.invalid_params import InvalidParamsService
@@ -10,6 +12,9 @@ from services.provision import ProvisionService
 from services.remote import RemoteService
 from services.session import UserSessionService
 from tests.support.service_bundle import build_service_bundle
+
+
+pytestmark = pytest.mark.offline
 
 
 def test_build_service_bundle_groups_domain_services():

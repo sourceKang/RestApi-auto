@@ -21,7 +21,24 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
-### 2026-10-20 AGENTS.md 精簡（Claude Code，未提交）
+### 2026-10-20 CI 離線測試、報表外洩修正、設定明文檢查（Claude Code，未提交）
+
+- 基準：73e18c5（AGENTS.md 精簡）之上，分支 codex/neox-profile-read-path-fix。
+- 離線測試寫入正式報表：原因是 tests/test_case_metadata.py 呼叫 `attach_case_metadata`，
+  其 `register_case` 把 EMS1-6666／6647 登記到全域 `REPORT_STATE` 且未清除，報表 hook 因此判定
+  有 TestLink case 而寫入 `reports/<version>/`。修正：該檔以 autouse fixture 換成全新 `ReportState`。
+  先前誤產生的 b13_redhat `*_2026-10-20_09-49-25*` 報表與 allure-results 已依使用者同意刪除。
+- pytest.ini 新增 `offline` marker；18 個不需 EMS／DUT／網路的測試檔加 module 層 `pytestmark`
+  （排除 test_zzz_permission_summaries 與含 live_swagger 的 test_openapi_yaml）。
+- 新增 tools/check_config_secrets.py 與 tests/test_config_secrets.py：掃描版控 configs/**/*.yaml 的
+  password／token／devKey／secret 欄位，只允許空值、`${ENV}` 或 placeholder 預設值；不輸出值。
+  目前 17 檔、24 個密碼欄位，0 筆。
+- CI：改跑設定明文檢查 → `pytest -m offline` → 確認 `reports/` 無 txt 報表。
+- 驗證：compile 通過；`pytest -m offline` 通過 108／失敗 0（6.4 s），執行前後 `reports/` 新增檔案 0；
+  ci.yml YAML 解析正常。CI 尚未在 GitHub 實跑（未 push）；離線判定若有遺漏會在 CI 失敗，屆時移除該檔 marker。
+- 下一步：使用者審閱後 commit／push，確認 GitHub CI 通過。
+
+### 2026-10-20 AGENTS.md 精簡（Claude Code）
 
 - 起因：依 retro 復盤，AGENTS.md（143 行）每個 session 都會載入，其中大半只在設計／review／產報表時需要。
 - AGENTS.md 縮為約 68 行，保留協作、核心原則、依賴方向、NeoX CLI → REST → CLI、EMS target／redaction、

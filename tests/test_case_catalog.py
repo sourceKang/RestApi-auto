@@ -6,6 +6,9 @@ from cases.case_catalog import case_catalog_payload, catalog_profile_data, catal
 from config_loader.profile import load_profile_definitions
 
 
+pytestmark = pytest.mark.offline
+
+
 @pytest.mark.smoke
 def test_case_catalog_contains_all_extracted_cases():
     payload = case_catalog_payload()

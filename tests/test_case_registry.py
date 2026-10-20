@@ -1,7 +1,12 @@
 ﻿from __future__ import annotations
 
+import pytest
+
 from cases import registry as cases
 from cases.endpoint_cases import MUTATING_ENDPOINTS, READ_ENDPOINTS
+
+
+pytestmark = pytest.mark.offline
 
 
 def test_automated_registry_contains_all_endpoint_case_ids():

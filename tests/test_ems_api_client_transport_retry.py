@@ -11,6 +11,9 @@ from clients.ems_api_client import EmsApiClient
 from utils import reporting
 
 
+pytestmark = pytest.mark.offline
+
+
 class FakeRaw:
     status_code = 200
     text = '{"retstatus": "Success", "retresult": ""}'

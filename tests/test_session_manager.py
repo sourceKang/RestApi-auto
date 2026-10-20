@@ -11,6 +11,9 @@ from models.api import ApiResponse, SessionRole
 from clients.session import CachedSessionHandle, SessionManager
 
 
+pytestmark = pytest.mark.offline
+
+
 def response(retstatus: str, *, session_id: str | None = None) -> ApiResponse:
     body = {"retstatus": retstatus, "retresult": ""}
     if session_id is not None:

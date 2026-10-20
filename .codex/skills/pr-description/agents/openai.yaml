@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Description"
+  short_description: "Draft a RestApi Auto PR body."
+  default_prompt: "Use $pr-description to draft the PR body for this branch."

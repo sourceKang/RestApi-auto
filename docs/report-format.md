@@ -1,6 +1,7 @@
 # 報表輸出格式
 
 本文件由 [AGENTS.md](../AGENTS.md) 指向；彙整測試結果、QA summary 或任務總結頁時使用。
+GitHub PR 描述不是報表，改依 [pr-description skill](../.codex/skills/pr-description/SKILL.md)。
 
 ## 測試／QA 報表
 

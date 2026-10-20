@@ -259,6 +259,9 @@ work-status.md 在各分支也是各自副本；整合時保留雙方工作條�
 - QA bug 的流程來源仍是 [.codex/skills/qa-bug-report/SKILL.md](../.codex/skills/qa-bug-report/SKILL.md)。
 - Claude 的 [.claude/skills/qa-bug-report/SKILL.md](../.claude/skills/qa-bug-report/SKILL.md)
   只負責載入共用內容；Codex 保留原入口。
+- PR 描述的流程來源是 [.codex/skills/pr-description/SKILL.md](../.codex/skills/pr-description/SKILL.md)，
+  Claude 入口同樣只轉介；[.github/pull_request_template.md](../.github/pull_request_template.md) 只放三段骨架，
+  供在 GitHub 網頁建 PR 時使用（`gh pr create --body-file` 不會套用範本）。
 - 對外工具可能包含 Redmine、TestLink 或其他 MCP／插件；是否可用須在各工具中實際確認，
   不假設 Codex 的連線、登入或個人插件可直接被 Claude 使用。
 - 本次不建立含憑證的 .mcp.json，也不預設放寬工具權限。

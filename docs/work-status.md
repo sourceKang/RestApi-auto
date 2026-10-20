@@ -18,6 +18,14 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-C：pr-description skill（Claude Code）
+
+- 分支 claude/pr-c-pr-description，基準為 PR-B 合併後的預設分支。
+- 新增 .codex/skills/pr-description（SKILL.md、agents/openai.yaml、references/example-pr20.md）與 .claude 入口；
+  內文三段：摘要（最小的圖）、證據（由強到弱，含 dry run 與「未驗證」）、合併風險（door＋blast radius 判準）；
+  流程含對照 Review 檢查清單、預覽後才 `gh pr create/edit`。給 RD／PM 時只把摘要第一句寫成白話，不另做白話版。
+- 新增 .github/pull_request_template.md（只放骨架，網頁建 PR 時才套用）；AGENTS.md、report-format、project-context 加指標。
+
 ### 2026-10-20 retro 計畫 PR-B：文件整併（Claude Code）
 
 - 分支 claude/pr-b-docs-consolidation，基準為 PR-A 合併後的預設分支。
@@ -29,23 +37,12 @@
   NeoX 地圖標為離線的 6 個測試檔實跑 52 passed（--skip-dut-preflight，未連線）；`.claude/worktrees/` 已被忽略。
   歸檔的 3 筆條目原文移至 docs/work-history/2026-10.md 末尾。
 
-### 2026-10-20 retro 計畫 PR-A：offline 不跑 DUT preflight、registid 遮罩（Claude Code）
-
-- DUT preflight 原在 tryfirst 的 `pytest_collection_modifyitems` 執行，早於 `-m`／`-k` 篩選，
-  `pytest -m offline` 不加 `--skip-dut-preflight` 仍會連 EMS／DUT。改到 `pytest_collection_finish`，
-  capability skip 一併移過去以保持在 target sync 之後；tests/test_collection_preflight.py 以子程序驗證，
-  舊基準會失敗。
-- `registid`（ONT password）加入 SENSITIVE_KEYS；`redact_text` 另遮罩 CLI `registration-id <值>`；
-  `redact()` 對字串也套用 `redact_text`；CLI 驗證 JSON 寫檔前遮罩。
-- 驗證：`pytest -m offline` 通過 117／失敗 0；collect 751；明文檢查 0 筆；`reports/` 無新增。未連 EMS／DUT。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-C]〔離線〕PR skill `pr-description`（摘要／證據／合併風險）與 .github PR 範本；流程含對照 Review 檢查清單。
 - [R-D]〔離線〕`tests/test_import_layers.py`：AST 檢查依賴方向，3 組現有違規先列 allowlist（附移除條件）。
 - [R-E]〔離線〕tools/run_multi_node.py 不再 import tests.support：preflight 核心與 target_sync 移到 services，
   純函式移到 config_loader（含 `neox_parallel_worker_auth_profile`）。

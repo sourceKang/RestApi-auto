@@ -65,4 +65,4 @@ tests
 
 - 改檔或跑測試前：先列「主目標 → 子目標」（5 行內），每個子目標寫完成條件，接著直接做。
 - 完成回報 10 行內，三段：結論（附「子目標完成 X／Y」）→ 重點最多 3 點 → 下一步 2～3 步。測試只寫「通過 X／失敗 Y」，有失敗才列原因；不重貼程式碼。
-- 測試／QA 報表與任務總結頁依 [報表輸出格式](docs/report-format.md)。
+- 測試／QA 報表與任務總結頁依 [報表輸出格式](docs/report-format.md)；PR 描述依 [pr-description skill](.codex/skills/pr-description/SKILL.md)（摘要／證據／合併風險）。

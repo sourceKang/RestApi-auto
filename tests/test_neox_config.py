@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import copy
-import os
-import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextlib import nullcontext
@@ -48,6 +46,7 @@ from tests.support.neox_cli_verification import (
     write_neox_cli_verify_report,
 )
 from tests.support.connectivity import assert_ping_reachable
+from tests.support.ge_acl_profile import wait_for_ge_acl_profile_mode, wait_for_ge_acl_profiles
 from tests.support.ont_cli_status import wait_for_ont_cli_config_absent, wait_for_ont_cli_is, wait_for_ont_cli_state
 from tests.support.ont_cli_status import wait_for_ont_cli_config_tokens
 from tests.support.options import option_or_full_testcases
@@ -808,20 +807,20 @@ def ge_acl_profile_names_from_commands(commands: list[str]) -> list[str]:
 def settle_ge_acl_profile_mode_if_needed(env_config, target, setup_commands: list[str]) -> None:
     if "acl-profile mode profile" not in setup_commands:
         return
-    seconds = float(os.environ.get("NEOX_GE_ACL_PROFILE_MODE_SETTLE_SECONDS", "2"))
-    if seconds <= 0:
+    profile_names = ge_acl_profile_names_from_commands(setup_commands)
+    if not profile_names:
         return
-    started = time.monotonic()
-    time.sleep(seconds)
+    poll = wait_for_ge_acl_profiles(env_config, profile_names)
     attach_json(
-        "GE ACL profile mode settle",
+        "GE ACL profile ready",
         {
             "node": env_config.dut.node_key,
             "device_ip": env_config.dut.device_ip,
             "ge_slot_id": target.ge_slot_id,
             "ge_port_id": target.ge_port_id,
-            "requested_seconds": seconds,
-            "actual_seconds": round(time.monotonic() - started, 3),
+            "profiles": profile_names,
+            "polls": poll.polls,
+            "elapsed_seconds": poll.elapsed_seconds,
         },
     )
 
@@ -853,7 +852,6 @@ def run_ge_global_acl_mode_switch_commands(
     mode_prefix: list[str],
 ) -> dict[str, str]:
     outputs = run_ge_global_config_command_batch_fresh(env_config, mode_prefix)
-    settle_ge_acl_mode_switch(env_config, mode_prefix[0])
     expected_mode = mode_prefix[0].rsplit(" ", 1)[-1]
     ensure_ge_acl_profile_mode(env_config, expected_mode)
     remaining_commands = commands[len(mode_prefix) :]
@@ -875,55 +873,31 @@ def run_ge_global_config_command_batch_fresh(env_config, commands: list[str]) ->
 
 
 def ensure_ge_acl_profile_mode(env_config, expected_mode: str) -> None:
-    output = ge_acl_profile_mode_output(env_config)
-    expected_line = f"Acl-profile mode : {expected_mode}"
-    if expected_line not in output:
-        mode_command = f"acl-profile mode {expected_mode}"
-        retry_output = run_ge_global_config_command_batch_fresh(env_config, [mode_command, "y"])
-        settle_ge_acl_mode_switch(env_config, mode_command)
-        output = ge_acl_profile_mode_output(env_config)
-        attach_json(
-            "GE ACL profile mode retry",
-            {
-                "node": env_config.dut.node_key,
-                "device_ip": env_config.dut.device_ip,
-                "expected_mode": expected_mode,
-                "retry_output": retry_output,
-                "show_output": output,
-            },
-        )
-    assert expected_line in output, f"Expected GE ACL profile mode {expected_mode!r}, got: {output}"
-
-
-def ge_acl_profile_mode_output(env_config) -> str:
-    ssh_username, ssh_password = neox_cli_credentials(env_config, "GE")
-    client = SshCliClient(env_config.dut.ssh_host, ssh_username, ssh_password)
-    results = client.run_commands(["show acl-profile mode"])
-    return results[0].output if results else ""
+    try:
+        wait_for_ge_acl_profile_mode(env_config, expected_mode)
+        return
+    except AssertionError as error:
+        first_attempt = str(error)
+    # The switch was not visible within the polling window: resend it once, then poll again.
+    mode_command = f"acl-profile mode {expected_mode}"
+    retry_output = run_ge_global_config_command_batch_fresh(env_config, [mode_command, "y"])
+    attach_json(
+        "GE ACL profile mode retry",
+        {
+            "node": env_config.dut.node_key,
+            "device_ip": env_config.dut.device_ip,
+            "expected_mode": expected_mode,
+            "first_attempt": first_attempt,
+            "retry_output": retry_output,
+        },
+    )
+    wait_for_ge_acl_profile_mode(env_config, expected_mode)
 
 
 def ge_acl_mode_switch_prefix(commands: list[str]) -> list[str]:
     if len(commands) >= 2 and commands[0].startswith("acl-profile mode ") and commands[1] == "y":
         return commands[:2]
     return []
-
-
-def settle_ge_acl_mode_switch(env_config, mode_command: str) -> None:
-    seconds = float(os.environ.get("NEOX_GE_ACL_MODE_SWITCH_SETTLE_SECONDS", "3"))
-    if seconds <= 0:
-        return
-    started = time.monotonic()
-    time.sleep(seconds)
-    attach_json(
-        "GE ACL mode switch settle",
-        {
-            "node": env_config.dut.node_key,
-            "device_ip": env_config.dut.device_ip,
-            "mode_command": mode_command,
-            "requested_seconds": seconds,
-            "actual_seconds": round(time.monotonic() - started, 3),
-        },
-    )
 
 
 def ge_cli_command_failed(output: str) -> bool:

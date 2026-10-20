@@ -35,7 +35,8 @@ Ground Truth：
 
 ## 目錄責任與設計
 
-依賴方向見 AGENTS.md。各目錄責任：
+依賴方向見 AGENTS.md，由 `tests/test_import_layers.py` 依允許依賴表檢查（含函式內的 lazy import）；
+既有違規列在該檔 `KNOWN_VIOLATIONS`，各附移除條件。各目錄責任：
 
 - `clients/`：REST client、EMS 溝通。
 - `services/`：domain 測試服務、共用 case helper。
@@ -101,7 +102,8 @@ Ground Truth：
 ## Review 檢查清單
 
 review（含 PR 自我檢查）時逐項確認。以下只列需要判斷的項目；能由機器檢查的規則已由 CI 強制：
-設定檔明文（`tools/check_config_secrets.py`）、offline 測試不寫正式報表（CI 防護步驟）。
+設定檔明文（`tools/check_config_secrets.py`）、offline 測試不寫正式報表（CI 防護步驟）、
+import 依賴方向（`tests/test_import_layers.py`）。
 
 - 修正位於最接近原因的責任層，沒有由 testcase 補償底層缺陷。
 - 沒有放寬正確 assertion、吞掉 exception 或忽略錯誤。

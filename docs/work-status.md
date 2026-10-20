@@ -18,6 +18,15 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-20 retro 計畫 PR-D：import 依賴方向測試（Claude Code）
+
+- 分支 claude/pr-d-import-layers，基準為 PR-C 合併後的預設分支。
+- 新增 tests/test_import_layers.py（offline、純 AST、不執行 import）：允許依賴表涵蓋 models、config_loader、utils、
+  cases、clients、services、tests.support、tools、tests、conftest；計入 lazy import、略過 TYPE_CHECKING、禁止相對 import、
+  新頂層套件須登記。既有 4 筆違規列入 KNOWN_VIOLATIONS（附移除條件），修好卻未刪除也會失敗。
+- 順帶修正 tools/check_environment.py docstring 的無效跳脫（改 raw docstring，內容不變），消除 compile 與 AST 掃描的 SyntaxWarning。
+- 驗證：5 passed（1.3 s，無警告）；暫存 worktree 實測「新增 clients→services lazy import」與「修好違規未刪 allowlist」皆會失敗。
+
 ### 2026-10-20 retro 計畫 PR-C：pr-description skill（Claude Code）
 
 - 分支 claude/pr-c-pr-description，基準為 PR-B 合併後的預設分支。
@@ -26,30 +35,18 @@
   流程含對照 Review 檢查清單、預覽後才 `gh pr create/edit`。給 RD／PM 時只把摘要第一句寫成白話，不另做白話版。
 - 新增 .github/pull_request_template.md（只放骨架，網頁建 PR 時才套用）；AGENTS.md、report-format、project-context 加指標。
 
-### 2026-10-20 retro 計畫 PR-B：文件整併（Claude Code）
-
-- 分支 claude/pr-b-docs-consolidation，基準為 PR-A 合併後的預設分支。
-- work-status 歸檔回 120 行內，「下一步」改用 ID＋類型標記；新增記帳規則（見文末）。
-- engineering-guidelines 新增「工具使用與搜尋」「Review 檢查清單」「拆解與平行子代理」「Retro」四節；
-  project-context 新增「改動目標→檔案」與 NeoX 測試檔地圖；Redmine 範本 Target version 改為留空；
-  ems-version-regression 補 TestLink 回填範本與地雷；.gitignore 加入 `.claude/worktrees/`。
-- 驗證：只改 Markdown 與 .gitignore；相對連結無斷鏈；AGENTS.md 68 行、本檔 90 行；明文檢查 0 筆；
-  NeoX 地圖標為離線的 6 個測試檔實跑 52 passed（--skip-dut-preflight，未連線）；`.claude/worktrees/` 已被忽略。
-  歸檔的 3 筆條目原文移至 docs/work-history/2026-10.md 末尾。
-
 ## 下一步
 
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准，依序開 PR）：
 
-- [R-D]〔離線〕`tests/test_import_layers.py`：AST 檢查依賴方向，3 組現有違規先列 allowlist（附移除條件）。
 - [R-E]〔離線〕tools/run_multi_node.py 不再 import tests.support：preflight 核心與 target_sync 移到 services，
-  純函式移到 config_loader（含 `neox_parallel_worker_auth_profile`）。
-- [R-F]〔離線〕utils/reporting.py 不再 lazy import tools：整合報表產生器移到 utils。
+  純函式移到 config_loader（含 `neox_parallel_worker_auth_profile`）。完成後刪除 KNOWN_VIOLATIONS 中 run_multi_node 的 2 筆。
+- [R-F]〔離線〕utils/reporting.py 不再 lazy import tools：整合報表產生器移到 utils。完成後刪除 KNOWN_VIOLATIONS 中 reporting→tools 1 筆。
 - [R-G]〔離線〕固定 sleep 檢查（先搬 wait_for_rest_tokens、合併冷卻延遲、假延遲改 Event）。
 - [R-H]〔離線〕唯讀 tools/run_status.py，查完整回歸進度。
-- [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。
+- [R-I]〔離線〕拆分 utils/reporting.py（渲染移出 utils），最後做。完成後刪除 KNOWN_VIOLATIONS 中 reporting→cases 1 筆。
 - [R-T2]〔離線〕teardown 失敗訊息中 EMS 回應的 `password` 會進 Allure `statusDetails.message`
   （allure 直接取 `excinfo.exconly()`）；需在組例外訊息處遮罩。
 - [R-SLP]〔需實機〕test_neox_config.py ACL 設定後固定等 2～3 秒（:814、:915）改輪詢後做 CLI baseline；

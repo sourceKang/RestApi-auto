@@ -2,7 +2,6 @@ from contextlib import contextmanager
 from models.api import ApiResponse
 from tests.test_neox_config import (
     cleanup_ont_provision_template_scenario,
-    restore_ont_config_baseline,
     restore_ont_config_exact_baseline,
     wait_for_rest_tokens,
 )
@@ -124,277 +123,6 @@ def test_wait_for_rest_tokens_requires_exact_validator_and_consecutive_samples()
     assert len(client.calls) == 5
 
 
-def test_restore_ont_config_baseline_posts_original_payload_without_delete_and_waits_for_cli(monkeypatch):
-    clock = []
-    client = FakeApiClient([response(200, "Success")])
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_is",
-        lambda env, timeout, interval: clock.append((env, timeout, interval)),
-    )
-    env = object()
-    payload = {"Content": {"description": "baseline"}}
-
-    result = restore_ont_config_baseline(
-        client,
-        env,
-        "/config/ont",
-        "session",
-        payload,
-        verify_cli=True,
-    )
-
-    assert result.retstatus == "Success"
-    assert [(method, path) for method, path, _, _ in client.calls] == [
-        ("POST", "/config/ont"),
-    ]
-    assert client.calls[0][3] == payload
-    assert clock == [(env, 180, 15)]
-
-
-def test_restore_ont_config_exact_baseline_uses_fresh_session_and_exact_polling(monkeypatch):
-    events = []
-
-    class SessionManager:
-        @contextmanager
-        def role_session(self, role):
-            events.append(("session_open", role))
-            try:
-                yield "fresh-session"
-            finally:
-                events.append(("session_close", "fresh-session"))
-
-    monkeypatch.setattr(
-        "tests.test_neox_config.restore_ont_config_baseline",
-        lambda api_client, env, path, session_id, payload, verify_cli: events.append(
-            ("baseline_post", session_id, payload)
-        ),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_rest_tokens",
-        lambda api_client, path, session_id, tokens, **kwargs: events.append(
-            ("rest_verify", session_id, tokens, kwargs["consecutive_successes"])
-        ),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_is",
-        lambda *args, **kwargs: events.append(("cli_state", "IS")),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_config_tokens",
-        lambda *args, **kwargs: events.append(
-            (
-                "cli_config",
-                kwargs["expected_tokens"],
-                kwargs["absent_tokens"],
-                kwargs["consecutive_successes"],
-            )
-        ),
-    )
-    monkeypatch.setattr("tests.test_neox_config.attach_json", lambda *args, **kwargs: None)
-
-    payload = {"Content": {"ontdescription": "baseline", "templatename": ""}}
-    restore_ont_config_exact_baseline(
-        object(),
-        object(),
-        SessionManager(),
-        "/config/ont",
-        payload,
-        "/ont/sn/SN-1",
-        ["ONT-1", "SN-1", "baseline"],
-        "3-16-1",
-        verify_cli=True,
-        attachment_name="test cleanup",
-    )
-
-    assert ("baseline_post", "fresh-session", payload) in events
-    assert ("rest_verify", "fresh-session", ["ONT-1", "SN-1", "baseline"], 4) in events
-    assert ("cli_config", ("3-16-1", "description baseline"), ("template #RestApi_provision_temp_SFU",), 4) in events
-    assert events[0][0] == "session_open"
-    assert ("session_close", "fresh-session") in events
-
-
-def test_provision_template_cleanup_restores_before_rest_and_cli_verification(monkeypatch):
-    events = []
-
-    class Provision:
-        @staticmethod
-        def delete_ont_service_if_uses_template(*args, **kwargs):
-            events.append("service_removed")
-
-    class Services:
-        provision = Provision()
-
-    class ApiClient:
-        @staticmethod
-        def request(method, path, *, session):
-            events.append("config_delete_requested")
-            return type("Response", (), {"retstatus": "Success"})()
-
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_config_absent",
-        lambda *args, **kwargs: events.append("config_cleared"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_state",
-        lambda *args, **kwargs: events.append("ont_unregistered"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.restore_ont_config_baseline",
-        lambda *args, **kwargs: events.append("baseline_restored"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_rest_tokens",
-        lambda *args, **kwargs: events.append("rest_verified"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_is",
-        lambda *args, **kwargs: events.append("cli_verified"),
-    )
-
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_config_tokens",
-        lambda *args, **kwargs: events.append("cli_config_verified"),
-    )
-    cleanup_ont_provision_template_scenario(
-        ApiClient(),
-        object(),
-        Services(),
-        "session",
-        "template",
-        "3-16-1",
-        "/config/ont",
-        {"Content": {"description": "baseline"}},
-        "/ont/sn/SN-1",
-        ["SN-1", "baseline"],
-        verify_cli=True,
-    )
-
-    assert events == [
-        "service_removed",
-        "config_delete_requested",
-        "config_cleared",
-        "ont_unregistered",
-        "baseline_restored",
-        "rest_verified",
-        "cli_verified",
-        "cli_config_verified",
-    ]
-
-
-def test_provision_template_cleanup_reposts_baseline_once_after_nonconvergence(monkeypatch):
-    events = []
-    rest_attempts = {"count": 0}
-
-    class Provision:
-        @staticmethod
-        def delete_ont_service_if_uses_template(*args, **kwargs):
-            events.append("service_removed")
-
-    class Services:
-        provision = Provision()
-
-    class ApiClient:
-        @staticmethod
-        def request(method, path, *, session):
-            events.append("config_delete_requested")
-            return type("Response", (), {"retstatus": "Success"})()
-
-    def wait_for_rest(*args, **kwargs):
-        rest_attempts["count"] += 1
-        events.append(f"rest_attempt_{rest_attempts['count']}")
-        if rest_attempts["count"] == 1:
-            raise AssertionError("not converged")
-
-    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_config_absent", lambda *args, **kwargs: None)
-    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_state", lambda *args, **kwargs: None)
-    monkeypatch.setattr(
-        "tests.test_neox_config.restore_ont_config_baseline",
-        lambda *args, **kwargs: events.append("baseline_posted"),
-    )
-    monkeypatch.setattr("tests.test_neox_config.wait_for_rest_tokens", wait_for_rest)
-    monkeypatch.setattr("tests.test_neox_config.attach_json", lambda *args, **kwargs: None)
-
-    cleanup_ont_provision_template_scenario(
-        ApiClient(),
-        object(),
-        Services(),
-        "session",
-        "template",
-        "3-16-1",
-        "/config/ont",
-        {"Content": {"description": "baseline"}},
-        "/ont/sn/SN-1",
-        ["SN-1", "baseline"],
-        verify_cli=False,
-    )
-
-    assert events == [
-        "service_removed",
-        "config_delete_requested",
-        "baseline_posted",
-        "rest_attempt_1",
-        "baseline_posted",
-        "rest_attempt_2",
-    ]
-
-
-def test_provision_template_cleanup_restores_even_when_service_removal_fails(monkeypatch):
-    events = []
-
-    class Provision:
-        @staticmethod
-        def delete_ont_service_if_uses_template(*args, **kwargs):
-            events.append("service_remove_failed")
-            raise AssertionError("delete failed")
-
-    class Services:
-        provision = Provision()
-
-    class ApiClient:
-        @staticmethod
-        def request(method, path, *, session):
-            events.append("config_delete_requested")
-            return type("Response", (), {"retstatus": "Success"})()
-
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_config_absent",
-        lambda *args, **kwargs: events.append("config_cleared"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_ont_cli_state",
-        lambda *args, **kwargs: events.append("ont_unregistered"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.restore_ont_config_baseline",
-        lambda *args, **kwargs: events.append("baseline_restored"),
-    )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_rest_tokens",
-        lambda *args, **kwargs: events.append("rest_verified"),
-    )
-
-    try:
-        cleanup_ont_provision_template_scenario(
-            ApiClient(),
-            object(),
-            Services(),
-            "session",
-            "template",
-            "3-16-1",
-            "/config/ont",
-            {"Content": {"description": "baseline"}},
-            "/ont/sn/SN-1",
-            ["SN-1", "baseline"],
-            verify_cli=False,
-        )
-    except AssertionError as error:
-        assert "delete failed" in str(error)
-    else:
-        raise AssertionError("Cleanup must preserve the service-removal failure")
-
-    assert events == ["service_remove_failed", "config_delete_requested", "config_cleared", "ont_unregistered", "baseline_restored", "rest_verified"]
-
-
 def test_wait_for_rest_tokens_fails_immediately_when_session_loses_authorization():
     clock = FakeClock()
     client = FakeApiClient([response(200, "Fail", "Not authorized.")])
@@ -419,57 +147,146 @@ def test_wait_for_rest_tokens_fails_immediately_when_session_loses_authorization
     assert clock.sleeps == []
 
 
-def test_provision_template_cleanup_rotates_fresh_sessions_for_each_rest_phase(monkeypatch):
+def test_wait_for_rest_tokens_counts_polls_and_can_skip_timeout_scaling():
+    clock = FakeClock()
+    client = FakeApiClient([response(200, "Fail", "No data found in the database.")])
+    client.env = type("Env", (), {"wait_scale": 1.5})()
+    stats = {"polls": 2}
+
+    try:
+        wait_for_rest_tokens(
+            client,
+            "/ont/sn/SN-1",
+            "session",
+            ["SN-1"],
+            timeout=30,
+            interval=15,
+            max_interval=15,
+            scale_timeout=False,
+            stats=stats,
+            sleeper=clock.sleep,
+            clock=clock.monotonic,
+        )
+    except AssertionError:
+        pass
+
+    assert clock.sleeps == [15, 15]
+    assert stats["polls"] == 2 + 3
+
+
+class Provision:
+    def __init__(self, events, fail=False):
+        self.events = events
+        self.fail = fail
+
+    def delete_ont_service_if_uses_template(self, session_id, *args, **kwargs):
+        self.events.append(("service_delete", session_id))
+        if self.fail:
+            raise AssertionError("delete failed")
+
+
+class RecordingApiClient:
+    def __init__(self, events):
+        self.events = events
+
+    def request(self, method, path, *, session, json=None):
+        self.events.append((method.lower(), session))
+        return type("Response", (), {"retstatus": "Success"})()
+
+
+class RotatingSessions:
+    def __init__(self, events):
+        self.events = events
+        self.count = 0
+
+    @contextmanager
+    def role_session(self, role):
+        self.count += 1
+        session_id = f"fresh-{self.count}"
+        self.events.append(("session_open", session_id))
+        try:
+            yield session_id
+        finally:
+            self.events.append(("session_close", session_id))
+
+
+def _patch_convergence(monkeypatch, events, *, rest_error=None):
+    def fake_rest(api_client, path, session_id, tokens, **kwargs):
+        events.append(("rest_verify", session_id, kwargs["consecutive_successes"], kwargs["interval"], kwargs["max_interval"]))
+        kwargs["stats"]["polls"] += 1
+        if rest_error:
+            raise AssertionError(rest_error)
+
+    monkeypatch.setattr("tests.support.ont_baseline.wait_for_rest_tokens", fake_rest)
+    monkeypatch.setattr("tests.support.ont_baseline.assert_api_success", lambda response: None)
+    monkeypatch.setattr("tests.support.ont_baseline.wait_for_ont_cli_is", lambda *args, **kwargs: events.append(("cli_is",)))
+    monkeypatch.setattr(
+        "tests.support.ont_baseline.wait_for_ont_cli_config_tokens",
+        lambda *args, **kwargs: events.append(("cli_config", kwargs["expected_tokens"], kwargs["absent_tokens"])),
+    )
+    monkeypatch.setattr("tests.support.ont_baseline.attach_json", lambda *args, **kwargs: None)
+
+
+def test_restore_ont_config_exact_baseline_posts_once_and_polls_in_fresh_sessions(monkeypatch):
     events = []
+    _patch_convergence(monkeypatch, events)
+    payload = {"Content": {"ontdescription": "baseline", "templatename": ""}}
 
-    class Provision:
-        @staticmethod
-        def delete_ont_service_if_uses_template(session_id, *args, **kwargs):
-            events.append(("service_delete", session_id))
-
-    class Services:
-        provision = Provision()
-
-    class ApiClient:
-        @staticmethod
-        def request(method, path, *, session):
-            events.append(("config_delete", session))
-            return type("Response", (), {"retstatus": "Success"})()
-
-    class SessionManager:
-        def __init__(self):
-            self.count = 0
-
-        @contextmanager
-        def role_session(self, role):
-            self.count += 1
-            session_id = f"fresh-{self.count}"
-            events.append(("session_open", session_id))
-            try:
-                yield session_id
-            finally:
-                events.append(("session_close", session_id))
-
-    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_config_absent", lambda *args, **kwargs: None)
-    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_state", lambda *args, **kwargs: None)
-    monkeypatch.setattr(
-        "tests.test_neox_config.restore_ont_config_baseline",
-        lambda api_client, env, path, session_id, payload, verify_cli: events.append(
-            ("baseline_post", session_id)
-        ),
+    restore_ont_config_exact_baseline(
+        RecordingApiClient(events),
+        object(),
+        RotatingSessions(events),
+        "/config/ont",
+        payload,
+        "/ont/sn/SN-1",
+        ["ONT-1", "SN-1", "baseline"],
+        "3-16-1",
+        verify_cli=True,
+        attachment_name="test cleanup",
     )
-    monkeypatch.setattr(
-        "tests.test_neox_config.wait_for_rest_tokens",
-        lambda api_client, path, session_id, *args, **kwargs: events.append(
-            ("rest_verify", session_id)
-        ),
-    )
-    monkeypatch.setattr("tests.test_neox_config.attach_json", lambda *args, **kwargs: None)
+
+    assert [event for event in events if event[0] in {"post", "rest_verify"}] == [
+        ("post", "fresh-1"),
+        ("rest_verify", "fresh-2", 4, 15, 15),
+    ]
+    assert ("cli_config", ("3-16-1", "description baseline"), ("template #RestApi_provision_temp_SFU",)) in events
+
+
+def test_restore_ont_config_exact_baseline_raises_when_rest_never_converges(monkeypatch):
+    events = []
+    _patch_convergence(monkeypatch, events, rest_error="not stable")
+
+    try:
+        restore_ont_config_exact_baseline(
+            RecordingApiClient(events),
+            object(),
+            RotatingSessions(events),
+            "/config/ont",
+            {"Content": {"ontdescription": "baseline"}},
+            "/ont/sn/SN-1",
+            ["SN-1"],
+            "3-16-1",
+            verify_cli=False,
+            attachment_name="test cleanup",
+        )
+    except AssertionError as error:
+        assert "did not converge" in str(error) and "not stable" in str(error)
+    else:
+        raise AssertionError("A restore that never converges must fail the strict cleanup")
+
+    assert [event[0] for event in events].count("post") == 1
+
+
+def test_provision_template_cleanup_clears_then_restores_once_with_fresh_sessions(monkeypatch):
+    events = []
+    _patch_convergence(monkeypatch, events)
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_config_absent", lambda *args, **kwargs: events.append(("config_cleared",)))
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_state", lambda *args, **kwargs: events.append(("ont_unregistered",)))
 
     cleanup_ont_provision_template_scenario(
-        ApiClient(),
+        RecordingApiClient(events),
         object(),
-        Services(),
+        type("Services", (), {"provision": Provision(events)})(),
         "expired-session",
         "template",
         "3-16-1",
@@ -477,11 +294,46 @@ def test_provision_template_cleanup_rotates_fresh_sessions_for_each_rest_phase(m
         {"Content": {"ontdescription": "baseline"}},
         "/ont/sn/SN-1",
         ["SN-1", "baseline"],
-        verify_cli=False,
-        session_manager=SessionManager(),
+        verify_cli=True,
+        session_manager=RotatingSessions(events),
     )
 
-    assert ("service_delete", "fresh-1") in events
-    assert ("config_delete", "fresh-2") in events
-    assert ("baseline_post", "fresh-3") in events
-    assert ("rest_verify", "fresh-3") in events
+    steps = [event for event in events if event[0] not in {"session_open", "session_close"}]
+    assert steps == [
+        ("service_delete", "fresh-1"),
+        ("delete", "fresh-2"),
+        ("config_cleared",),
+        ("ont_unregistered",),
+        ("post", "fresh-3"),
+        ("rest_verify", "fresh-4", 4, 15, 15),
+        ("cli_is",),
+        ("cli_config", ("description baseline",), ("template template",)),
+    ]
+
+
+def test_provision_template_cleanup_restores_even_when_service_removal_fails(monkeypatch):
+    events = []
+    _patch_convergence(monkeypatch, events)
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_config_absent", lambda *args, **kwargs: events.append(("config_cleared",)))
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_state", lambda *args, **kwargs: events.append(("ont_unregistered",)))
+
+    try:
+        cleanup_ont_provision_template_scenario(
+            RecordingApiClient(events),
+            object(),
+            type("Services", (), {"provision": Provision(events, fail=True)})(),
+            "session",
+            "template",
+            "3-16-1",
+            "/config/ont",
+            {"Content": {"ontdescription": "baseline"}},
+            "/ont/sn/SN-1",
+            ["SN-1", "baseline"],
+            verify_cli=False,
+        )
+    except AssertionError as error:
+        assert "delete failed" in str(error)
+    else:
+        raise AssertionError("Cleanup must preserve the service-removal failure")
+
+    assert [event[0] for event in events] == ["service_delete", "delete", "config_cleared", "ont_unregistered", "post", "rest_verify"]

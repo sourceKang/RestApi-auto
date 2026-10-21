@@ -47,8 +47,8 @@ from tests.support.neox_cli_verification import (
 )
 from tests.support.connectivity import assert_ping_reachable
 from tests.support.ge_acl_profile import wait_for_ge_acl_profile_mode, wait_for_ge_acl_profiles
-from tests.support.ont_cli_status import wait_for_ont_cli_config_absent, wait_for_ont_cli_is, wait_for_ont_cli_state
-from tests.support.ont_cli_status import wait_for_ont_cli_config_tokens
+from tests.support.ont_cli_status import wait_for_ont_cli_config_absent, wait_for_ont_cli_state
+from tests.support.ont_baseline import converge_ont_baseline
 from tests.support.options import option_or_full_testcases
 from utils.assertions import assert_api_failure, assert_api_success
 from utils.allure_helpers import attach_json
@@ -63,7 +63,6 @@ pytestmark = [
 ]
 
 GE_MAX_VARIANT_GROUPS = tuple(ge_max_variants_config()["variant_order"])
-ONT_BASELINE_STABLE_SAMPLES = 4
 
 
 @pytest.mark.mutating
@@ -445,6 +444,10 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
         xpon = f"{target.ont_slot_id}-{target.ont_port_id}"
         remote_xont = f"{xpon}-{target.ont_id}"
         cli_verify = not skip_neox_cli_verify(request)
+        # TestLink EMS1-7223 step 6 expects the cleanup to succeed, so the body runs it and a failure
+        # fails the case; the strict final callback only restores when the body stopped earlier.
+        restore_state = {"done": False}
+
         def cleanup_scenario():
             cleanup_ont_provision_template_scenario(
                 api_client,
@@ -461,7 +464,7 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
                 session_manager=session_manager,
             )
 
-        cleanup_registry.add_strict_final(cleanup_scenario)
+        cleanup_registry.add_strict_final(lambda: restore_state["done"] or cleanup_scenario())
 
         # The ONT service references the EMS-level template and its bandwidth
         # profile by name, so they must exist on a freshly installed EMS too.
@@ -513,51 +516,80 @@ def test_ont_config_apply_provision_template_sfu_readwrite(
             ),
         )
 
-        if not cli_verify:
-            return
+        if cli_verify:
+            verify_ont_provision_template_sfu_cli(
+                neox_config_service,
+                env_config,
+                target,
+                xpon,
+                remote_xont,
+                path,
+                payload,
+                response,
+                ont_read_path,
+                ont_response,
+                template_path,
+            )
 
-        credentials = neox_cli_credentials(env_config, "ONT provision template SFU")
-        command_by_name = {
-            "running-config": f"show running-config interface xpon {xpon}",
-            "xont-by-sn": f"show interface remote xont sn {target.ont_sn}",
-        }
-        output_by_command = run_neox_cli_commands(env_config, credentials, list(command_by_name.values()))
-        assert_neox_config_node_reachable(env_config, "ont", "provision_template_sfu", "after_cli_verify")
-        expected_by_command = {
-            command_by_name["running-config"]: ont_running_config_tokens(remote_xont, payload["Content"]),
-            command_by_name["xont-by-sn"]: [remote_xont, target.ont_sn],
-        }
-        missing_by_command = missing_tokens_by_command(output_by_command, expected_by_command)
-        report_path = write_neox_cli_verify_report(
-            neox_config_service,
-            "ont",
-            "provision_template_sfu",
-            path,
-            payload,
-            response,
-            output_by_command,
-            expected_by_command,
-            missing_by_command,
-            target_extra={
-                "ont_slot_id": target.ont_slot_id,
-                "ont_port_id": target.ont_port_id,
-                "ont_id": target.ont_id,
-                "ont_sn": target.ont_sn,
-            },
-            metadata={
-                "testcase_id": "EMS1-7223",
-                "template_path": template_path,
-                "rest_read_path": ont_read_path,
-                "rest_read_response": {
-                    "status_code": ont_response.status_code,
-                    "retstatus": ont_response.retstatus,
-                    "retresult": ont_response.retresult,
-                },
-            },
-        )
+        cleanup_scenario()
+        restore_state["done"] = True
 
-        missing = {command: tokens for command, tokens in missing_by_command.items() if tokens}
-        assert not missing, f"Missing ONT provision template CLI tokens for {remote_xont}: {missing}. Report: {report_path}"
+
+def verify_ont_provision_template_sfu_cli(
+    neox_config_service,
+    env_config,
+    target,
+    xpon: str,
+    remote_xont: str,
+    path: str,
+    payload: dict[str, Any],
+    response,
+    ont_read_path: str,
+    ont_response,
+    template_path: str,
+) -> None:
+    credentials = neox_cli_credentials(env_config, "ONT provision template SFU")
+    command_by_name = {
+        "running-config": f"show running-config interface xpon {xpon}",
+        "xont-by-sn": f"show interface remote xont sn {target.ont_sn}",
+    }
+    output_by_command = run_neox_cli_commands(env_config, credentials, list(command_by_name.values()))
+    assert_neox_config_node_reachable(env_config, "ont", "provision_template_sfu", "after_cli_verify")
+    expected_by_command = {
+        command_by_name["running-config"]: ont_running_config_tokens(remote_xont, payload["Content"]),
+        command_by_name["xont-by-sn"]: [remote_xont, target.ont_sn],
+    }
+    missing_by_command = missing_tokens_by_command(output_by_command, expected_by_command)
+    report_path = write_neox_cli_verify_report(
+        neox_config_service,
+        "ont",
+        "provision_template_sfu",
+        path,
+        payload,
+        response,
+        output_by_command,
+        expected_by_command,
+        missing_by_command,
+        target_extra={
+            "ont_slot_id": target.ont_slot_id,
+            "ont_port_id": target.ont_port_id,
+            "ont_id": target.ont_id,
+            "ont_sn": target.ont_sn,
+        },
+        metadata={
+            "testcase_id": "EMS1-7223",
+            "template_path": template_path,
+            "rest_read_path": ont_read_path,
+            "rest_read_response": {
+                "status_code": ont_response.status_code,
+                "retstatus": ont_response.retstatus,
+                "retresult": ont_response.retresult,
+            },
+        },
+    )
+
+    missing = {command: tokens for command, tokens in missing_by_command.items() if tokens}
+    assert not missing, f"Missing ONT provision template CLI tokens for {remote_xont}: {missing}. Report: {report_path}"
 
 
 @pytest.mark.mutating
@@ -1655,22 +1687,6 @@ def ensure_ont_bandwidth_profile_supports_service_tcont(
     assert_api_success(response)
 
 
-def restore_ont_config_baseline(
-    api_client,
-    env_config,
-    path: str,
-    session_id: str,
-    payload: dict[str, Any],
-    *,
-    verify_cli: bool,
-):
-    response = api_client.request("POST", path, session=session_id, json=payload)
-    assert_api_success(response)
-    if verify_cli:
-        wait_for_ont_cli_is(env_config, timeout=180, interval=15)
-    return response
-
-
 def restore_ont_config_exact_baseline(
     api_client,
     env_config,
@@ -1684,90 +1700,22 @@ def restore_ont_config_exact_baseline(
     verify_cli: bool,
     attachment_name: str,
 ) -> None:
-    restore_content = restore_payload.get("Content", {})
-    expected_description = str(restore_content.get("ontdescription") or "")
-    expected_template_name = str(restore_content.get("templatename") or "")
-
-    def rest_baseline_matches(response) -> bool:
-        payload = response.json if isinstance(response.json, dict) else {}
-        ont_info = ((payload.get("retval") or {}).get("ontinfo") or {})
-        actual_description = str(ont_info.get("description") or "")
-        actual_template_name = str(ont_info.get("templateName") or ont_info.get("ontTemplate") or "")
-        return actual_description == expected_description and actual_template_name == expected_template_name
-
-    attempts = []
-    for attempt, timeout in ((1, 120), (2, 180)):
-        attempt_errors = []
-        try:
-            with session_manager.role_session(SessionRole.READWRITE) as cleanup_session:
-                restore_ont_config_baseline(
-                    api_client,
-                    env_config,
-                    config_path,
-                    cleanup_session,
-                    restore_payload,
-                    verify_cli=False,
-                )
-                wait_for_rest_tokens(
-                    api_client,
-                    read_path,
-                    cleanup_session,
-                    expected_rest_tokens,
-                    timeout=timeout,
-                    interval=15,
-                    response_validator=rest_baseline_matches,
-                    consecutive_successes=ONT_BASELINE_STABLE_SAMPLES,
-                )
-        except Exception as error:
-            attempt_errors.append(f"REST baseline convergence: {error}")
-
-        if verify_cli:
-            try:
-                wait_for_ont_cli_is(env_config, timeout=timeout, interval=15)
-                wait_for_ont_cli_config_tokens(
-                    env_config,
-                    expected_tokens=(remote_xont, f"description {expected_description}"),
-                    absent_tokens=(f"template {PROVISION_TEMPLATE_SFU_NAME}",),
-                    consecutive_successes=ONT_BASELINE_STABLE_SAMPLES,
-                    timeout=timeout,
-                    interval=15,
-                )
-            except Exception as error:
-                attempt_errors.append(f"CLI baseline convergence: {error}")
-
-        attempts.append(
-            {
-                "attempt": attempt,
-                "timeout": timeout,
-                "errors": attempt_errors,
-            }
-        )
-        if not attempt_errors:
-            attach_json(
-                attachment_name,
-                {
-                    "config_path": config_path,
-                    "read_path": read_path,
-                    "expected_description": expected_description,
-                    "expected_template_name": expected_template_name,
-                    "attempts": attempts,
-                    "converged": True,
-                },
-            )
-            return
-
-    attach_json(
-        attachment_name,
-        {
-            "config_path": config_path,
-            "read_path": read_path,
-            "expected_description": expected_description,
-            "expected_template_name": expected_template_name,
-            "attempts": attempts,
-            "converged": False,
-        },
+    expected_description = str(restore_payload.get("Content", {}).get("ontdescription") or "")
+    result = converge_ont_baseline(
+        api_client,
+        env_config,
+        lambda: session_manager.role_session(SessionRole.READWRITE),
+        config_path,
+        restore_payload,
+        read_path,
+        expected_rest_tokens,
+        cli_expected_tokens=(remote_xont, f"description {expected_description}"),
+        cli_absent_tokens=(f"template {PROVISION_TEMPLATE_SFU_NAME}",),
+        verify_cli=verify_cli,
+        label=attachment_name,
     )
-    raise AssertionError(f"restore ONT exact baseline did not converge: {attempts}")
+    if not result.converged:
+        raise AssertionError(f"restore ONT exact baseline did not converge: {result.errors}")
 
 
 def cleanup_ont_provision_template_scenario(
@@ -1835,83 +1783,22 @@ def cleanup_ont_provision_template_scenario(
         except Exception as error:
             errors.append(f"wait for ONT unregister after config clear: {error}")
 
-    restore_attempts = []
-    restore_content = restore_payload.get("Content", {})
-    expected_description = str(restore_content.get("ontdescription") or "")
-    expected_template_name = str(restore_content.get("templatename") or "")
-
-    def rest_baseline_matches(response) -> bool:
-        payload = response.json if isinstance(response.json, dict) else {}
-        ont_info = ((payload.get("retval") or {}).get("ontinfo") or {})
-        actual_description = str(ont_info.get("description") or "")
-        actual_template_name = str(ont_info.get("templateName") or ont_info.get("ontTemplate") or "")
-        return actual_description == expected_description and actual_template_name == expected_template_name
-
-    restore_converged = False
-    for attempt, timeout in ((1, 120), (2, 180)):
-        attempt_errors = []
-        try:
-            with cleanup_session_scope() as cleanup_session:
-                restore_ont_config_baseline(
-                    api_client,
-                    env_config,
-                    config_path,
-                    cleanup_session,
-                    restore_payload,
-                    verify_cli=False,
-                )
-                try:
-                    wait_for_rest_tokens(
-                        api_client,
-                        read_path,
-                        cleanup_session,
-                        expected_rest_tokens,
-                        timeout=timeout,
-                        interval=15,
-                        response_validator=rest_baseline_matches,
-                        consecutive_successes=ONT_BASELINE_STABLE_SAMPLES,
-                    )
-                except Exception as error:
-                    attempt_errors.append(f"REST convergence: {error}")
-        except Exception as error:
-            attempt_errors.append(f"cleanup session or POST baseline: {error}")
-
-        if verify_cli:
-            try:
-                wait_for_ont_cli_is(env_config, timeout=timeout, interval=15)
-                wait_for_ont_cli_config_tokens(
-                    env_config,
-                    expected_tokens=(f"description {expected_description}",),
-                    absent_tokens=(f"template {template_name}",),
-                    consecutive_successes=ONT_BASELINE_STABLE_SAMPLES,
-                    timeout=timeout,
-                    interval=15,
-                )
-            except Exception as error:
-                attempt_errors.append(f"CLI convergence: {error}")
-
-        restore_attempts.append(
-            {
-                "attempt": attempt,
-                "timeout": timeout,
-                "errors": attempt_errors,
-            }
-        )
-        if not attempt_errors:
-            restore_converged = True
-            break
-
-    attach_json(
-        "ONT provision-template cleanup baseline convergence",
-        {
-            "config_path": config_path,
-            "read_path": read_path,
-            "attempts": restore_attempts,
-            "converged": restore_converged,
-        },
+    expected_description = str(restore_payload.get("Content", {}).get("ontdescription") or "")
+    restore = converge_ont_baseline(
+        api_client,
+        env_config,
+        cleanup_session_scope,
+        config_path,
+        restore_payload,
+        read_path,
+        expected_rest_tokens,
+        cli_expected_tokens=(f"description {expected_description}",),
+        cli_absent_tokens=(f"template {template_name}",),
+        verify_cli=verify_cli,
+        label="ONT provision-template cleanup baseline convergence",
     )
-    if not restore_converged:
-        errors.append(f"restore ONT baseline did not converge: {restore_attempts}")
+    if not restore.converged:
+        errors.append(f"restore ONT baseline did not converge: {restore.errors}")
 
     assert not errors, "ONT provision-template cleanup failed: " + "; ".join(errors)
 

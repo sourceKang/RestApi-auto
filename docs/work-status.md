@@ -31,20 +31,17 @@
 - D3：刪除 reports/multi_node 中 91 個與 build 歸檔逐檔 SHA-256 相同的 allure-current 子目錄與 3 個 dry-run 目錄
   （504,616 檔）；DIFFERENT 3、NO_ARCHIVE 6 保留；reports/ 剩 1,026,561 檔。清單：reports/summary/20261020-d3-multi-node-allure-duplicates.csv。
 
-### 2026-10-20 R-SLP（ACL 輪詢）與 R-REG 實機驗證（Claude Code）
+### 2026-10-21 PR-2：ONT baseline 還原單一輪詢窗、SFU 還原移進本體（Claude Code）
 
-- 分支 claude/r-slp-acl-polling，基準為 #30 合併後的預設分支；實機 NODE3（redhat .100，b13），使用者授權。
-- 新增 tests/support/ge_acl_profile.py：以 `show acl-profile mode`／`show acl-profile` 輪詢（30 秒、間隔 1 秒，
-  scaled_wait），取代 test_neox_config.py ACL 模式切換與 profile 建立後的固定 sleep；mode 輪詢逾時才重送一次
-  `acl-profile mode <mode>`，並附 Allure「GE ACL profile mode retry」。刪除 KNOWN_SLEEPS 兩個 ACL 條目，
-  新增離線測試 tests/test_ge_acl_profile.py（5 項）。
-- CLI baseline：模式切換、建立 RestApiGeAcl、切回 port 都在第一次 show 即可見（約 3.4 秒）。REST 回歸
-  test_ge_config_max_create／max_variant：通過 9／失敗 0，8 個 ACL 案例皆 polls=1、約 3.4 秒，未觸發重送；
-  結束後 NODE3 為 port mode，profile 與執行前相同。
-- R-REG：預設跑法保留 password 與 session id 原值；`--redact-reports` 下 password、session id 全數遮罩。
-  registid、CLI registration-id、teardown statusDetails 在唯讀案例未出現，僅由離線測試涵蓋。
-- D0：PR #18 已關閉並留言；兩個殘留 worktree（皆乾淨）已移除，分支保留。
-- 離線 `pytest -m offline`：通過 158／失敗 0。
+- 分支 claude/sfu-restore-in-body，基準為 #32 合併後的預設分支。使用者決定：還原輪詢改單一 600 秒窗（乘 wait_scale）、
+  固定 15 秒、不重送 baseline、超過 12 次輪詢在報表檔頭標 SLOW；EMS1-7223 還原移進本體、失敗記 Fail。
+- 新增 tests/support/ont_baseline.py（converge_ont_baseline）：POST baseline 一次，REST 以每段 300 秒重新登入輪詢
+  （EMS session 600 秒到期），需連續 4 次符合；附 Allure 輪詢次數／耗時；SLOW 寫入檔頭 `ONT Baseline Restore (...)`。
+  EMS1-7130、7133（strict teardown）與 7223 共用；刪除舊的 120／180 秒兩輪重送與 restore_ont_config_baseline。
+- EMS1-7223 比照 NNI restore_state：步驟 6 在本體執行，未執行到時才由 strict final 補救。
+- 實機 NODE3（redhat .100）：EMS1-7223、EMS1-7130 通過 2／失敗 0，無 Teardown Errors；SFU 本體還原 6 次輪詢、163 秒，
+  7130 teardown 還原 4 次、120 秒，皆未標 SLOW；CLI 確認 ONT 為 IS、description REST_API_NEOX_ONT、無 template。
+- 離線 `pytest -m offline`：通過 178／失敗 0；相關單元測試（rest_polling、ont_cli_status、reporting 等）通過 72／失敗 0。
 
 ## 下一步
 
@@ -68,7 +65,7 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 
 - [B13]〔需決定〕b13_redhat：既有報表明文清理（同 D1）；RAD external 11:40～15:59 恢復原因；
   formal_runs.yaml 正式執行；TestLink build／回填；configs/ems.yaml b13 版本是否已提交需核對。
-- [TD]〔需實機〕（Blocked 報表已完成）PR-2：EMS1-7223 SFU 還原移進本體（比照 NNI restore_state），失敗記 Fail；需 NODE3 實機驗證。
+- [TD]〔需實機〕（PR-1／PR-2 已完成）累積幾次回歸的 `ONT baseline` 輪詢次數後，檢討 SLOW 門檻 12 次是否合適。
 - [EMS100]〔需實機〕.100 連線中斷判定為 server 資源不足（ADR 0002）；下次完整測試確認
   `EMS Connection Errors` 行與重送恢復，仍頻繁再以報表時間點查 .100 log。
 - [SOP]〔需決定〕docs/sop/ 的 SOP docx（9/22 版）未納入版控；要給同事用需先改寫為 Markdown 並更新

@@ -170,6 +170,7 @@ def badge(status: str) -> str:
         "fail": "fail",
         "failed": "fail",
         "broken": "fail",
+        "blocked": "partial",
         "skip": "skip",
         "skipped": "skip",
     }.get(lowered, "info")
@@ -332,7 +333,7 @@ def render_photo_comparison() -> str:
 def render_failures(cases: list[TxtCase]) -> str:
     rows = []
     for case in cases:
-        if case.result.lower() == "fail":
+        if case.result.lower() in {"fail", "blocked"}:
             rows.append(
                 f'<tr><td>{esc(case.case_id)}</td><td>{esc(case.name)}</td>'
                 f"<td>{badge(case.result)}</td><td>{esc(case.duration)}</td>"
@@ -362,6 +363,10 @@ def render_report(
     allure_rel = html.escape(allure_dir.name, quote=True)
     pass_count = sum(1 for case in cases if case.result.lower() == "pass")
     fail_count = sum(1 for case in cases if case.result.lower() == "fail")
+    blocked_count = sum(1 for case in cases if case.result.lower() == "blocked")
+    testlink_value = f"{pass_count} / {fail_count}" + (f" / {blocked_count}" if blocked_count else "")
+    testlink_note = "Pass / Fail" + (" / Blocked" if blocked_count else "")
+    blocked_heading = f", {blocked_count} Blocked" if blocked_count else ""
     ems_version = metadata.get("EMS Version", "EMS")
     ems_platform = metadata.get("EMS Platform", "")
     ems_heading = f"{ems_version} ({ems_platform})" if ems_platform else ems_version
@@ -411,7 +416,7 @@ def render_report(
     <div class="card"><div class="label">EMS Version</div><div class="value">{esc(ems_version.split()[-1] if ems_version.split() else ems_version)}</div><div class="note">{esc(" / ".join(part for part in (ems_version, ems_platform, metadata.get("UI URL", "")) if part))}</div></div>
     <div class="card"><div class="label">Node</div><div class="value">{esc(metadata.get("Node Name") or "N/A")}</div><div class="note">Chassis: {esc(metadata.get("Node Chassis") or "N/A")}</div></div>
     <div class="card"><div class="label">pytest raw</div><div class="value">{status_counts["passed"]} / {raw_failed} / {status_counts["skipped"]}</div><div class="note">{esc(raw_note)}</div></div>
-    <div class="card"><div class="label">TestLink report</div><div class="value">{pass_count} / {fail_count}</div><div class="note">Pass / Fail, {len(cases)} cases</div></div>
+    <div class="card"><div class="label">TestLink report</div><div class="value">{testlink_value}</div><div class="note">{testlink_note}, {len(cases)} cases</div></div>
   </section>
 
   <section class="callout">HTML report and Allure raw evidence are merged below. Open any TestLink case to see matching Allure result records, request payloads, EMS responses, verification steps, CLI/contract evidence, status details, and raw attachment links.</section>
@@ -428,7 +433,7 @@ def render_report(
 {photo_issue_section}
 
   <section class="panel">
-    <div class="panel-title"><h2>{fail_count} Failure{"" if fail_count == 1 else "s"} in txt Report</h2><span>Jump directly to merged case evidence</span></div>
+    <div class="panel-title"><h2>{fail_count} Failure{"" if fail_count == 1 else "s"}{blocked_heading} in txt Report</h2><span>Jump directly to merged case evidence</span></div>
     <div class="table-wrap"><table><thead><tr><th>Case</th><th>Test</th><th>Result</th><th>Duration</th><th>Detail</th></tr></thead><tbody>{render_failures(cases)}</tbody></table></div>
   </section>
 

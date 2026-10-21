@@ -3,6 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 
+class StrictCleanupError(AssertionError):
+    """A strict final cleanup failed after the test body (the device baseline was not restored).
+
+    The pytest reporting hooks record a passed case whose strict cleanup fails as Blocked.
+    """
+
+
 class CleanupRegistry:
     def __init__(self) -> None:
         self._callbacks: list[tuple[Callable[[], None], bool]] = []
@@ -27,7 +34,10 @@ class CleanupRegistry:
                     strict_errors.append(error)
 
         if len(strict_errors) == 1:
-            raise strict_errors[0]
+            raise StrictCleanupError(str(strict_errors[0])) from strict_errors[0]
         if strict_errors:
-            raise ExceptionGroup("Strict cleanup callbacks failed", strict_errors)
+            message = "; ".join(f"{type(error).__name__}: {error}" for error in strict_errors)
+            raise StrictCleanupError(f"{len(strict_errors)} strict cleanup callbacks failed: {message}") from ExceptionGroup(
+                "Strict cleanup callbacks failed", strict_errors
+            )
 

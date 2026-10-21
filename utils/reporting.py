@@ -48,6 +48,7 @@ class ReportState:
     report_notes: dict[str, str] = field(default_factory=dict)
     connection_events: list["ConnectionEvent"] = field(default_factory=list)
     slow_requests: list["SlowRequest"] = field(default_factory=list)
+    teardown_errors: list["TeardownError"] = field(default_factory=list)
 
 
 @dataclass
@@ -71,6 +72,13 @@ class SlowRequest:
     attempts: int
     status_code: int
     threshold: float
+
+
+@dataclass
+class TeardownError:
+    nodeid: str
+    message: str
+    strict: bool  # a strict final cleanup (device baseline restore) failed
 
 
 REPORT_STATE = ReportState()
@@ -125,6 +133,21 @@ def record_slow_request(
             threshold=threshold,
         )
     )
+
+
+def record_teardown_error(nodeid: str, message: str, *, strict: bool) -> None:
+    """Record a teardown failure; a strict cleanup failure turns a passed case into Blocked.
+
+    A failed or skipped case keeps its outcome; every teardown failure is listed in the report header.
+    """
+    REPORT_STATE.teardown_errors.append(TeardownError(nodeid=nodeid, message=message, strict=strict))
+    if not strict:
+        return
+    for result in reversed(REPORT_STATE.results):
+        if result.nodeid == nodeid:
+            if result.outcome == "passed":
+                result.outcome = "blocked"
+            return
 
 
 def _current_nodeid() -> str:

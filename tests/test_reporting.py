@@ -505,7 +505,7 @@ def test_makereport_hook_masks_known_secrets_in_failed_report(monkeypatch):
 
     monkeypatch.setattr(reporting_hooks, "_known_secret_values", lambda config: ("Secret123!",))
     traceback_text = "credentials = ('admin', 'Secret123!')\nE   TypeError: boom"
-    report = SimpleNamespace(failed=True, longrepr=traceback_text, longreprtext=traceback_text)
+    report = SimpleNamespace(when="call", failed=True, longrepr=traceback_text, longreprtext=traceback_text)
 
     hook = reporting_hooks.pytest_runtest_makereport(item=SimpleNamespace(config=None), call=None)
     next(hook)

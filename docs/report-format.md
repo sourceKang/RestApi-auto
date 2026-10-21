@@ -12,6 +12,11 @@ GitHub PR 描述不是報表，改依 [pr-description skill](../.codex/skills/pr
 - 大型 request/response、CLI output、traceback 另存檔案；報表只放摘要與連結。
 - 保留原始 txt、HTML、Allure raw、log 的回查連結。本機報表預設保留原始資料（含密碼、session id、token、devKey）以便回查；
   要給他人或放到外部時，先以 `EMS_REPORT_REDACT=1` 重產或只提供已遮罩的摘要。
+- txt／TestLink 結果有四種：Pass、Fail、Skip（回填略過）與 Blocked（TestLink `b`）。Blocked 表示本體通過，
+  但 strict cleanup（`cleanup_registry.add_strict_final`，還原設備 baseline）失敗；本體已失敗時維持 Fail。
+  所有 teardown 錯誤都列在檔頭 `Teardown Errors`／`Teardown Error #n`（strict cleanup 或 other teardown），
+  other teardown（例如 session 登出斷線）只列明細、不改結果。同一 case ID 合併順序為 Fail > Blocked > Skip > Pass。
+  檔頭明細不會帶入 TestLink notes，需要時另行補充。
 
 ## 任務總結頁
 

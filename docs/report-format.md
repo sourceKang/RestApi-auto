@@ -17,6 +17,8 @@ GitHub PR 描述不是報表，改依 [pr-description skill](../.codex/skills/pr
   所有 teardown 錯誤都列在檔頭 `Teardown Errors`／`Teardown Error #n`（strict cleanup 或 other teardown），
   other teardown（例如 session 登出斷線）只列明細、不改結果。同一 case ID 合併順序為 Fail > Blocked > Skip > Pass。
   檔頭明細不會帶入 TestLink notes，需要時另行補充。
+- ONT baseline 還原（EMS1-7130／7133／7223）超過 12 次 REST 輪詢時，檔頭加 `ONT Baseline Restore (...)：SLOW ...`，
+  只標記不改結果；輪詢窗 600 秒乘 wait_scale 用完才判失敗。
 
 ## 任務總結頁
 

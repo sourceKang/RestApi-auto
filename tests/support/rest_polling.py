@@ -19,12 +19,20 @@ def wait_for_rest_tokens(
     max_interval: float = 30,
     response_validator=None,
     consecutive_successes: int = 1,
+    scale_timeout: bool = True,
+    stats: dict | None = None,
     sleeper=time.sleep,
     clock=time.monotonic,
 ):
+    """Poll GET `path` until the tokens (and validator) match `consecutive_successes` times in a row.
+
+    `scale_timeout=False` takes `timeout` as already scaled (callers that split one window).
+    `stats["polls"]` is incremented per GET, so a caller can sum polls across several calls.
+    """
     if consecutive_successes < 1:
         raise ValueError("consecutive_successes must be at least 1")
-    timeout = scaled_wait(getattr(api_client, "env", None), timeout)
+    if scale_timeout:
+        timeout = scaled_wait(getattr(api_client, "env", None), timeout)
     deadline = clock() + timeout
     last_response = None
     last_missing = expected_tokens
@@ -32,6 +40,8 @@ def wait_for_rest_tokens(
     stable_hits = 0
     while clock() <= deadline:
         last_response = api_client.request("GET", path, session=session_id)
+        if stats is not None:
+            stats["polls"] = stats.get("polls", 0) + 1
         if last_response.retstatus == "Fail" and "not authorized" in last_response.retresult.casefold():
             raise AssertionError(
                 f"REST polling lost authorization for {path}; obtain a fresh session before retrying"

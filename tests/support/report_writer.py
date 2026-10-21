@@ -128,7 +128,7 @@ def _render_txt_report(env_config: Any) -> str:
     lines = [
         f"Report generated on: {reporting.REPORT_STATE.timestamp}",
         f"Total test time: {_format_timedelta(elapsed)} ({elapsed:.2f} seconds)",
-        f"Summary: {summary['passed']} Pass / {summary['failed']} Fail",
+        f"Summary: {_summary_text(summary)}",
         f"UI URL: {env_config.base_url}",
         f"EMS Version: {getattr(env_config, 'ems_version', 'unknown')}",
         *(f"{label}: {value}" for label, value in _ems_server_metadata(env_config)),
@@ -166,6 +166,7 @@ def _render_html_report(
     rendered_results = _rendered_report_results()
     summary = _summary_counts(rendered_results)
     failed_results = [result for result in rendered_results if result.outcome == "failed"]
+    blocked_results = [result for result in rendered_results if result.outcome == "blocked"]
 
     metadata = [
         ("Generated at", reporting.REPORT_STATE.timestamp),
@@ -231,11 +232,17 @@ def _render_html_report(
             _summary_card("Total", summary["total"], "testcases"),
             _summary_card("Pass", summary["passed"], "passed"),
             _summary_card("Fail", summary["failed"], "failed"),
+            _summary_card("Blocked", summary["blocked"], "blocked"),
             _summary_card("Skip", summary["skipped"], "skipped"),
             "</section>",
             _html_section("Test Environment", _metadata_table(metadata)),
             _html_section("Report Files", _links_list(links) if links else "<p>No additional report links.</p>"),
             _html_section("Failed Cases", _results_table(failed_results) if failed_results else "<p>No failed cases in this run.</p>"),
+            *(
+                [_html_section("Blocked Cases (strict cleanup failed)", _results_table(blocked_results))]
+                if blocked_results
+                else []
+            ),
             _html_section("All Testcase Results", _results_table(rendered_results)),
             "</main>",
             "</body>",
@@ -253,8 +260,14 @@ def _summary_counts(rendered_results: list["AggregatedReportCase"]) -> dict[str,
         "total": len(rendered_results),
         "passed": sum(1 for result in rendered_results if result.outcome == "passed"),
         "failed": sum(1 for result in rendered_results if result.outcome == "failed"),
+        "blocked": sum(1 for result in rendered_results if result.outcome == "blocked"),
         "skipped": sum(1 for result in rendered_results if result.outcome == "skipped"),
     }
+
+
+def _summary_text(summary: dict[str, int]) -> str:
+    text = f"{summary['passed']} Pass / {summary['failed']} Fail"
+    return f"{text} / {summary['blocked']} Blocked" if summary["blocked"] else text
 
 
 def _split_label_value(line: str) -> tuple[str, str]:
@@ -266,10 +279,11 @@ def _split_label_value(line: str) -> tuple[str, str]:
 
 def _report_note_lines() -> list[str]:
     lines = [f"{label}: {value}" for label, value in reporting.REPORT_STATE.report_notes.items()]
-    return lines + _connection_event_lines() + _slow_request_lines()
+    return lines + _connection_event_lines() + _slow_request_lines() + _teardown_error_lines()
 
 
 MAX_CONNECTION_EVENT_LINES = 30
+MAX_TEARDOWN_MESSAGE_CHARS = 500
 
 
 def _event_location(nodeid: str) -> str:
@@ -292,6 +306,28 @@ def _slow_request_lines() -> list[str]:
         lines.append(
             f"EMS Slow Request (more): {len(slow) - MAX_CONNECTION_EVENT_LINES} "
             "further requests in Allure attachments"
+        )
+    return lines
+
+
+def _teardown_error_lines() -> list[str]:
+    errors = reporting.REPORT_STATE.teardown_errors
+    if not errors:
+        return []
+    strict = sum(1 for error in errors if error.strict)
+    lines = [
+        f"Teardown Errors: {len(errors)} "
+        f"(strict cleanup {strict}, case Blocked unless it already failed; other {len(errors) - strict}, listed only)"
+    ]
+    for index, error in enumerate(errors[:MAX_CONNECTION_EVENT_LINES], start=1):
+        kind = "strict cleanup" if error.strict else "other teardown"
+        message = error.message
+        if len(message) > MAX_TEARDOWN_MESSAGE_CHARS:
+            message = message[:MAX_TEARDOWN_MESSAGE_CHARS] + "... (full text in Allure)"
+        lines.append(f"Teardown Error #{index}: {_event_location(error.nodeid)} | {kind} | {message}")
+    if len(errors) > MAX_CONNECTION_EVENT_LINES:
+        lines.append(
+            f"Teardown Error (more): {len(errors) - MAX_CONNECTION_EVENT_LINES} further errors in Allure results"
         )
     return lines
 
@@ -412,6 +448,8 @@ def _path_href(path: Path) -> str:
 def _overall_status(summary: dict[str, int]) -> str:
     if summary["failed"]:
         return "failed"
+    if summary["blocked"]:
+        return "blocked"
     if summary["total"] and summary["passed"]:
         return "passed"
     return "skipped"
@@ -420,6 +458,8 @@ def _overall_status(summary: dict[str, int]) -> str:
 def _overall_status_label(summary: dict[str, int]) -> str:
     if summary["failed"]:
         return "FAIL"
+    if summary["blocked"]:
+        return "BLOCKED"
     if summary["total"] and summary["passed"]:
         return "PASS"
     return "SKIP"
@@ -437,6 +477,7 @@ def _html_report_css() -> str:
   --pass: #138a54;
   --fail: #c93b3b;
   --skip: #7a6a21;
+  --blocked: #b45309;
 }
 * { box-sizing: border-box; }
 body {
@@ -472,9 +513,10 @@ main {
 .status-passed { color: #9df0c2; }
 .status-failed { color: #ffb6b6; }
 .status-skipped { color: #f1dd84; }
+.status-blocked { color: #fdba74; }
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin: 16px 0;
 }
@@ -496,6 +538,7 @@ th { color: var(--muted); font-weight: 600; }
 .pill-passed { background: #ddf7e9; color: var(--pass); }
 .pill-failed { background: #ffe2e2; color: var(--fail); }
 .pill-skipped { background: #fbf0bf; color: var(--skip); }
+.pill-blocked { background: #ffedd5; color: var(--blocked); }
 .links { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .links li { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .links span { color: var(--muted); font-size: 12px; }
@@ -683,6 +726,8 @@ def _outcome_name(outcome: str) -> str:
         return "Pass"
     if outcome == "failed":
         return "Fail"
+    if outcome == "blocked":
+        return "Blocked"
     return "Skip"
 
 
@@ -809,6 +854,7 @@ def permission_summary_breakdown(role: str) -> dict[str, Any]:
             "total": 0,
             "passed": 0,
             "failed": 0,
+            "blocked": 0,
             "skipped": 0,
             "failed_items": [],
             "members": [],
@@ -836,6 +882,7 @@ def permission_summary_breakdown(role: str) -> dict[str, Any]:
         "total": len(detail.members),
         "passed": sum(1 for member in detail.members if member.outcome == "passed"),
         "failed": sum(1 for member in detail.members if member.outcome == "failed"),
+        "blocked": sum(1 for member in detail.members if member.outcome == "blocked"),
         "skipped": sum(1 for member in detail.members if member.outcome == "skipped"),
         "failed_items": failed_items,
         "members": members,
@@ -850,6 +897,8 @@ def _combine_outcomes(outcomes: Any) -> str:
     values = list(outcomes)
     if any(outcome == "failed" for outcome in values):
         return "failed"
+    if any(outcome == "blocked" for outcome in values):
+        return "blocked"
     if any(outcome == "skipped" for outcome in values):
         return "skipped"
     if any(outcome == "passed" for outcome in values):
@@ -861,6 +910,8 @@ def _combine_permission_outcomes(outcomes: Any) -> str:
     values = list(outcomes)
     if any(outcome == "failed" for outcome in values):
         return "failed"
+    if any(outcome == "blocked" for outcome in values):
+        return "blocked"
     if any(outcome == "passed" for outcome in values):
         return "passed"
     return "skipped"

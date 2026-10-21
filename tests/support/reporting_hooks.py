@@ -10,12 +10,16 @@ from clients.ssh_cli import close_ssh_session_pools
 from tests.support.options import option_or_env
 from config_loader import load_environment
 from config_loader.auth import AuthConfigError, load_auth_config
+from utils.cleanup import StrictCleanupError
 from utils.redaction import REPORT_REDACT_ENV, report_mask_values
 from tests.support.report_writer import write_reports
-from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result
+from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result, record_teardown_error
 
 
 _SECRET_VALUES_KEY = pytest.StashKey[tuple]()
+# Set on teardown reports in pytest_runtest_makereport; user_properties also reach the xdist controller.
+TEARDOWN_STRICT_PROPERTY = "teardown_error_strict"
+TEARDOWN_MESSAGE_PROPERTY = "teardown_error_message"
 _HEARTBEAT_STOP: threading.Event | None = None
 _HEARTBEAT_THREAD: threading.Thread | None = None
 
@@ -49,6 +53,13 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     masked = report_mask_values(text, _known_secret_values(item.config))
     if masked != text:
         report.longrepr = masked
+    if report.when == "teardown" and call.excinfo is not None:
+        error = call.excinfo.value
+        message = " ".join(str(error).split()) or type(error).__name__
+        report.user_properties.append((TEARDOWN_STRICT_PROPERTY, call.excinfo.errisinstance(StrictCleanupError)))
+        report.user_properties.append(
+            (TEARDOWN_MESSAGE_PROPERTY, report_mask_values(f"{type(error).__name__}: {message}", _known_secret_values(item.config)))
+        )
 
 
 def _known_secret_values(config: pytest.Config) -> tuple[str, ...]:
@@ -78,6 +89,13 @@ def _known_secret_values(config: pytest.Config) -> tuple[str, ...]:
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if report.when == "call":
         record_result(report.nodeid, report.outcome, report.duration)
+        return
+    if report.when == "teardown":
+        if report.failed:
+            properties = dict(report.user_properties)
+            lines = [line for line in report.longreprtext.splitlines() if line.strip()]
+            message = properties.get(TEARDOWN_MESSAGE_PROPERTY) or (lines[-1].strip() if lines else "teardown failed")
+            record_teardown_error(report.nodeid, message, strict=bool(properties.get(TEARDOWN_STRICT_PROPERTY)))
         return
     if report.when != "setup" or report.outcome not in {"failed", "skipped"}:
         return

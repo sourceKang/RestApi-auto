@@ -95,7 +95,10 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
   `b12-redhat-node3-20261002-v2`、`b13-redhat-node3-run11-20261014`）；重新預覽用新的 `-vN`，
   不要覆用已執行過的 id。
 - `label` 最多 64 字元；notes 不能逐筆自訂，判定說明寫在 label。
-- 多報表合併規則是「任一份 Fail 即 Fail」且各報表 case 清單須相同，不能直接併入重跑報表；
+- txt 的 `Result Blocked`（strict cleanup 失敗）會回填成 `b`，`Teardown Error #n` 明細不會進 notes；
+  回報時列出 Blocked case 與對應明細，先確認設備已回 baseline 再決定是否重跑。
+- 多報表合併規則是「任一份 Fail 即 Fail」，否則 Pass 優先於 Blocked（某 node Blocked、另一 node Pass 會回填 p），
+  且各報表 case 清單須相同，不能直接併入重跑報表；
   重跑改判時另存 `*_judged.txt`（只改受影響 case、Summary 與檔頭 Judgement 說明，原始 txt 不動）。
 - audit 目錄用絕對路徑並確認可寫；以相對路徑 `local/...` 執行時曾因 MCP 行程 cwd 不可寫而
   254 筆全部 `TESTLINK_ERROR`（`[WinError 5]`），且未寫入 TestLink。

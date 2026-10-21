@@ -18,15 +18,18 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
-### 2026-10-20 本機報表保留原值、EMS_REPORT_REDACT 開關（Claude Code）
+### 2026-10-21 TD：strict cleanup 失敗記 Blocked、D3 重複報表清理（Claude Code）
 
-- 分支 claude/report-redact-switch，基準為 R-T2 合併後的預設分支。使用者決定：Allure 附件與測試報表要保留原始資料
-  （密碼、session id、token、devKey）以便回查。
-- utils/redaction.py 新增 `report_value`／`report_text`／`report_mask_values`：預設回傳原值，`EMS_REPORT_REDACT=1`
-  （或 pytest `--redact-reports`，在 pytest_configure 設定環境變數，xdist worker 與子程序同樣生效）時遮罩。
-  `redact`／`redact_text`／`mask_values` 維持一律遮罩，供對外內容使用。報表路徑 14 處改用 report_*。
-- AGENTS.md、engineering-guidelines、report-format、project-context、ems-version-regression 規則改為「本機報表保留原值、
-  分享前以開關重產；PR、Redmine、TestLink notes、提交的檔案一律遮罩」。txt 報表（TestLink 回填來源）不含回應本體或帳密。
+- 分支 claude/td-teardown-blocked，基準為 #31 合併後的預設分支。使用者決定：strict cleanup 失敗且本體通過 → Blocked
+  （TestLink b）；本體已失敗維持 Fail；非 strict teardown 錯誤只列明細。SFU 還原移進本體、失敗記 Fail 另做（PR-2）。
+- utils/cleanup.py 新增 StrictCleanupError；reporting_hooks 在 teardown 標記 strict 並記錄訊息（user_properties，xdist 適用）；
+  utils/reporting 新增 blocked 與 teardown_errors；txt 檔頭 `Teardown Errors`／`Teardown Error #n`，有 Blocked 時
+  Summary 為 `X Pass / Y Fail / Z Blocked`；HTML、integrated、報表索引認得 Blocked。
+- corp 只產生 preview（不寫入）：`Result Blocked` → b、`Result Error` → f；新檔頭與 Summary 解析無 warning；
+  檔頭明細不會進 TestLink notes。TestLink EMS1-7223 步驟 6 明列「cleanup 成功」，EMS1-7130 步驟不含還原。
+- 離線 `pytest -m offline`：通過 174／失敗 0（新增 tests/test_teardown_blocked.py）。
+- D3：刪除 reports/multi_node 中 91 個與 build 歸檔逐檔 SHA-256 相同的 allure-current 子目錄與 3 個 dry-run 目錄
+  （504,616 檔）；DIFFERENT 3、NO_ARCHIVE 6 保留；reports/ 剩 1,026,561 檔。清單：reports/summary/20261020-d3-multi-node-allure-duplicates.csv。
 
 ### 2026-10-20 R-SLP（ACL 輪詢）與 R-REG 實機驗證（Claude Code）
 
@@ -57,7 +60,7 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 使用者決策（2026-10-20 已定：D6 skill 名稱 pr-description；D7 專案 settings.json／.gitattributes 這輪不做）：
 
 - [D1]〔需決定〕（2026-10-20 使用者已定：本機報表保留原值）既有 reports/ 不需清理明文；此項可關閉。
-- [D3]〔需決定〕reports/ 約 153 萬檔，是否以 tools/archive_reports.py 歸檔 b1–b9。
+- [D3]〔需決定〕（重複副本已清理）保留的 9 個 DIFFERENT／NO_ARCHIVE 目錄與 b1–b9 是否再以 tools/archive_reports.py 歸檔。
 - [D4]〔需決定〕曾貼入對話或整檔讀出的測試帳密是否輪替。
 - [D5]〔需決定〕Codex 之後是否仍在本 repo 使用（影響 skill 原檔位置）。
 
@@ -65,7 +68,7 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 
 - [B13]〔需決定〕b13_redhat：既有報表明文清理（同 D1）；RAD external 11:40～15:59 恢復原因；
   formal_runs.yaml 正式執行；TestLink build／回填；configs/ems.yaml b13 版本是否已提交需核對。
-- [TD]〔需決定〕teardown 失敗（cleanup 未收斂）是否反映到 txt／TestLink 結果。
+- [TD]〔需實機〕（Blocked 報表已完成）PR-2：EMS1-7223 SFU 還原移進本體（比照 NNI restore_state），失敗記 Fail；需 NODE3 實機驗證。
 - [EMS100]〔需實機〕.100 連線中斷判定為 server 資源不足（ADR 0002）；下次完整測試確認
   `EMS Connection Errors` 行與重送恢復，仍頻繁再以報表時間點查 .100 log。
 - [SOP]〔需決定〕docs/sop/ 的 SOP docx（9/22 版）未納入版控；要給同事用需先改寫為 Markdown 並更新

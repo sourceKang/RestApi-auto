@@ -25,7 +25,7 @@ class FakeClock:
 class Harness:
     """Fake EMS: each polling chunk spends its whole timeout unless it converges after `polls_to_converge`."""
 
-    def __init__(self, monkeypatch, *, polls_to_converge=None, fail_immediately=False):
+    def __init__(self, monkeypatch, *, polls_to_converge=None, immediate_failures=0):
         self.clock = FakeClock()
         self.posts = 0
         self.sessions = []
@@ -37,7 +37,7 @@ class Harness:
             assert kwargs["scale_timeout"] is False
             assert (kwargs["interval"], kwargs["max_interval"], kwargs["consecutive_successes"]) == (15, 15, 4)
             self.chunks.append((session_id, kwargs["timeout"]))
-            if fail_immediately:
+            if len(self.chunks) <= immediate_failures:
                 raise AssertionError("REST polling lost authorization")
             polls_in_chunk = int(kwargs["timeout"] // 15) + 1
             if polls_to_converge is not None and self.total_polls + polls_in_chunk >= polls_to_converge:
@@ -66,7 +66,7 @@ class Harness:
         self.sessions.append(f"s{len(self.sessions) + 1}")
         yield self.sessions[-1]
 
-    def run(self, wait_scale=1.0):
+    def run(self, wait_scale=1.0, verify_cli=False):
         return ont_baseline.converge_ont_baseline(
             self,
             SimpleNamespace(wait_scale=wait_scale),
@@ -77,7 +77,7 @@ class Harness:
             ["SN-1"],
             cli_expected_tokens=("description REST_API_NEOX_ONT",),
             cli_absent_tokens=("template x",),
-            verify_cli=False,
+            verify_cli=verify_cli,
             label="ONT clear strict baseline convergence",
             clock=self.clock,
         )
@@ -119,10 +119,38 @@ def test_window_is_600_seconds_times_wait_scale_and_then_fails(monkeypatch):
     assert result.errors[0].startswith("REST baseline convergence: REST response was not stable")
 
 
-def test_immediate_error_stops_instead_of_looping_until_the_deadline(monkeypatch):
-    harness = Harness(monkeypatch, fail_immediately=True)
+def test_immediate_errors_get_two_fresh_session_retries_then_fail(monkeypatch):
+    harness = Harness(monkeypatch, immediate_failures=99)
 
     result = harness.run()
 
-    assert len(harness.chunks) == 1
-    assert result.errors == ["REST baseline convergence: REST polling lost authorization"]
+    assert [session for session, _ in harness.chunks] == ["s2", "s3", "s4"]
+    assert harness.posts == 1 and harness.clock.now == 0
+    assert result.errors == [
+        "REST baseline convergence: REST polling lost authorization (after 2 fresh-session retries)"
+    ]
+
+
+def test_one_immediate_error_is_retried_in_a_fresh_session_and_converges(monkeypatch):
+    harness = Harness(monkeypatch, polls_to_converge=5, immediate_failures=1)
+
+    result = harness.run()
+
+    assert result.converged and harness.posts == 1
+    assert [session for session, _ in harness.chunks] == ["s2", "s3"]
+
+
+def test_elapsed_and_slow_count_rest_convergence_only(monkeypatch):
+    harness = Harness(monkeypatch, polls_to_converge=5)
+
+    def slow_cli(*args, **kwargs):
+        harness.clock.now += 170
+
+    monkeypatch.setattr(ont_baseline, "wait_for_ont_cli_is", slow_cli)
+    monkeypatch.setattr(ont_baseline, "wait_for_ont_cli_config_tokens", slow_cli)
+
+    result = harness.run(verify_cli=True)
+
+    assert result.converged and harness.clock.now == 60 + 340
+    assert result.elapsed_seconds == 60
+    assert harness.attachments[-1][1]["elapsed_seconds"] == 60

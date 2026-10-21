@@ -30,6 +30,7 @@ ONT_BASELINE_INTERVAL_SECONDS = 15
 ONT_BASELINE_SLOW_POLLS = 12
 ONT_BASELINE_SESSION_CHUNK_SECONDS = 300  # real seconds per login, inside the 600 s session lifetime
 ONT_BASELINE_CLI_TIMEOUT_SECONDS = 180
+ONT_BASELINE_IMMEDIATE_RETRIES = 2  # fresh sessions after an error that did not use the chunk time
 
 
 @dataclass
@@ -74,6 +75,7 @@ def converge_ont_baseline(
     errors: list[str] = []
     stats = {"polls": 0}
     started = clock()
+    rest_elapsed = 0.0
     window = scaled_wait(env_config, ONT_BASELINE_TIMEOUT_SECONDS)
     try:
         with session_scope() as session_id:
@@ -83,6 +85,7 @@ def converge_ont_baseline(
 
     if not errors:
         deadline = started + window
+        immediate_retries = 0
         while True:
             chunk = max(0.0, min(deadline - clock(), ONT_BASELINE_SESSION_CHUNK_SECONDS))
             chunk_started = clock()
@@ -103,11 +106,21 @@ def converge_ont_baseline(
                     )
                 break
             except Exception as error:
-                # Only a chunk that used its whole time moves on to a fresh session; an immediate
-                # error (login failure, lost authorization) would otherwise loop without waiting.
-                if clock() >= deadline or clock() < chunk_started + chunk:
+                # A chunk that used its whole time moves on to a fresh session. An immediate error
+                # (login failure, lost authorization, transport error) gets a few fresh-session
+                # retries so one EMS hiccup does not fail the restore, without looping until the deadline.
+                if clock() >= deadline:
                     errors.append(f"REST baseline convergence: {error}")
                     break
+                if clock() < chunk_started + chunk:
+                    immediate_retries += 1
+                    if immediate_retries > ONT_BASELINE_IMMEDIATE_RETRIES:
+                        errors.append(
+                            f"REST baseline convergence: {error} "
+                            f"(after {ONT_BASELINE_IMMEDIATE_RETRIES} fresh-session retries)"
+                        )
+                        break
+        rest_elapsed = clock() - started
 
     if verify_cli:
         try:
@@ -123,7 +136,8 @@ def converge_ont_baseline(
         except Exception as error:
             errors.append(f"CLI baseline convergence: {error}")
 
-    elapsed = round(clock() - started, 1)
+    # SLOW and the attachment describe the REST convergence only; CLI checks are not counted.
+    elapsed = round(rest_elapsed, 1)
     result = OntBaselineConvergence(
         polls=stats["polls"], elapsed_seconds=elapsed, slow=stats["polls"] > ONT_BASELINE_SLOW_POLLS, errors=errors
     )

@@ -18,6 +18,21 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-22 RC-1 完整性檢查：缺漏測試與中斷標記（Claude Code）
+
+- 分支 claude/run-completeness-check，基準為 a98039d（#35 合併後的預設分支），尚未提交。
+- 原因：2026-07-21 與 2026-10-02 09:54 兩輪中途停止，沒有 summary.json，也沒有任何地方標出沒跑完；
+  b12_redhat 判定版回填的來源就是 10-02 09:54 那輪（log 停在 99%）。
+- 修改：收集結束（-m／-k 之後）記錄選中的 nodeid；pytest 被中斷（ExitCode 2）時標記。txt／HTML 檔頭加
+  `Completeness: Complete|Incomplete (X/Y selected tests have a result[; run interrupted])` 與
+  `Missing Test #n: <case ID> <nodeid>`（最多 30 行）；xdist 標「not evaluated」。結束時印 `EMS completeness: …`。
+  run_multi_node 讀這一行：檔頭 Incomplete、exit code 2 或 log 沒有最後摘要行時，node 狀態為 Incomplete，
+  summary.json 加 completeness 欄位，整輪 exit code 非 0。不改 Summary 與結果列。
+- 驗證：compile 通過；`pytest -m offline` 通過 199／失敗 0（新增 tests/test_run_completeness.py 15 個）。
+  corp 離線解析 Incomplete 範例報表：只讀到結果列與 Summary，新檔頭不影響。
+- 限制：單一 node 回填時，corp 仍會寫入有結果的列，缺漏的 case 不寫；要擋回填需做建議第 4 項（回填前把關）。
+  未實機驗證。
+
 ### 2026-10-22 修正假 Pass：收集階段登記 TestLink case ID（Claude Code）
 
 - 分支 claude/run-completeness，基準為 8c32c6d（#33 合併後的預設分支）；commit 76199b8、ab30db5。
@@ -70,8 +85,7 @@
 
 retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
 
-- [RC-1]〔離線〕完整性檢查第二部分：每輪比對應跑與實際有結果的 case，列出缺漏；中斷的一輪標 Incomplete，
-  summary.json 加缺漏數。範圍見 2026-10-22 PR #34 條目。
+- [RC-1]〔離線〕完整性檢查第二部分：已在 claude/run-completeness-check 實作（見 2026-10-22 RC-1 條目），待提交與實機確認。
 - [RC-2]〔需決定〕RAD 摘要（7056／7107／7108）沒開 --auth-matrix 時被 skip 仍不會出現在報表，是否改為列出 Skip。
 - [RC-3]〔需實機〕PR #34 的 mutating 情境（6667～6669 主測試 skip）尚未實機驗證，需 node-mutating lane 與授權。
 

@@ -13,7 +13,12 @@ from cases.registry import RAD_SUMMARY_CASES
 from tests.support.capabilities import capability_skip_reason
 from tests.support.options import option_or_full_testcases, validate_neox_parallel_settings, xdist_worker_count
 from tests.support.preflight import is_dut_dependent, skip_unready_dut_items
-from utils.reporting import register_node_case, register_permission_role
+from utils.reporting import (
+    mark_completeness_unavailable,
+    record_expected_items,
+    register_node_case,
+    register_permission_role,
+)
 
 
 RAD_AUTH_MATRIX_CASES = {
@@ -104,6 +109,15 @@ def pytest_collection_finish(session: pytest.Session) -> None:
     # because the preflight target sync can refresh the slot data they read.
     skip_unready_dut_items(session.config, session.items)
     _apply_node_capability_skips(session.config, session.items)
+    _record_expected_items(session)
+
+
+def _record_expected_items(session: pytest.Session) -> None:
+    # The xdist controller collects no items, so it cannot tell which tests never reported.
+    if getattr(session.config.option, "dist", "no") != "no":
+        mark_completeness_unavailable("xdist run; the controller does not collect test items")
+        return
+    record_expected_items([item.nodeid for item in session.items])
 
 
 def _deselect_internal_tests_from_full_suite(config: pytest.Config, items: list[pytest.Item]) -> None:

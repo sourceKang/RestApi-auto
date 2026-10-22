@@ -131,6 +131,7 @@ def test_mutating_endpoints_reject_noaccess(services, noaccess_session, case):
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6666", "test_post_ont_service_by_sn")
 def test_post_ont_service_by_sn(
     services,
     readwrite_session,
@@ -155,6 +156,7 @@ def test_post_ont_service_by_sn(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6667", "test_put_ont_service_by_sn")
 def test_put_ont_service_by_sn(services, readwrite_session, ont_mutating_workflow_template):
     services.provision.verify_ont_service_put(
         readwrite_session,
@@ -165,6 +167,7 @@ def test_put_ont_service_by_sn(services, readwrite_session, ont_mutating_workflo
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6668", "test_patch_ont_service_by_sn")
 def test_patch_ont_service_by_sn(services, readwrite_session, ont_mutating_workflow_template):
     services.provision.verify_ont_service_patch(
         readwrite_session,
@@ -175,6 +178,7 @@ def test_patch_ont_service_by_sn(services, readwrite_session, ont_mutating_workf
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6669", "test_delete_ont_service_by_sn")
 def test_delete_ont_service_by_sn(
     services,
     readwrite_session,
@@ -191,6 +195,7 @@ def test_delete_ont_service_by_sn(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6661", "test_post_ge_service_by_port")
 def test_post_ge_service_by_port(
     services,
     readwrite_session,
@@ -227,6 +232,7 @@ def test_post_ge_service_by_port(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6662", "test_put_ge_service_by_serviceid")
 def test_put_ge_service_by_serviceid(
     services,
     readwrite_session,
@@ -270,6 +276,7 @@ def test_put_ge_service_by_serviceid(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6663", "test_patch_ge_service_by_serviceid")
 def test_patch_ge_service_by_serviceid(
     services,
     readwrite_session,
@@ -324,6 +331,7 @@ def test_patch_ge_service_by_serviceid(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6664", "test_delete_ge_service_by_serviceid")
 def test_delete_ge_service_by_serviceid(
     services,
     readwrite_session,

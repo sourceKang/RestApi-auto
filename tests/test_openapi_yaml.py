@@ -38,6 +38,7 @@ from utils.case_metadata import attach_case_id
 @pytest.mark.openapi
 @pytest.mark.smoke
 @pytest.mark.live_swagger
+@pytest.mark.testlink_case("EMS1-7116", "YAML File")
 def test_latest_openapi_yaml_keys_match_live_swagger(request):
     attach_case_id("EMS1-7116", "YAML File")
     guard_failures: list[str] = []
@@ -517,6 +518,7 @@ def test_live_neox_swagger_nni_schema_matches_baseline(request):
 
 @pytest.mark.openapi
 @pytest.mark.live_swagger
+@pytest.mark.testlink_case("EMS1-7210", "Live Swagger OpenAPI document availability")
 def test_live_swagger_openapi_document_is_available(request):
     attach_case_id("EMS1-7210", "Live Swagger OpenAPI document availability")
     if not option_or_full_testcases(request.config, "--run-live-swagger-check"):

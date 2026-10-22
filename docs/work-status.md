@@ -18,6 +18,21 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-22 修正假 Pass：收集階段登記 TestLink case ID（Claude Code）
+
+- 分支 claude/run-completeness，基準為 8c32c6d（#33 合併後的預設分支），尚未提交。
+- 問題證據：b12 NODE1（2026-09-08）報表有 152 Pass／0 Fail，pytest 結果是 26 skipped。EMS1-6667／6669 的主測試被 skip，
+  但報表顯示 Pass（只有 readonly／noaccess 權限變體有跑）；EMS1-6642／6668／6670 被 skip 後在報表中消失。
+  原因：這些測試的 case ID 在 services 執行時才由 attach_case_id 登記，setup 或本體前段被 skip 時拿不到 ID。
+- 修改：新增 `testlink_case(case_id, name)` marker（pytest.ini），collection.py 在收集時登記；32 個非參數化測試加上 marker，
+  ID 和名稱沿用 services 字面值，並用 b12／b13 共 80 輪 Allure 結果交叉確認。profile 參數化 case（catalog dict）也改在收集時登記。
+  lifecycle 測試只標它獨有的 6654／6659，避免停用時把其他測試的 Pass 變成 Skip。
+- 離線量測（`--collect-only --run-full-testcases`）：收集時已知的 ID 從 108／254 增加到 252／254（剩下 7109／7110 是權限摘要）；
+  沒有 ID 的 item 從 156 降到 3，都是非 TestLink 測試，列在 tests/test_case_id_registration.py 的允許清單。
+- 驗證：compile 通過；`pytest -m offline` 通過 184／失敗 0；新測試在拿掉修正後 4 個全部失敗。
+- 行為改變：被 skip 的 case 會在報表多出 `Result Skip` 列（例如沒開 --run-alarm-delete 時的 6674／6654／6659），
+  未確認 corp（TestLink 回填）怎麼對應 Skip。
+
 ### 2026-10-21 TD：strict cleanup 失敗記 Blocked、D3 重複報表清理（Claude Code）
 
 - 分支 claude/td-teardown-blocked，基準為 #31 合併後的預設分支。使用者決定：strict cleanup 失敗且本體通過 → Blocked

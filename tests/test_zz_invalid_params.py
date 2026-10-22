@@ -6,6 +6,7 @@ import pytest
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7023", "test_ont_service_post_various_invalid_parameters_should_return_error")
 def test_ont_service_post_various_invalid_parameters_should_return_error(
     services,
     readwrite_session,
@@ -20,6 +21,7 @@ def test_ont_service_post_various_invalid_parameters_should_return_error(
 @pytest.mark.provision
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7024", "test_ge_service_post_various_invalid_parameters_should_return_error")
 def test_ge_service_post_various_invalid_parameters_should_return_error(
     services,
     readwrite_session,
@@ -34,29 +36,34 @@ def test_ge_service_post_various_invalid_parameters_should_return_error(
 @pytest.mark.alarm
 @pytest.mark.mutating
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7030", "test_history_alarm_various_invalid_parameters_should_return_error")
 def test_history_alarm_various_invalid_parameters_should_return_error(services, readwrite_session):
     services.invalid_params.verify_history_alarm_invalid_parameters(readwrite_session)
 
 
 @pytest.mark.inventory
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7031", "test_get_device_name_with_invalid_parameters_should_return_error")
 def test_get_device_name_with_invalid_parameters_should_return_error(services, readwrite_session):
     services.invalid_params.verify_device_name_invalid_parameters(readwrite_session)
 
 
 @pytest.mark.inventory
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7032", "test_slot_api_with_invalid_parameters_should_return_error")
 def test_slot_api_with_invalid_parameters_should_return_error(services, readwrite_session):
     services.invalid_params.verify_slot_invalid_parameters(readwrite_session)
 
 
 @pytest.mark.inventory
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7033", "test_port_api_with_invalid_parameters_should_return_error")
 def test_port_api_with_invalid_parameters_should_return_error(services, readwrite_session):
     services.invalid_params.verify_port_invalid_parameters(readwrite_session)
 
 
 @pytest.mark.ont
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-7034", "test_ont_api_with_invalid_parameters_should_return_error")
 def test_ont_api_with_invalid_parameters_should_return_error(services, readwrite_session):
     services.invalid_params.verify_ont_invalid_parameters(readwrite_session)

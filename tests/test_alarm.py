@@ -127,6 +127,7 @@ def test_history_alarm_no_data_skips_without_remote_console(method_name, expecte
 
 @pytest.mark.alarm
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6641", "test_get_active_alarm")
 def test_active_alarm_list(services, readwrite_session, alarm_workflow_state):
     alarm_workflow_state.active_ids = services.alarm.verify_active_alarm_list(readwrite_session)
 
@@ -135,6 +136,7 @@ def test_active_alarm_list(services, readwrite_session, alarm_workflow_state):
 @pytest.mark.mutating
 @pytest.mark.destructive
 @pytest.mark.ems_scoped
+@pytest.mark.testlink_case("EMS1-6658", "test_patch_active_alarm_by_id")
 def test_active_alarm_ack_and_clear_if_alarm_exists(services, readwrite_session, alarm_workflow_state):
     active_ids = _require_alarm_ids(alarm_workflow_state.active_ids, "active alarm list")
     alarm_workflow_state.history_ids = services.alarm.verify_active_alarm_ack_and_clear_if_exists(
@@ -145,6 +147,7 @@ def test_active_alarm_ack_and_clear_if_alarm_exists(services, readwrite_session,
 
 @pytest.mark.alarm
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6642", "test_get_history_alarm")
 def test_history_alarm_list(services, readwrite_session, alarm_workflow_state):
     history_ids = _require_alarm_ids(alarm_workflow_state.history_ids, "active alarm ack/clear")
     services.alarm.verify_history_alarm_list(readwrite_session, history_ids)
@@ -153,6 +156,7 @@ def test_history_alarm_list(services, readwrite_session, alarm_workflow_state):
 
 @pytest.mark.alarm
 @pytest.mark.readwrite
+@pytest.mark.testlink_case("EMS1-6670", "test_get_history_alarm_by_id")
 def test_history_alarm_get_by_id_if_alarm_exists(services, readwrite_session, alarm_workflow_state):
     history_ids = _require_alarm_ids(alarm_workflow_state.history_ids, "active alarm ack/clear")
     if not alarm_workflow_state.history_list_verified:
@@ -165,6 +169,7 @@ def test_history_alarm_get_by_id_if_alarm_exists(services, readwrite_session, al
 @pytest.mark.alarm_delete
 @pytest.mark.destructive
 @pytest.mark.mutating
+@pytest.mark.testlink_case("EMS1-6674", "test_delete_history_alarm_by_id")
 def test_history_alarm_delete_if_alarm_exists(services, readwrite_session, alarm_workflow_state):
     history_ids = _require_alarm_ids(alarm_workflow_state.history_ids, "active alarm ack/clear")
     if not alarm_workflow_state.history_by_id_verified:
@@ -177,11 +182,16 @@ def test_history_alarm_delete_if_alarm_exists(services, readwrite_session, alarm
 @pytest.mark.remoteconsole
 @pytest.mark.destructive
 @pytest.mark.mutating
+# Only the ids no other test covers: the lifecycle also re-registers 6641/6642/6652/6658/6670/6674
+# at runtime, and marking those here would turn their Pass into Skip whenever this test is disabled.
+@pytest.mark.testlink_case("EMS1-6654", "test_get_active_alarm_by_id")
+@pytest.mark.testlink_case("EMS1-6659", "test_delete_active_alarm_by_id")
 def test_alarm_lifecycle_remote_console_to_history_delete(services, readwrite_session):
     services.alarm.verify_alarm_lifecycle_remote_console_to_history_delete(readwrite_session)
 
 
 @pytest.mark.alarm
 @pytest.mark.noaccess
+@pytest.mark.testlink_case("EMS1-7029", "test_active_alarm_various_invalid_parameters_should_return_error")
 def test_alarm_noaccess_is_rejected(services, noaccess_session):
     services.alarm.verify_noaccess_rejected(noaccess_session)

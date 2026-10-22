@@ -90,6 +90,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             role = "readonly"
         elif "noaccess" in item.keywords:
             role = "noaccess"
+        _register_marked_cases(item)
         _register_parametrized_case(item)
         _register_neox_case(item)
         register_permission_role(item.nodeid, role)
@@ -332,11 +333,24 @@ def _skip_neox_config_without_cli_dependency(config: pytest.Config, items: list[
             item.add_marker(skip_missing_paramiko)
 
 
+def _register_marked_cases(item: pytest.Item) -> None:
+    # Services register case ids when the test body runs; registering them here as well keeps
+    # a test that is skipped in setup or never reached under its case id instead of dropping it.
+    for marker in item.iter_markers("testlink_case"):
+        case_id, name = marker.args
+        register_node_case(item.nodeid, case_id, name)
+
+
 def _register_parametrized_case(item: pytest.Item) -> None:
     callspec = getattr(item, "callspec", None)
     params = getattr(callspec, "params", {})
     case = params.get("case") if isinstance(params, dict) else None
     if case is None:
+        return
+    if isinstance(case, dict):
+        # case_catalog entries (profile tests) carry their ids as a list.
+        for case_id in case.get("case_ids") or []:
+            register_node_case(item.nodeid, str(case_id), str(case.get("name", "")))
         return
     register_node_case(
         item.nodeid,

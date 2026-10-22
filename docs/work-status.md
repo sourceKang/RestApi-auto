@@ -20,7 +20,8 @@
 
 ### 2026-10-22 修正假 Pass：收集階段登記 TestLink case ID（Claude Code）
 
-- 分支 claude/run-completeness，基準為 8c32c6d（#33 合併後的預設分支），尚未提交。
+- 分支 claude/run-completeness，基準為 8c32c6d（#33 合併後的預設分支）；commit 76199b8、ab30db5。
+- PR #34 CI 通過，head ab30db5，由使用者於 2026-10-22 11:10（台北）以 merge commit 合併為 a9d9273。
 - 問題證據：b12 NODE1（2026-09-08）報表有 152 Pass／0 Fail，pytest 結果是 26 skipped。EMS1-6667／6669 的主測試被 skip，
   但報表顯示 Pass（只有 readonly／noaccess 權限變體有跑）；EMS1-6642／6668／6670 被 skip 後在報表中消失。
   原因：這些測試的 case ID 在 services 執行時才由 attach_case_id 登記，setup 或本體前段被 skip 時拿不到 ID。
@@ -68,6 +69,11 @@
 標記：〔離線〕可直接做；〔需決定〕等使用者決策；〔需實機〕需使用者授權並指定 node。
 
 retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
+
+- [RC-1]〔離線〕完整性檢查第二部分：每輪比對應跑與實際有結果的 case，列出缺漏；中斷的一輪標 Incomplete，
+  summary.json 加缺漏數。範圍見 2026-10-22 PR #34 條目。
+- [RC-2]〔需決定〕RAD 摘要（7056／7107／7108）沒開 --auth-matrix 時被 skip 仍不會出現在報表，是否改為列出 Skip。
+- [RC-3]〔需實機〕PR #34 的 mutating 情境（6667～6669 主測試 skip）尚未實機驗證，需 node-mutating lane 與授權。
 
 - [R-SLP]〔需實機〕（ACL 部分已完成）inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測，
   完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。

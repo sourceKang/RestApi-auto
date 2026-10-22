@@ -49,6 +49,11 @@ class ReportState:
     connection_events: list["ConnectionEvent"] = field(default_factory=list)
     slow_requests: list["SlowRequest"] = field(default_factory=list)
     teardown_errors: list["TeardownError"] = field(default_factory=list)
+    # Tests selected for this session after -m/-k deselection; None until collection records them.
+    expected_nodeids: tuple[str, ...] | None = None
+    # Why completeness cannot be judged in this process (for example the xdist controller has no items).
+    completeness_unavailable: str = ""
+    interrupted: bool = False
 
 
 @dataclass
@@ -189,6 +194,18 @@ def register_node_case(nodeid: str, case_id: str | None, name: str) -> None:
 def register_permission_role(nodeid: str, role: str | None) -> None:
     if role in {"readonly", "noaccess"}:
         REPORT_STATE.permission_roles[nodeid] = role
+
+
+def record_expected_items(nodeids: list[str]) -> None:
+    REPORT_STATE.expected_nodeids = tuple(nodeids)
+
+
+def mark_completeness_unavailable(reason: str) -> None:
+    REPORT_STATE.completeness_unavailable = reason
+
+
+def mark_interrupted() -> None:
+    REPORT_STATE.interrupted = True
 
 
 def record_result(nodeid: str, outcome: str, duration: float) -> None:

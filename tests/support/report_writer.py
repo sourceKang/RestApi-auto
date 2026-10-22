@@ -279,7 +279,49 @@ def _split_label_value(line: str) -> tuple[str, str]:
 
 def _report_note_lines() -> list[str]:
     lines = [f"{label}: {value}" for label, value in reporting.REPORT_STATE.report_notes.items()]
-    return lines + _connection_event_lines() + _slow_request_lines() + _teardown_error_lines()
+    return (
+        _completeness_lines()
+        + lines
+        + _connection_event_lines()
+        + _slow_request_lines()
+        + _teardown_error_lines()
+    )
+
+
+def missing_nodeids() -> list[str]:
+    """Selected tests that never recorded a result, in collection order."""
+    expected = reporting.REPORT_STATE.expected_nodeids or ()
+    reported = {result.nodeid for result in reporting.REPORT_STATE.results}
+    return [nodeid for nodeid in expected if nodeid not in reported]
+
+
+def completeness_text() -> str | None:
+    """One-line verdict shared by the report header and the terminal line the runner reads."""
+    state = reporting.REPORT_STATE
+    if state.completeness_unavailable:
+        return f"not evaluated ({state.completeness_unavailable})"
+    if state.expected_nodeids is None:
+        return None
+    expected = len(state.expected_nodeids)
+    missing = len(missing_nodeids())
+    verdict = "Incomplete" if missing or state.interrupted else "Complete"
+    detail = f"{expected - missing}/{expected} selected tests have a result"
+    if state.interrupted:
+        detail += "; run interrupted"
+    return f"{verdict} ({detail})"
+
+
+def _completeness_lines() -> list[str]:
+    text = completeness_text()
+    if text is None:
+        return []
+    lines = [f"Completeness: {text}"]
+    missing = missing_nodeids()
+    for index, nodeid in enumerate(missing[:MAX_CONNECTION_EVENT_LINES], start=1):
+        lines.append(f"Missing Test #{index}: {_event_location(nodeid)}")
+    if len(missing) > MAX_CONNECTION_EVENT_LINES:
+        lines.append(f"Missing Test (more): {len(missing) - MAX_CONNECTION_EVENT_LINES} further tests without a result")
+    return lines
 
 
 MAX_CONNECTION_EVENT_LINES = 30

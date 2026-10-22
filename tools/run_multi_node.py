@@ -56,6 +56,9 @@ REPORT_LINE_PREFIXES = {
     "allure_results": "EMS allure results:",
     "allure_html": "EMS allure report:",
 }
+# Printed by tests/support/reporting_hooks.py at session finish.
+COMPLETENESS_PREFIX = "EMS completeness:"
+PYTEST_INTERRUPTED = 2
 
 
 @dataclass(frozen=True)
@@ -82,6 +85,7 @@ class NodeResult:
     omitted_options: list[str]
     skipped: bool = False
     skip_reason: str = ""
+    completeness: str = ""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -150,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = write_summary(report_dir, plans, results)
     print(f"Multi-node summary: {summary}", flush=True)
-    return 1 if any(result.returncode != 0 for result in results) else 0
+    return 1 if any(result.returncode != 0 or node_status(result) == "Incomplete" for result in results) else 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -475,6 +479,8 @@ def print_node_result(result: NodeResult) -> None:
         f"[{result.node}] finished with exit code {result.returncode} in {format_duration(result.duration_seconds)}",
         flush=True,
     )
+    if node_status(result) == "Incomplete":
+        print(f"[{result.node}] INCOMPLETE: {result.completeness or 'no final pytest summary line'}", flush=True)
 
 
 def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -> NodeResult:
@@ -559,6 +565,7 @@ def run_node_plan(plan: NodePlan, report_dir: Path, *, preflight: bool = True) -
         summary_line=parse_pytest_summary_line(output_lines),
         report_paths=parse_report_paths(output_lines),
         omitted_options=plan.omitted_options,
+        completeness=parse_completeness_line(output_lines),
     )
 
 
@@ -585,6 +592,30 @@ def parse_pytest_summary_line(lines: Iterable[str]) -> str:
         if stripped.startswith("=") and stripped.endswith("=") and " in " in stripped:
             return " ".join(stripped.strip("= ").split())
     return ""
+
+
+def parse_completeness_line(lines: Iterable[str]) -> str:
+    for line in reversed(list(lines)):
+        stripped = line.strip()
+        if stripped.startswith(COMPLETENESS_PREFIX):
+            return stripped[len(COMPLETENESS_PREFIX) :].strip()
+    return ""
+
+
+def node_status(result: NodeResult | None) -> str:
+    if result is None:
+        return "Not run"
+    if result.skipped:
+        return "Blocked"
+    # Exit code 2 is a pytest interrupt; no final summary line means the process was cut off
+    # before pytest finished. Either way part of the selection may never have run.
+    if (
+        result.completeness.startswith("Incomplete")
+        or result.returncode == PYTEST_INTERRUPTED
+        or not result.summary_line
+    ):
+        return "Incomplete"
+    return "Pass" if result.returncode == 0 else "Fail"
 
 
 def parse_report_paths(lines: Iterable[str]) -> dict[str, str]:
@@ -634,16 +665,10 @@ def render_html_summary(
     rows = []
     for plan in plans:
         result = result_by_node.get(plan.node)
-        status = (
-            "Not run"
-            if result is None
-            else "Blocked"
-            if result.skipped
-            else "Pass"
-            if result.returncode == 0
-            else "Fail"
-        )
+        status = node_status(result)
         summary = "" if result is None else result.summary_line
+        if result is not None and result.completeness:
+            summary = f"{summary} | completeness: {result.completeness}".strip(" |")
         duration = "" if result is None else format_duration(result.duration_seconds)
         log_link = "" if result is None else link(result.log_path, "log")
         report_links = "" if result is None else " ".join(

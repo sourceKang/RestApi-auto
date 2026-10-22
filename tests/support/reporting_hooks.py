@@ -12,8 +12,14 @@ from config_loader import load_environment
 from config_loader.auth import AuthConfigError, load_auth_config
 from utils.cleanup import StrictCleanupError
 from utils.redaction import REPORT_REDACT_ENV, report_mask_values
-from tests.support.report_writer import write_reports
-from utils.reporting import ensure_report_dirs, ensure_worker_report_dirs, record_result, record_teardown_error
+from tests.support.report_writer import completeness_text, write_reports
+from utils.reporting import (
+    ensure_report_dirs,
+    ensure_worker_report_dirs,
+    mark_interrupted,
+    record_result,
+    record_teardown_error,
+)
 
 
 _SECRET_VALUES_KEY = pytest.StashKey[tuple]()
@@ -108,6 +114,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     close_ssh_session_pools()
     if is_xdist_worker(session.config):
         return
+    if exitstatus == pytest.ExitCode.INTERRUPTED:
+        mark_interrupted()
     try:
         env_config = load_environment(
             node=session.config.getoption("--ems-node"),
@@ -120,6 +128,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
                 terminal.write_line("EMS report: skipped; no TestLink case results in this session.")
             return
         txt_path, html_summary, allure_results, allure_html, integrated_html = reports
+        completeness = completeness_text()
+        if terminal and completeness:
+            # tools/run_multi_node.py reads this line into summary.json.
+            terminal.write_line(f"EMS completeness: {completeness}")
         if terminal:
             if integrated_html:
                 terminal.write_line(f"EMS HTML report: {integrated_html}")

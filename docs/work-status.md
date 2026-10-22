@@ -30,8 +30,13 @@
 - 離線量測（`--collect-only --run-full-testcases`）：收集時已知的 ID 從 108／254 增加到 252／254（剩下 7109／7110 是權限摘要）；
   沒有 ID 的 item 從 156 降到 3，都是非 TestLink 測試，列在 tests/test_case_id_registration.py 的允許清單。
 - 驗證：compile 通過；`pytest -m offline` 通過 184／失敗 0；新測試在拿掉修正後 4 個全部失敗。
-- 行為改變：被 skip 的 case 會在報表多出 `Result Skip` 列（例如沒開 --run-alarm-delete 時的 6674／6654／6659），
-  未確認 corp（TestLink 回填）怎麼對應 Skip。
+- 行為改變：被 skip 的 case 會在報表多出 `Result Skip` 列（例如沒開 --run-alarm-delete 時的 6674／6654／6659）。
+  corp（D:\UseTestlink）預設 skip_policy=ignore，Skip 列列入 ignored、不寫入；blocked 才寫成 b。
+- 已開 PR #34，CI 通過。b12 TestLink 唯讀查詢：6667／6668／6669 當時已人工判定為 b，沒有假 Pass 落地。
+- 實機 NODE3（redhat .100，2026-10-22，safe lane，唯讀）：通過 40／skipped 34；報表 16 Pass／17 Skip，
+  每個 skipped item 的 ID 都在報表，沒有 skip 被顯示成 Pass。6642／6670 以 Skip 出現（修正前會消失）。
+  corp 離線解析：33 列、無錯誤，ignore 為 p 16／忽略 17。未驗證：mutating 的 6667～6669 情境（不在唯讀範圍）。
+- 仍有缺口：RAD 摘要（7056／7107／7108）只在 --auth-matrix 時登記，沒開時被 skip 仍不會出現在報表。
 
 ### 2026-10-21 TD：strict cleanup 失敗記 Blocked、D3 重複報表清理（Claude Code）
 

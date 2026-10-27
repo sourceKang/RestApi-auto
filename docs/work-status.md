@@ -18,6 +18,19 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-27 RC-5 回填前把關（UseTestlink，Claude Code）
+
+- 使用者決定：把關做在 UseTestlink（匯入前驗證是它的責任，所有回填路徑都會經過），不在本專案另做檢查工具；
+  Incomplete／Drift 擋下、可帶原因放行並寫入 audit、沒有 Completeness 行只警告；先不發版。
+- D:\UseTestlink 分支 claude/report-readiness-gate（基準 main 8112c2d）：解析檔頭 `Completeness`／`Case ID Drift`；
+  qa-integration-agent 預覽與 testlink_upload_report（CLI upload-report）都在呼叫 TestLink／Redmine 前回
+  `REPORT_NOT_READY`；`readiness_override_reason` 放行時記入預覽、warnings 與 workflow audit；JUnit 不檢查。
+- 驗證：UseTestlink `python -m unittest discover -s tests` 通過 445／失敗 0（新增 tests/test_report_readiness.py 10 個）。
+  以真實報表與測試用假連線離線驗證：10-27 safe lane、10-22 完整測試通過；10-27 漂移實測報表被擋下；
+  b12_redhat 判定版（無 Completeness）只出 warning。
+- 本專案：ems-version-regression 第 6 步補上 REPORT_NOT_READY 的處理方式（分支 claude/backfill-gate-docs）。
+- 未完成：UseTestlink 發版與安裝（mcp-release，需使用者同意）；安裝前回填流程行為不變。
+
 ### 2026-10-27 Case ID 漂移檢查（Claude Code）
 
 - 分支 claude/case-id-drift，基準為 b07702c（#36 合併後的預設分支）。
@@ -119,7 +132,7 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 
 - [RC-4]〔離線〕txt Summary 行加 Skip 數（b12 NODE1 的 `152 Pass / 0 Fail` 看不出 26 個 skipped）；corp 只把 Summary 當字串，
   但會寫進 TestLink notes，格式需使用者確認。
-- [RC-5]〔需決定〕回填 TestLink 前把關：要求 Completeness 為 Complete、檔頭沒有 Case ID Drift，並逐筆看過預覽的 ignored Skip 列。
+- [RC-5]〔需決定〕回填前把關已在 UseTestlink claude/report-readiness-gate 實作（見 2026-10-27 RC-5 條目），待合併與發版安裝。
 - [RC-6]〔需決定〕b12 NODE1：formal_runs.yaml 標 2026-09-22 為正式執行，TestLink 仍是 09-08 的結果，需決定補回填或改正式執行。
 - [RC-7]〔需實機〕redhat .100 在 10-22／10-27 多次出現 RemoteDisconnected／讀取逾時／拒絕連線，重跑皆通過；若持續發生再評估。
 - [RC-2]〔需決定〕RAD 摘要（7056／7107／7108）沒開 --auth-matrix 時被 skip 仍不會出現在報表，是否改為列出 Skip。

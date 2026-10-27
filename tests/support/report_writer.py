@@ -281,11 +281,25 @@ def _report_note_lines() -> list[str]:
     lines = [f"{label}: {value}" for label, value in reporting.REPORT_STATE.report_notes.items()]
     return (
         _completeness_lines()
+        + _case_id_drift_lines()
         + lines
         + _connection_event_lines()
         + _slow_request_lines()
         + _teardown_error_lines()
     )
+
+
+def _case_id_drift_lines() -> list[str]:
+    drifts = reporting.REPORT_STATE.case_id_drift
+    if not drifts:
+        return []
+    lines = [f"Case ID Drift: {len(drifts)} (service registered an id the testlink_case marker does not declare)"]
+    for index, drift in enumerate(drifts[:MAX_CONNECTION_EVENT_LINES], start=1):
+        held = ",".join(drift.collection_case_ids) or "none"
+        lines.append(f"Case ID Drift #{index}: {drift.nodeid} registered {drift.case_id}; collection had {held}")
+    if len(drifts) > MAX_CONNECTION_EVENT_LINES:
+        lines.append(f"Case ID Drift (more): {len(drifts) - MAX_CONNECTION_EVENT_LINES} further drifts")
+    return lines
 
 
 def missing_nodeids() -> list[str]:

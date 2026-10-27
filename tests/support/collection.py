@@ -14,6 +14,7 @@ from tests.support.capabilities import capability_skip_reason
 from tests.support.options import option_or_full_testcases, validate_neox_parallel_settings, xdist_worker_count
 from tests.support.preflight import is_dut_dependent, skip_unready_dut_items
 from utils.reporting import (
+    freeze_collection_case_ids,
     mark_completeness_unavailable,
     record_expected_items,
     register_node_case,
@@ -118,6 +119,18 @@ def _record_expected_items(session: pytest.Session) -> None:
         mark_completeness_unavailable("xdist run; the controller does not collect test items")
         return
     record_expected_items([item.nodeid for item in session.items])
+    freeze_collection_case_ids(
+        [item.nodeid for item in session.items],
+        {item.nodeid: _runtime_case_ids(item) for item in session.items},
+    )
+
+
+def _runtime_case_ids(item: pytest.Item) -> set[str]:
+    # Ids a service may add at runtime without counting as drift (see the testlink_runtime_case marker).
+    iter_markers = getattr(item, "iter_markers", None)
+    if iter_markers is None:
+        return set()
+    return {marker.args[0] for marker in iter_markers("testlink_runtime_case")}
 
 
 def _deselect_internal_tests_from_full_suite(config: pytest.Config, items: list[pytest.Item]) -> None:

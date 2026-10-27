@@ -54,6 +54,18 @@ class ReportState:
     # Why completeness cannot be judged in this process (for example the xdist controller has no items).
     completeness_unavailable: str = ""
     interrupted: bool = False
+    # Case ids each selected test held at collection, plus ids its testlink_runtime_case markers allow
+    # services to add; None until collection freezes them.
+    collection_case_ids: dict[str, frozenset[str]] | None = None
+    case_id_drift: list["CaseIdDrift"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CaseIdDrift:
+    nodeid: str
+    case_id: str
+    name: str
+    collection_case_ids: tuple[str, ...]
 
 
 @dataclass
@@ -178,9 +190,32 @@ def register_case(case_id: str | None, name: str) -> None:
     current = os.environ.get("PYTEST_CURRENT_TEST", "").split(" ", 1)[0]
     if not current:
         return
+    _record_case_id_drift(current, case_id, name)
     registrations = REPORT_STATE.case_registry.setdefault(current, [])
     if not any(item.case_id == case_id and item.name == name for item in registrations):
         registrations.append(CaseRegistration(case_id=case_id, name=name))
+
+
+def freeze_collection_case_ids(nodeids: list[str], runtime_allowed: dict[str, set[str]]) -> None:
+    REPORT_STATE.collection_case_ids = {
+        nodeid: frozenset(
+            {item.case_id for item in REPORT_STATE.case_registry.get(nodeid, [])} | runtime_allowed.get(nodeid, set())
+        )
+        for nodeid in nodeids
+    }
+
+
+def _record_case_id_drift(nodeid: str, case_id: str, name: str) -> None:
+    # A service registering an id its test did not hold at collection means the testlink_case
+    # marker and the service literal have drifted apart; the id is still registered as before.
+    frozen = REPORT_STATE.collection_case_ids
+    if frozen is None or nodeid not in frozen or case_id in frozen[nodeid]:
+        return
+    if any(drift.nodeid == nodeid and drift.case_id == case_id for drift in REPORT_STATE.case_id_drift):
+        return
+    REPORT_STATE.case_id_drift.append(
+        CaseIdDrift(nodeid=nodeid, case_id=case_id, name=name, collection_case_ids=tuple(sorted(frozen[nodeid])))
+    )
 
 
 def register_node_case(nodeid: str, case_id: str | None, name: str) -> None:

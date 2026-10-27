@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-20（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-27（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -18,9 +18,41 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
+### 2026-10-27 Case ID 漂移檢查（Claude Code）
+
+- 分支 claude/case-id-drift，基準為 b07702c（#36 合併後的預設分支）。
+- 原因：PR #34 之後 ID 同時寫在測試 marker 與 services 的 `attach_case_id`，只檢查「有 ID」，不檢查兩邊一致；
+  改了 service 的 ID 卻沒改 marker 時，同一個測試會在報表掛兩個 case。
+- 修改：收集結束時凍結每個選中測試的 ID；執行時 `register_case` 登記不在其中的 ID，報表檔頭加
+  `Case ID Drift: N` 與 `Case ID Drift #n: <nodeid> registered <id>; collection had <ids>`（使用者決定只寫檔頭，不改結果）。
+  新增 `testlink_runtime_case(case_id)` marker，lifecycle 測試用它宣告執行時補登的 6641／6642／6652／6658／6670／6674。
+  新增 tests/test_case_id_drift.py：AST 掃描 services／tests 的 `attach_case_id` 字面 ID，必須有測試在收集時持有；
+  marker ID 必須是已知 case，名稱與 service 字面一致（`register_txt=False` 的權限摘要排除）。
+- 驗證：compile 通過；`pytest -m offline` 通過 206／失敗 0。刻意改 service ID 與 marker 名稱，兩個守門測試都失敗。
+  b12／b13 共 80 輪 Allure 結果比對 81 個測試函式，沒有漂移。
+- 實機 NODE3（redhat .100，safe lane，唯讀）：通過 39／skipped 34／error 1，Completeness 74/74，沒有 Case ID Drift。
+  error 是 readonly 登入時 .100 `RemoteDisconnected`（連帶 EMS1-7109 Fail），單獨重跑通過。暫時把
+  services/invalid_params 的 EMS1-7031 改為 EMS1-6699 跑該測試：檔頭列出 1 筆 Drift，結果列出現 7031 與 6699 兩列；檔案已用 git 還原。
+- 帳號事件：同日 NODE3 preflight 兩次失敗，default profile 的 readwrite 帳號登入成功，但 `GET /device` 與
+  `GET /device/<NODE3>` 都回 `You have no privilege to do this.`。使用者確認 NODE3 仍由 redhat .100 管理並修正帳號權限，
+  第一次修正後仍失敗、再次修正後兩個 GET 皆 Success，之後實測正常。
+
+### 2026-10-22 NODE3 完整測試（Claude Code）
+
+- 使用者授權含破壞性測試；預設分支 b07702c，`tools/run_multi_node.py --nodes NODE3 --run-full-testcases`，
+  reports/multi_node/2026-10-22_full-NODE3-b07702c。
+- 結果：316 selected，pytest 通過 313／失敗 3，1:58:17；報表 251 Pass／3 Fail，Completeness 316/316，無 Teardown Errors。
+  ONT error 測試的 baseline 還原 219 秒、14 次輪詢，標 SLOW（門檻 12）。
+- 3 個失敗都是 .100 連線層錯誤：EMS1-7195（RemoteDisconnected）、EMS1-7116（/v3/api-docs 讀取逾時）、
+  EMS1-6922（RemoteDisconnected）；單獨重跑 3 個都通過，判定為環境問題。
+- CLI show 確認 ONT 3-16-1 為 IS、description REST_API_NEOX_ONT、無 template。沒有回填 TestLink。
+
 ### 2026-10-22 RC-1 完整性檢查：缺漏測試與中斷標記（Claude Code）
 
-- 分支 claude/run-completeness-check，基準為 a98039d（#35 合併後的預設分支），尚未提交。
+- 分支 claude/run-completeness-check，基準為 a98039d（#35 合併後的預設分支）；commit f67499c。
+- PR #36 CI 通過，head f67499c，於 2026-10-22 14:38（台北）以 merge commit 合併為 b07702c。
+- 實機 NODE3 safe lane：檔頭、`EMS completeness:`、summary.json 與總表都顯示 Complete (74/74)，corp 解析 33 列不變；
+  同日第一次執行時 .100 拒絕連線，preflight 標 Blocked、pytest 未執行，重跑正常。
 - 原因：2026-07-21 與 2026-10-02 09:54 兩輪中途停止，沒有 summary.json，也沒有任何地方標出沒跑完；
   b12_redhat 判定版回填的來源就是 10-02 09:54 那輪（log 停在 99%）。
 - 修改：收集結束（-m／-k 之後）記錄選中的 nodeid；pytest 被中斷（ExitCode 2）時標記。txt／HTML 檔頭加
@@ -31,7 +63,7 @@
 - 驗證：compile 通過；`pytest -m offline` 通過 199／失敗 0（新增 tests/test_run_completeness.py 15 個）。
   corp 離線解析 Incomplete 範例報表：只讀到結果列與 Summary，新檔頭不影響。
 - 限制：單一 node 回填時，corp 仍會寫入有結果的列，缺漏的 case 不寫；要擋回填需做建議第 4 項（回填前把關）。
-  未實機驗證。
+  Incomplete 的情境只有離線測試，實機尚未遇到。
 
 ### 2026-10-22 修正假 Pass：收集階段登記 TestLink case ID（Claude Code）
 
@@ -85,9 +117,14 @@
 
 retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下的是待實機與待決策項目：
 
-- [RC-1]〔離線〕完整性檢查第二部分：已在 claude/run-completeness-check 實作（見 2026-10-22 RC-1 條目），待提交與實機確認。
+- [RC-4]〔離線〕txt Summary 行加 Skip 數（b12 NODE1 的 `152 Pass / 0 Fail` 看不出 26 個 skipped）；corp 只把 Summary 當字串，
+  但會寫進 TestLink notes，格式需使用者確認。
+- [RC-5]〔需決定〕回填 TestLink 前把關：要求 Completeness 為 Complete、檔頭沒有 Case ID Drift，並逐筆看過預覽的 ignored Skip 列。
+- [RC-6]〔需決定〕b12 NODE1：formal_runs.yaml 標 2026-09-22 為正式執行，TestLink 仍是 09-08 的結果，需決定補回填或改正式執行。
+- [RC-7]〔需實機〕redhat .100 在 10-22／10-27 多次出現 RemoteDisconnected／讀取逾時／拒絕連線，重跑皆通過；若持續發生再評估。
 - [RC-2]〔需決定〕RAD 摘要（7056／7107／7108）沒開 --auth-matrix 時被 skip 仍不會出現在報表，是否改為列出 Skip。
-- [RC-3]〔需實機〕PR #34 的 mutating 情境（6667～6669 主測試 skip）尚未實機驗證，需 node-mutating lane 與授權。
+- [RC-3]〔需實機〕PR #34 的 mutating 情境（6667～6669 主測試 skip）尚未實機驗證；10-22 完整測試中這三個都通過，
+  沒有遇到 skip 的情況。
 
 - [R-SLP]〔需實機〕（ACL 部分已完成）inventory／provision 輪詢前固定 30／15 秒以 initial_delay=0 實測，
   完成後刪除 tests/test_no_fixed_sleep.py 對應的 KNOWN_SLEEPS 條目。

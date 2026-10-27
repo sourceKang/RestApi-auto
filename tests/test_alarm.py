@@ -186,6 +186,12 @@ def test_history_alarm_delete_if_alarm_exists(services, readwrite_session, alarm
 # at runtime, and marking those here would turn their Pass into Skip whenever this test is disabled.
 @pytest.mark.testlink_case("EMS1-6654", "test_get_active_alarm_by_id")
 @pytest.mark.testlink_case("EMS1-6659", "test_delete_active_alarm_by_id")
+@pytest.mark.testlink_runtime_case("EMS1-6641")
+@pytest.mark.testlink_runtime_case("EMS1-6642")
+@pytest.mark.testlink_runtime_case("EMS1-6652")
+@pytest.mark.testlink_runtime_case("EMS1-6658")
+@pytest.mark.testlink_runtime_case("EMS1-6670")
+@pytest.mark.testlink_runtime_case("EMS1-6674")
 def test_alarm_lifecycle_remote_console_to_history_delete(services, readwrite_session):
     services.alarm.verify_alarm_lifecycle_remote_console_to_history_delete(readwrite_session)
 

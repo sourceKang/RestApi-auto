@@ -82,6 +82,9 @@ description: 新 EMS 版本的 RestApi Auto 回歸流程：更新 EMS 版本設�
    `reports` 每個 node 一筆 `{label: <node>, path: <該 node txt 報表>}`，
    帶 environment、project、plan、build、platform（platform 不猜）；
    `redmine_create_bugs` 維持 false，Redmine 另走步驟 7。
+   報表檔頭 `Completeness` 為 Incomplete／not evaluated 或有 `Case ID Drift` 時，預覽會回
+   `REPORT_NOT_READY`（需含 Report Readiness Gate 的 UseTestlink 版本）：先重跑缺漏的測試或修正 marker，
+   不自行帶 `readiness_override_reason`；只有使用者明確接受並給出原因時才帶，並在預覽中轉述。
 2. 以 `qa_read_preview_artifact` 讀完 items、warnings、ignored 三段；確認
    筆數、status 分布與各 node 報表相符後，向使用者預覽。
 3. 同意後才以 `qa_execute_preview_artifact` 寫入。同一 build 已回填過時

@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-27（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-10-28（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -17,6 +17,20 @@
 ## 最近一次工作
 
 較早的紀錄見 docs/work-history/（依月份）。
+
+### 2026-10-28 NODE3 完整測試與 b13_redhat 回填（Claude Code）
+
+- UseTestlink 已發版並安裝 v1.9.7（含 v1.9.5 回填前把關、v1.9.6 `testlink_mark_automated`、v1.9.7 預覽與 audit 預設目錄），
+  10-27 RC-5 記錄的「發版與安裝」已完成。
+- 使用者授權含破壞性測試；分支 claude/backfill-gate-docs 7cfab88（只改文件，之後以 #38 合併為 2eca0ea），
+  `tools/run_multi_node.py --nodes NODE3 --run-full-testcases`，reports/multi_node/2026-10-28_14-35-27。
+- 結果：316 selected，pytest 通過 316／失敗 0，1:29:10；報表 254 Pass／0 Fail，Completeness 316/316，沒有 Case ID Drift。
+- 回填：使用者審閱預覽（254 筆 Pass、warnings 0、ignored 0）後寫入 TestLink build `03.00.11 (AAVV.221) b13_redhat`，
+  錯誤 0；`testlink_get_latest_results` 回讀 254 筆皆 Pass。未建立 Redmine bug。
+- 手動／自動：寫入後預覽 `testlink_mark_automated`，2 個仍為 Manual（EMS1-7056 v2、EMS1-7223 v1），
+  使用者確認後改為 Automated 並回讀驗證；這批 254 個現在都是 Automated。
+- 待處理：UseTestlink 產生的 TestLink notes 含 node 名稱與 IP，與本專案「對外內容遮罩」不一致；
+  這次使用者決定照原格式寫入，遮罩需在 UseTestlink 另外處理。
 
 ### 2026-10-27 RC-5 回填前把關（UseTestlink，Claude Code）
 

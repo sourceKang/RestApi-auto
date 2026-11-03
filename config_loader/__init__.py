@@ -1,3 +1,3 @@
-from config_loader.settings import EnvironmentConfig, load_environment
+from config_loader.settings import EnvironmentConfig, dut_ssh_credentials, load_environment
 
-__all__ = ["EnvironmentConfig", "load_environment"]
+__all__ = ["EnvironmentConfig", "dut_ssh_credentials", "load_environment"]

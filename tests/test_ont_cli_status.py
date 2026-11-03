@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from config_loader import settings as config_settings
 from tests.support import ont_cli_status
 from tests.support.ont_cli_status import (
     OntCliStatus,
@@ -260,7 +261,7 @@ def test_ssh_credentials_use_default_profile_for_nondefault_rest_auth(monkeypatc
     monkeypatch.delenv("NEOX_SSH_USERNAME", raising=False)
     monkeypatch.delenv("NEOX_SSH_PASSWORD", raising=False)
     loaded = SimpleNamespace(readwrite=SimpleNamespace(username="default-cli", password="secret"))
-    monkeypatch.setattr(ont_cli_status, "load_environment", lambda **kwargs: loaded)
+    monkeypatch.setattr(config_settings, "load_environment", lambda **kwargs: loaded)
     env_config = SimpleNamespace(
         auth_profile="ems_local_rw2",
         dut=SimpleNamespace(node_key="NODE3"),

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 from clients.ssh_cli import SshCliClient
-from config_loader import load_environment
+from config_loader import dut_ssh_credentials, load_environment
 from config_loader.hardware import DEFAULT_TEST_TARGETS_FILE, load_hardware_config
 
 
@@ -48,7 +48,7 @@ def sync_target_data_from_cli(
                 True,
                 f"{node} uses openssh_legacy; NeoX show lc st target sync skipped",
             )
-        client = SshCliClient(env_config.dut.ssh_host, env_config.readwrite.username, env_config.readwrite.password)
+        client = SshCliClient(env_config.dut.ssh_host, *dut_ssh_credentials(env_config))
         results = client.run_commands(["show lc st"])
         output = results[0].output if results else ""
         live_cards = parse_show_lc_status(output)

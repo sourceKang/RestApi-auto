@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import time
 from dataclasses import dataclass
@@ -8,7 +7,7 @@ from typing import Callable
 
 from clients.legacy_ssh_cli import LegacyOpenSshCliClient
 from clients.ssh_cli import SshCliClient
-from config_loader import load_environment
+from config_loader import dut_ssh_credentials
 from utils.allure_helpers import attach_json
 from config_loader.settings import scaled_wait
 
@@ -285,15 +284,4 @@ def _normalized_cli_text(value: str) -> str:
 
 
 def ssh_credentials(env_config) -> tuple[str, str]:
-    username = os.environ.get("DUT_SSH_USERNAME") or os.environ.get("NEOX_SSH_USERNAME")
-    password = os.environ.get("DUT_SSH_PASSWORD") or os.environ.get("NEOX_SSH_PASSWORD")
-    if username and password:
-        return username, password
-    configured_username = getattr(env_config.dut, "ssh_username", "")
-    configured_password = getattr(env_config.dut, "ssh_password", "")
-    if configured_username and configured_password:
-        return configured_username, configured_password
-    ssh_env = env_config
-    if env_config.auth_profile != "default":
-        ssh_env = load_environment(node=env_config.dut.node_key, auth_profile="default")
-    return ssh_env.readwrite.username, ssh_env.readwrite.password
+    return dut_ssh_credentials(env_config)

@@ -7,6 +7,7 @@ import pytest
 from services import target_sync
 from tests.support import neox_cli_verification
 
+pytestmark = pytest.mark.offline
 
 SSH_ENV_VARS = (
     "DUT_SSH_USERNAME",

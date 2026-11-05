@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-10-27（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-11-04（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -17,6 +17,32 @@
 ## 最近一次工作
 
 較早的紀錄見 docs/work-history/（依月份）。
+
+### 2026-11-03～04 NODE3 換韌體與帳號後重跑 b14（Claude Code）
+
+- 使用者把 NODE3 韌體升為 V1.03 b8（NXC400 V1.03(ACKG.0)b8、NXP316 V1.03(ACKI.0)b8、NXA340 V1.03(ACQE.0)b8），
+  裝置登入帳號改為 kang；test_targets.local.yaml 的 NODE3 帳號與 fw_version 已更新（本機檔，不進版控）。
+- 發現 NeoX CLI 驗證與 target sync 用 EMS readwrite 帳號登入裝置：分支 claude/node-ssh-credentials（`15ca902`，
+  基準 origin/codex/prepare-github-upload，未推送）新增 `config_loader.dut_ssh_credentials`，三處統一順序
+  DUT_SSH_*/NEOX_SSH_* → node target → default EMS readwrite；相關 pytest 通過 77／失敗 0。
+- 另發現 target sync 對 NODE3 回 `no slot-based target data` 而跳過，fw_version 不會自動同步（未修）。
+- 重跑：ubuntu（.8，b14）NODE3 完整測試通過 316／失敗 0（2026-11-03_14-34-43，1h26m）。
+- UseTestlink v1.9.8（PR #42 備註加 `Test Environment:` 段含 EMS／節點／卡片韌體；PR #43 版號）已發版並以 pipx 從 tag 安裝。
+- 回填 TestLink b14（附加，不覆蓋 11-02）：254 筆 p，0 錯誤，每筆備註含 Card FW V1.03 b8；readback 254 皆 p，traceability valid。
+  execute 呼叫在用戶端逾時，但 audit 顯示 254 筆皆一次寫入成功，未重送。
+- formal_runs.yaml：b14_ubuntu NODE3 正式執行改為 2026-11-03_14-34-45_NODE3（使用者 2026-11-04 指定），11-02 那輪保留為非正式。
+- 未完成：claude/node-ssh-credentials 推送與 PR；ems.yaml b14 與本檔提交。
+
+### 2026-11-02 b14 NODE3 回歸與 TestLink 回填（Claude Code）
+
+- 2026-10-30 建立 TestLink build `03.00.11 (AAVV.221) b14`（id 20831，NetAtlasEMS／NetAtlas EMS）；
+  configs/ems.yaml 兩個 target 的 version 改為 b14（分支 claude/backfill-gate-docs，未提交）。
+- NODE3 由 NEOX 設定檔案分析 session 釋出（該 session 回報 running-config 已還原、帳號 kang 為現行基準）；
+  使用者確認後於 ubuntu（.8，b14）以 `run_multi_node.py --nodes NODE3 --run-full-testcases` 執行：
+  通過 316／失敗 0，1h20m，報表 reports/03.00.11 (AAVV.221) b14_ubuntu/（2026-11-02_11-20-01）。
+- 回填 TestLink b14（platform NetAtlas EMS）：254 筆全部 p，0 錯誤；readback 254 筆皆 p，traceability valid；
+  254 個 TC 已是 Automated。audit 位於 local/testlink_audit/qa_audit/。
+- 未完成：b14 其他 node 與 redhat（b14_redhat build 未建）；ems.yaml 版本變更待提交；未做 b13↔b14 比對。
 
 ### 2026-10-27 RC-5 回填前把關（UseTestlink，Claude Code）
 

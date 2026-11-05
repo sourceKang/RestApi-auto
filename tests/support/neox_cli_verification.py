@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from clients.ssh_cli import ssh_session_pool
-from config_loader import load_environment
+from config_loader import dut_ssh_credentials, load_environment
 from utils.allure_helpers import attach_json
 from utils.redaction import report_value
 
@@ -19,12 +19,13 @@ def neox_cli_credentials(env_config, feature: str) -> tuple[str, str]:
     ssh_username = os.environ.get("NEOX_SSH_USERNAME")
     ssh_password = os.environ.get("NEOX_SSH_PASSWORD")
     if not ssh_username or not ssh_password:
-        ssh_env = env_config
         ssh_auth_profile = os.environ.get("NEOX_SSH_AUTH_PROFILE")
-        if ssh_auth_profile or env_config.auth_profile != "default":
-            ssh_env = load_environment(node=env_config.dut.node_key, auth_profile=ssh_auth_profile or "default")
-        ssh_username = ssh_env.readwrite.username
-        ssh_password = ssh_env.readwrite.password
+        if ssh_auth_profile:
+            ssh_env = load_environment(node=env_config.dut.node_key, auth_profile=ssh_auth_profile)
+            ssh_username = ssh_env.readwrite.username
+            ssh_password = ssh_env.readwrite.password
+        else:
+            ssh_username, ssh_password = dut_ssh_credentials(env_config)
     if not ssh_username or not ssh_password:
         pytest.skip(
             f"Set NEOX_SSH_USERNAME and NEOX_SSH_PASSWORD or readwrite credentials to run {feature} CLI verification."

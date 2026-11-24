@@ -175,14 +175,16 @@ def test_wait_for_rest_tokens_counts_polls_and_can_skip_timeout_scaling():
 
 
 class Provision:
-    def __init__(self, events, fail=False):
+    def __init__(self, events, fail=False, deleted=False):
         self.events = events
         self.fail = fail
+        self.deleted = deleted
 
     def delete_ont_service_if_uses_template(self, session_id, *args, **kwargs):
         self.events.append(("service_delete", session_id))
         if self.fail:
             raise AssertionError("delete failed")
+        return self.deleted
 
 
 class RecordingApiClient:
@@ -337,3 +339,74 @@ def test_provision_template_cleanup_restores_even_when_service_removal_fails(mon
         raise AssertionError("Cleanup must preserve the service-removal failure")
 
     assert [event[0] for event in events] == ["service_delete", "delete", "config_cleared", "ont_unregistered", "post", "rest_verify"]
+
+
+def _run_provision_template_cleanup(monkeypatch, events, *, deleted, removal_error=None):
+    _patch_convergence(monkeypatch, events)
+
+    def config_absent(*args, **kwargs):
+        events.append(("config_cleared", kwargs.get("timeout"), kwargs.get("interval")))
+        if removal_error:
+            raise AssertionError(removal_error)
+
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_config_absent", config_absent)
+    monkeypatch.setattr("tests.test_neox_config.wait_for_ont_cli_state", lambda *args, **kwargs: events.append(("ont_unregistered",)))
+    cleanup_ont_provision_template_scenario(
+        RecordingApiClient(events),
+        object(),
+        type("Services", (), {"provision": Provision(events, deleted=deleted)})(),
+        "session",
+        "template",
+        "3-16-1",
+        "/config/ont",
+        {"Content": {"ontdescription": "baseline"}},
+        "/ont/sn/SN-1",
+        ["SN-1", "baseline"],
+        verify_cli=False,
+    )
+
+
+def test_provision_template_cleanup_waits_for_ems_removal_instead_of_deleting_config(monkeypatch):
+    # A deleted ontservice is removed from the device later by EMS (WebAutoProvision, 30 s cycle);
+    # a REST DELETE plus an early re-create would race that removal (EMS1-7223).
+    events = []
+    _run_provision_template_cleanup(monkeypatch, events, deleted=True)
+
+    assert [event[0] for event in events] == [
+        "service_delete",
+        "config_cleared",
+        "ont_unregistered",
+        "post",
+        "rest_verify",
+    ]
+    assert ("config_cleared", 120, 5) in events
+
+
+def test_provision_template_cleanup_clears_config_itself_when_no_service_was_deleted(monkeypatch):
+    events = []
+    _run_provision_template_cleanup(monkeypatch, events, deleted=False)
+
+    assert [event[0] for event in events] == [
+        "service_delete",
+        "delete",
+        "config_cleared",
+        "ont_unregistered",
+        "post",
+        "rest_verify",
+    ]
+    assert ("config_cleared", 300, 15) in events
+
+
+def test_provision_template_cleanup_fails_when_ems_never_removes_config(monkeypatch):
+    events = []
+    try:
+        _run_provision_template_cleanup(monkeypatch, events, deleted=True, removal_error="still present")
+    except AssertionError as error:
+        assert "did not remove the ONT config" in str(error) and "still present" in str(error)
+    else:
+        raise AssertionError("A device config that EMS never removes must fail the cleanup")
+
+    kinds = [event[0] for event in events]
+    assert "delete" not in kinds
+    assert "ont_unregistered" not in kinds
+    assert kinds[-2:] == ["post", "rest_verify"]

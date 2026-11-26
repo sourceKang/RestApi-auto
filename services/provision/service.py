@@ -401,18 +401,25 @@ class ProvisionService:
         ont_template: str,
         timeout: int = 180,
         interval: int = 15,
-    ) -> None:
+    ) -> bool:
+        """Delete the ONT service when it uses `ont_template`; return True when a service was deleted.
+
+        The REST DELETE only marks the service for deletion in the EMS database. EMS's
+        WebAutoProvision task removes the ONT from the device later (one 30 s cycle, by SNMP),
+        so a caller that re-creates the ONT config must wait for that removal first.
+        """
         path = f"/ontservice/{self.env_config.dut.ont_sn}"
         existing = self.api_client.request("GET", path, session=session_id)
         if existing.retstatus != "Success":
-            return
+            return False
         service = ont_service_info(existing.json)
         actual_template = ont_service_template(service)
         if actual_template != ont_template:
-            return
+            return False
         delete = self.api_client.request("DELETE", path, session=session_id)
         assert_api_success(delete)
         self.wait_for_ont_service_removed(session_id, timeout=timeout, interval=interval)
+        return True
 
     def post_ge_service_with_retry(self, session_id: str, payload, timeout: int = 180, interval: int = 5):
         dut = self.env_config.dut

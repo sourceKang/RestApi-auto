@@ -735,13 +735,14 @@ def ont_service_response(template_name: str):
 def test_temporary_profile_cleanup_only_deletes_service_using_exact_template():
     env = SimpleNamespace(dut=SimpleNamespace(ont_sn="SN"))
     other_client = FakeApiClient([ont_service_response("#RestApi_Other")])
-    ProvisionService(other_client, env).delete_ont_service_if_uses_template(
+    deleted = ProvisionService(other_client, env).delete_ont_service_if_uses_template(
         "session",
         "#RestApi_ONT_SFU_3011b10_N1_R7F",
         timeout=1,
         interval=0,
     )
     assert [call[0] for call in other_client.calls] == ["GET"]
+    assert deleted is False
 
     temporary_name = "#RestApi_ONT_SFU_3011b10_N1_R7F"
     matching_client = FakeApiClient(
@@ -751,13 +752,14 @@ def test_temporary_profile_cleanup_only_deletes_service_using_exact_template():
             api_response("Fail", retresult="No data found"),
         ]
     )
-    ProvisionService(matching_client, env).delete_ont_service_if_uses_template(
+    deleted = ProvisionService(matching_client, env).delete_ont_service_if_uses_template(
         "session",
         temporary_name,
         timeout=1,
         interval=0,
     )
     assert [call[0] for call in matching_client.calls] == ["GET", "DELETE", "GET"]
+    assert deleted is True
 
 
 def test_temporary_ge_profile_name_is_versioned_and_separate_from_formal_case():

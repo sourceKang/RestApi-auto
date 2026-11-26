@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import copy
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextlib import nullcontext
@@ -56,6 +57,10 @@ from utils.diagnostics import masked_response_body
 from utils.redaction import redact
 from tests.support.rest_polling import wait_for_rest_tokens
 
+
+# EMS's WebAutoProvision task handles a deleted ontservice every 30 s; allow about four cycles.
+ONT_SERVICE_DEVICE_REMOVAL_TIMEOUT_SECONDS = 120
+ONT_SERVICE_DEVICE_REMOVAL_INTERVAL_SECONDS = 5
 
 pytestmark = [
     pytest.mark.neox_config,
@@ -1740,42 +1745,75 @@ def cleanup_ont_provision_template_scenario(
             return nullcontext(session_id)
         return session_manager.role_session(SessionRole.READWRITE)
 
+    service_deleted = False
     try:
         with cleanup_session_scope() as cleanup_session:
-            services.provision.delete_ont_service_if_uses_template(
-                cleanup_session,
-                template_name,
-                timeout=180,
-                interval=15,
+            service_deleted = bool(
+                services.provision.delete_ont_service_if_uses_template(
+                    cleanup_session,
+                    template_name,
+                    timeout=180,
+                    interval=15,
+                )
             )
     except Exception as error:
         errors.append(f"delete provision-template service: {error}")
 
-    config_clear_requested = False
-    try:
-        with cleanup_session_scope() as cleanup_session:
-            clear_response = api_client.request("DELETE", config_path, session=cleanup_session)
-            if clear_response.retstatus != "Success":
-                assert_api_failure(
-                    clear_response,
-                    accepted_messages=("no data", "not found", "does not exist", "no such data"),
-                )
-        config_clear_requested = True
-    except Exception as error:
-        errors.append(f"clear ONT config through REST: {error}")
-
     config_cleared = False
-    if config_clear_requested:
+    if service_deleted:
+        # DELETE /ontservice only marks the service for deletion; EMS's WebAutoProvision task
+        # removes the ONT from the device on its next 30 s cycle (SNMP xontRowStatus). Re-creating
+        # the ONT config before that removal lets the late removal delete the new config, so wait
+        # for the removal on CLI instead of clearing the config through REST first.
+        started = time.monotonic()
         try:
             wait_for_ont_cli_config_absent(
                 env_config,
                 remote_xont,
-                timeout=300,
-                interval=15,
+                timeout=ONT_SERVICE_DEVICE_REMOVAL_TIMEOUT_SECONDS,
+                interval=ONT_SERVICE_DEVICE_REMOVAL_INTERVAL_SECONDS,
             )
             config_cleared = True
         except Exception as error:
-            errors.append(f"wait for ONT CLI config clear: {error}")
+            errors.append(
+                "EMS did not remove the ONT config from the device after the ontservice delete "
+                f"(WebAutoProvision): {error}"
+            )
+        attach_json(
+            "ONT provision-template cleanup: wait for EMS device removal",
+            {
+                "remote_xont": remote_xont,
+                "removed": config_cleared,
+                "elapsed_seconds": round(time.monotonic() - started, 1),
+                "timeout_seconds": ONT_SERVICE_DEVICE_REMOVAL_TIMEOUT_SECONDS,
+                "interval_seconds": ONT_SERVICE_DEVICE_REMOVAL_INTERVAL_SECONDS,
+            },
+        )
+    else:
+        config_clear_requested = False
+        try:
+            with cleanup_session_scope() as cleanup_session:
+                clear_response = api_client.request("DELETE", config_path, session=cleanup_session)
+                if clear_response.retstatus != "Success":
+                    assert_api_failure(
+                        clear_response,
+                        accepted_messages=("no data", "not found", "does not exist", "no such data"),
+                    )
+            config_clear_requested = True
+        except Exception as error:
+            errors.append(f"clear ONT config through REST: {error}")
+
+        if config_clear_requested:
+            try:
+                wait_for_ont_cli_config_absent(
+                    env_config,
+                    remote_xont,
+                    timeout=300,
+                    interval=15,
+                )
+                config_cleared = True
+            except Exception as error:
+                errors.append(f"wait for ONT CLI config clear: {error}")
 
     if config_cleared:
         try:

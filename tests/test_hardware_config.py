@@ -146,7 +146,7 @@ def _assert_supported_model(supported, aliases, label, model, actual_version):
 def test_node1_report_cards_are_yaml_targeted():
     env = load_environment(node="NODE1")
     lines = _card_version_lines(env)
-    assert [line.split(":", 1)[0] for line in lines] == ["MSC1240QA", "GLC1440X-55", "OLC3816-IA"]
+    assert [line.split(":", 1)[0] for line in lines] == ["MSC1240QA", "GLC1540X-55A", "OLC3816-IA"]
     assert env.dut.device_name == "California_IES4204_169.57"
     assert env.dut.device_ip == "192.168.169.57"
     assert env.dut.chassis == "IES4204"
@@ -167,5 +167,7 @@ def test_node3_report_cards_are_yaml_targeted():
     lines = _card_version_lines(env)
     assert [line.split(":", 1)[0] for line in lines] == ["NXC400", "NXP316", "NXA340"]
     assert env.dut.device_name == "Taiwan_NeoX-03_169.58"
-    assert env.dut.device_ip == "192.168.169.58"
+    # device_ip follows managed_ip_family (IPv4 or IPv6); the node's own IPv4 address is fixed.
+    assert env.dut.device_ip_v4 == "192.168.169.58"
+    assert env.dut.device_ip in {env.dut.device_ip_v4, env.dut.device_ip_v6}
     assert env.dut.chassis == "NeoX-03"

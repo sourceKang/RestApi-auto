@@ -138,6 +138,7 @@ def _render_txt_report(env_config: Any) -> str:
         f"NA Account: {env_config.noaccess_account.account_name} ({env_config.noaccess_account.username})",
         f"Node Name: {env_config.dut.device_name}",
         f"Node IP: {env_config.dut.device_ip}",
+        f"Node IP Family: {getattr(env_config.dut, 'managed_ip_family', 'ipv4')}",
         f"Node Chassis: {env_config.dut.chassis}",
     ]
     lines.extend(_card_version_lines(env_config))
@@ -189,6 +190,7 @@ def _render_html_report(
         ),
         ("Node Name", env_config.dut.device_name),
         ("Node IP", env_config.dut.device_ip),
+        ("Node IP Family", getattr(env_config.dut, "managed_ip_family", "ipv4")),
         ("Node Chassis", env_config.dut.chassis),
     ]
     metadata.extend(_split_label_value(line) for line in _card_version_lines(env_config))

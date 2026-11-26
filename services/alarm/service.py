@@ -27,6 +27,7 @@ def remote_alarm_seed_commands(env_config) -> tuple[list[str], list[str]]:
 
 
 def alarm_keywords(env_config) -> list[str]:
+    # EMS records DevIP as the node's managed address (dut.device_ip), IPv4 or IPv6 (ADR 0003).
     dut = env_config.dut
     if dut.chassis in OLT140X_CHASSIS:
         return [dut.device_ip, dut.ont_sn, "Unregister ONT"]
@@ -282,7 +283,9 @@ class AlarmService:
         for command in commands_1:
             assert command in retval_str
         if self.env_config.dut.chassis not in OLT140X_CHASSIS:
-            assert f"inband    {self.env_config.dut.device_ip}" in retval_str
+            # Device CLI shows the node's own IPv4 inband address, even when EMS manages it by IPv6.
+            inband_ip = getattr(self.env_config.dut, "device_ip_v4", "") or self.env_config.dut.device_ip
+            assert f"inband    {inband_ip}" in retval_str
         response = self.api_client.request(
             "POST",
             f"/remote/{self.env_config.dut.device_name}",

@@ -94,7 +94,15 @@ EMS version、node、slot、card、port、ONT 與 auth profile 以當次設定�
 | target | EMS | 平台 | 說明 |
 | --- | --- | --- | --- |
 | `redhat`（`default_target`） | 192.168.128.100 | RedHat 9 HA | 目前僅支援 NeoX 系列設備 |
-| `ubuntu` | 192.168.128.8 | Ubuntu | |
+| `ubuntu` | 192.168.128.8 | Ubuntu | IPv4 URL |
+| `ubuntu_ipv6` | [2001:2:128::8] | Ubuntu | 同一台 .8 走 IPv6，報表在 `<version>_ubuntu_ipv6` |
+
+- **IPv4／IPv6 兩件事分開設**（[ADR 0003](adr/0003-ipv4-ipv6-ems-targets-and-node-managed-address.md)）：
+  連 EMS 的 URL 用 target 選；EMS 用哪個位址納管 node，設在 node 的 `managed_ip_family`
+  （`ipv4` 預設／`ipv6`，搭配 `device_ip_v6`），單次可用 `$env:EMS_NODE_IP_FAMILY = "ipv6"` 覆寫。
+  同一個 EMS 一個 node 只用一個位址納管；改納管方式由使用者在 EMS 重新加入 node，並同步改設定。
+  不一致時 device preflight 會在開跑前停下並列出 EMS 實際的 IPAddress。CLI（`ssh_host`）仍走 IPv4。
+  `test_targets.local.yaml` 會整份取代 committed 檔，兩個鍵也要寫在本機檔。
 
 - 切換方式：PowerShell 執行 `$env:EMS_TARGET = "ubuntu"`；沒設定時使用
   `default_target`。target 的版本字串寫在各自的 `version`。

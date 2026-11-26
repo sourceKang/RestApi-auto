@@ -1,6 +1,6 @@
 # 共用工作進度
 
-更新日期：2026-11-04（Asia/Taipei）。此檔是交接快照；
+更新日期：2026-11-16（Asia/Taipei）。此檔是交接快照；
 接手時先核對 Git 與現有檔案，不能把本文當作即時設備狀態或測試通過證據。
 
 ## 雙工具協作設定
@@ -18,137 +18,239 @@
 
 較早的紀錄見 docs/work-history/（依月份）。
 
-### 2026-11-03～04 NODE3 換韌體與帳號後重跑 b14（Claude Code）
+### 2026-11-20 b17 NODE1 回歸（Claude Code）
 
-- 使用者把 NODE3 韌體升為 V1.03 b8（NXC400 V1.03(ACKG.0)b8、NXP316 V1.03(ACKI.0)b8、NXA340 V1.03(ACQE.0)b8），
-  裝置登入帳號改為 kang；test_targets.local.yaml 的 NODE3 帳號與 fw_version 已更新（本機檔，不進版控）。
-- 發現 NeoX CLI 驗證與 target sync 用 EMS readwrite 帳號登入裝置：分支 claude/node-ssh-credentials（`15ca902`，
-  基準 origin/codex/prepare-github-upload，未推送）新增 `config_loader.dut_ssh_credentials`，三處統一順序
-  DUT_SSH_*/NEOX_SSH_* → node target → default EMS readwrite；相關 pytest 通過 77／失敗 0。
-- 另發現 target sync 對 NODE3 回 `no slot-based target data` 而跳過，fw_version 不會自動同步（未修）。
-- 重跑：ubuntu（.8，b14）NODE3 完整測試通過 316／失敗 0（2026-11-03_14-34-43，1h26m）。
-- UseTestlink v1.9.8（PR #42 備註加 `Test Environment:` 段含 EMS／節點／卡片韌體；PR #43 版號）已發版並以 pipx 從 tag 安裝。
-- 回填 TestLink b14（附加，不覆蓋 11-02）：254 筆 p，0 錯誤，每筆備註含 Card FW V1.03 b8；readback 254 皆 p，traceability valid。
-  execute 呼叫在用戶端逾時，但 audit 顯示 254 筆皆一次寫入成功，未重送。
-- formal_runs.yaml：b14_ubuntu NODE3 正式執行改為 2026-11-03_14-34-45_NODE3（使用者 2026-11-04 指定），11-02 那輪保留為非正式。
-- 未完成：claude/node-ssh-credentials 推送與 PR；ems.yaml b14 與本檔提交。
+- 分支 claude/b15-regression（HEAD c7d5673），未提交。TestLink build `03.00.11 (AAVV.221) b17` 已存在（id 21026，
+  2026-11-20 10:35 建立），未重建。
+- 使用者表示 .8 已升 b17；configs/ems.yaml ubuntu version 改為 b17（URL 維持 IPv6 `[2001:2:128::8]`），redhat 不動。
+- OpenAPI guard local 12 通過／3 skip、live 15 通過（spec 資料夾無新檔）；dry-run 指令與 b16 相同。
+- NODE1 回歸 reports/multi_node/2026-11-20_11-12-10：pytest 222 passed／91 skipped／3 errors，Complete 316/316，22m36s。
+- 3 筆失敗皆 RAD 外部帳號 EMS1-7056／7107／7108 登入回 `Invalid username.`，與同日 b16 IPv6 輪相同（b16 時已確認
+  IPv4 也一樣）；與 b16 正式輪（11-16）比對：Regression 候選僅此 3 筆、已修復 0、其他無差異。
+  比對報表 reports/_index/compare_NODE1_b16_ubuntu_vs_b17_ubuntu_34ce3667ef.html。原因未確認（推測 RADIUS 設定或連線）。
+- 未做：formal_runs.yaml 標記、TestLink b17 回填（需使用者確認預覽）、RAD 原因調查、NODE3。
 
-### 2026-11-02 b14 NODE3 回歸與 TestLink 回填（Claude Code）
+### 2026-11-16 b16 TestLink build（Claude Code）
 
-- 2026-10-30 建立 TestLink build `03.00.11 (AAVV.221) b14`（id 20831，NetAtlasEMS／NetAtlas EMS）；
-  configs/ems.yaml 兩個 target 的 version 改為 b14（分支 claude/backfill-gate-docs，未提交）。
-- NODE3 由 NEOX 設定檔案分析 session 釋出（該 session 回報 running-config 已還原、帳號 kang 為現行基準）；
-  使用者確認後於 ubuntu（.8，b14）以 `run_multi_node.py --nodes NODE3 --run-full-testcases` 執行：
-  通過 316／失敗 0，1h20m，報表 reports/03.00.11 (AAVV.221) b14_ubuntu/（2026-11-02_11-20-01）。
-- 回填 TestLink b14（platform NetAtlas EMS）：254 筆全部 p，0 錯誤；readback 254 筆皆 p，traceability valid；
-  254 個 TC 已是 Automated。audit 位於 local/testlink_audit/qa_audit/。
-- 未完成：b14 其他 node 與 redhat（b14_redhat build 未建）；ems.yaml 版本變更待提交；未做 b13↔b14 比對。
+- 依使用者指示建立 TestLink build `03.00.11 (AAVV.221) b16`（id 20992，NetAtlasEMS／NetAtlas EMS，
+  release date 2026-11-16），readback 驗證成功。
+- 使用者表示 b16 已升級；configs/ems.yaml ubuntu（.8）改為 b16（redhat 維持 b15，未確認 .100 是否升版），未提交。
+- NODE3 `show lc st`：slot 1／3／4 皆 V1.03 b9，已把 test_targets.local.yaml 的 b8 改為 b9；NODE1 卡版本與設定一致。
+- OpenAPI guard local 12 通過／3 skip、live 15 通過；dry-run（--nodes NODE1,NODE3 --run-full-testcases）正常。
+- b15 bug #263239、#263277 已 Released（#263239 Fix Version b16；#263277 未填 Fix Version），待 b16 驗證。
+- NODE1 回歸 2026-11-16_10-31-58（run_multi_node，使用者要求只跑 NODE1，NODE1 結束後停止 runner，NODE3 未跑）：
+  pytest 225 passed／91 skipped／0 failed，txt 173 Pass／0 Fail，Complete 316/316；與 b15 正式輪比對 Regression 0、
+  已修復 4（EMS1-6675／6676／6677／7109）。已記入 reports/_index/formal_runs.yaml。
+- TestLink b16 回填 NODE1（使用者確認預覽後寫入）：operation `b16-ubuntu-node1-20261116`，173 筆 p、0 錯誤、81 Skip 忽略；
+  抽查 6640／6643／6675／7109 readback 皆 p。之後 NODE3 回填時共同 case 會在同 build 多一筆 execution。
+- #263239 驗證：NODE1 2-16-1 UnReg 5 分鐘內 10 次 4 個 GET 全 200（b15 為 500），重新註冊後 IS 且 200 → b16 已修。
+  log 在 reports/03.00.11 (AAVV.221) b16_ubuntu/b16_bugverify/。
+- #263277 驗證：repro_valid_session_errors.py 3 次（各 540 秒，11:02～11:29）共 4367 筆全部 Success（b15 約 0.5～6% 錯誤），
+  搭配 NODE1 回歸無此類錯誤，判定 b16 未再重現；log 同上目錄。
+- NODE3 回歸 2026-11-16_11-31-22（--nodes NODE3 --run-full-testcases）：pytest 314 passed／2 failed（1:36:53），
+  txt 252 Pass／2 Fail。與 b15 正式輪比對：Regression 1（EMS1-7119）、持續問題 1（EMS1-7223）、已修復 1（EMS1-7173）。
+  - EMS1-7119 GE 1/39 POST 回 `This card is not NXA card`，但 `show lc st` slot 1 NXA340 active（uptime 4 天）；
+    單獨重跑 7119＋GE error case 2/2 通過 → 偶發，未開單，待再觀察。
+  - EMS1-7223 cleanup 等待 ONT 3-16-1 回 IS 逾時（CLI 仍 UnReg）；事後 REST GET 顯示 ONT 已 IS，不需還原設備。
+- 單獨重跑（log：reports/03.00.11 (AAVV.221) b16_ubuntu/b16_failrerun/）：7119 共 4 次全通過（偶發）。
+  7223 重跑仍失敗；CLI 唯讀監看（每 ~37 秒，13:36 起）顯示：13:32:45 restore POST 回 Success 後，
+  13:36:15～13:45:27 running-config 都沒有 `interface remote xont 3-16-1`、ONT 在 unreg 清單；teardown 13:46:04
+  送同樣 POST 後，13:46:04 CLI 即出現設定（OOS-NR），13:46:42 IS。→ 第一次 POST 回 Success 但設備沒有設定，
+  偏向 EMS 沒下發；13:32:45～13:36:15 無 CLI 樣本，無法排除「下發後又被 EMS 移除」。尚未開單。
+  第二次重跑（全程 CLI 監看，每 ~17 秒）通過：14:03:11 DELETE ontservice＋ONT config，14:03:43 restore POST，
+  14:03:58 CLI 出現設定（OOS-NR）、14:04:14 IS。失敗的 3 次 restore POST 都在 DELETE 後約 11 秒送出，
+  通過這次隔 32 秒 → 推測與 DELETE 後太快重建有關（未證實；run1 teardown 隔 12 秒也成功，但當時 ontservice 早已刪除）。偶發，尚未開單。
+- 14:28～15:03 重驗 b15 bug：#263239 UnReg 期間 60 次 GET 全 200、重新註冊後 IS（與上午一致，已修）；
+  #263277 3 輪全 Success（與上午一致，未再重現）。
+- NODE3 第二輪完整回歸 2026-11-16_15-03-21（全程 CLI 監看 204 筆，log 在 b16_node3_cli_watch/）：
+  316 passed／0 failed，txt 254 Pass／0 Fail；7119、7223、7173 皆 Pass。slot 1 全程 active NXA340。
+  7223 這輪 restore POST 在 DELETE 後 33 秒送出，15:36:15 CLI OOS-NR、15:36:39 IS → 再次支持「DELETE 後約 11 秒就重建才失敗」的推測（未證實）。
+- TestLink NODE3 預覽改用第二輪：`b16-ubuntu-node3-20261116-r2`（digest e60707ae…），254 筆全 p，逐筆核對一致，尚未寫入；
+  第一輪預覽 `b16-ubuntu-node3-20261116` 作廢不寫。
+- TestLink b16 回填 NODE3 r2（使用者確認後寫入）：254 筆 p、0 錯誤；readback 6640／7119／7173／7223 皆 p。
+- 7223 時間差驗證（使用者同意改動 NODE3；腳本 b16_failrerun/test_probe_7223_timing.py，CLI 監看 probe_cli_watch/，
+  每輪：套 SFU template → 刪 ontservice → DELETE ONT config → 約 12 秒後 POST 重建 → 觀察 10 分鐘 → 未恢復則還原）：
+  3 輪中 2 輪重現（R1 17:18、R3 17:48）：CLI 在 POST 後約 0～5 秒出現 `interface remote xont 3-16-1`（OOS-NR），
+  約 15～19 秒後設定從設備消失、ONT 進 unreg，期間腳本只送 GET；R2 間隔相同但設定留下並 IS。
+  另觀察到刪 ontservice 時 EMS 會自行移除設備上的 ONT 設定（R2 17:38:52 早於腳本 DELETE）。
+  → 「間隔短必失敗」不成立；現象是偶發的「下發後被移除」，推測為 ontservice 刪除的背景處理延遲清掉重建的設定（未證實，無 EMS 端 log）。
+  每輪結束 ONT 皆已還原 IS。尚未開單。
+- 2026-11-18 7223 單獨重跑（全程 CLI 監看，b16_failrerun/7223_run3*）：Pass（10:15）。09:26:36 刪 ontservice＋ONT config，
+  09:27:09 restore POST（隔 33 秒），09:27:20 CLI 出現設定、09:27:34 IS 並維持。累計 7223 正式 case 6 次：3 Fail／3 Pass；
+  通過的 3 次 restore 間隔都約 32～33 秒，失敗的都約 11～15 秒（時間差腳本已證明短間隔不必然失敗）。
+- 2026-11-18 7223 間隔 A/B（b16_failrerun/test_probe_7223_gap_ab.py，CLI 判定，probe_ab_cli_watch/）：
+  12 秒組 3 輪 1 removed（R1：09:47:43 POST，09:47:50 設定出現，09:48:07 消失）、2 kept；35 秒組 3 輪全 kept。
+  合計 12 秒 6 輪 3 removed，35 秒（含 testcase 32～33 秒）6 次 0 失敗 → 短間隔是必要條件、非充分條件（樣本小，未證實）。
+  另觀察：被移除的 3 輪，REST 反映 template 套用都花 3.5～4 分鐘；kept 的多為 1～3 分鐘（僅觀察）。ONT 已還原 IS。
+- 2026-11-18 7223 清理順序 B（先 DELETE ONT config、等 CLI 清除＋UnReg，再刪 ontservice，12 秒後 POST；
+  b16_failrerun/test_probe_7223_order_b.py，probe_b_cli_watch/）：第一次 10:55 跑到第 5 輪時 session 中斷（11:27），
+  ONT 停在無設定／UnReg、ontservice 已刪；16:26 以 DELETE→等 35 秒→POST 還原，16:27:12 CLI IS。
+  前 4 輪：R1 removed（10:57:57 POST，10:58:04 出現，10:58:22 消失），R2～R4 kept → 對調順序不能消除問題。
+  16:27 起補跑剩下 2 輪：R5 removed（16:34:53 刪 ontservice，16:35:07 POST，16:35:14 出現、16:35:26 IS、16:35:31 消失），
+  R6 kept（16:42:31 POST，16:42:56 IS）。B 順序合計 6 輪 2 removed／4 kept → 對調順序不能消除；
+  R5 在 IS 之後才被移除，排除「ONT 沒註冊上」。結束時 ONT IS。結論：刪 ontservice 觸發的 EMS 背景清理與重建競態，
+  測試需在 POST 前等 EMS 清理完成（待確認可用訊號，需問 RD）。
+- 使用者判定 7223 不開 bug：NeoX config API 先移除再下設定屬預期行為，問題是測試清理在 ontservice 刪除的背景操作完成前就重建。
+  修改計畫（重建後 CLI 確認 60 秒、被移除則重送最多 2 次，僅 7223 啟用）尚待使用者確認，程式未改。
+- EMS .8 REST API 背景 command log：依 Notion 頁面需 conf/RESTAPIDebugLevel.conf 設 10、看 logs/RESTAPILog.log；
+  .8 執行目錄 /opt/ELEMENTVIEW_MASTER/conf 無此檔，只在 /opt/ems_deploy/ems_master/conf 有 debugLevel=0，log 只有 WARN。
+  2026-11-18 已寄信詢問 RD Leaf Yeh 正確步驟（使用者同意），等回覆；.8 設定未改。SSH 用 EMS web auto 的 scripts/ssh_run.py。
+- 2026-11-20 使用者要求 EMS 改 IPv6：configs/ems.yaml ubuntu rest_api_url 改為 `https://[2001:2:128::8]:9116/netatlasemsapi`（未提交）；
+  本機 IPv6 ping／TCP 9116 通，登入／GET／登出 200。NODE1 完整回歸 2026-11-20_09-03-09：170 Pass／3 Fail（22 分）；
+  與 11/16 IPv4 比對只有 EMS1-7056／7107／7108（RAD external）Regression，回 `Invalid username.`；
+  同時以 IPv4 URL 登入 RAD readwrite／readonly 也失敗 → 非 IPv6 問題，RAD 外部帳號在 11/16 之後失效（類似 10 月 .100 升級後現象），原因未確認。
+  其餘 case 結果與 IPv4 相同。未回填 TestLink。注意：比對工具步驟正規化只遮 IPv4，IPv6 URL 會被當成步驟差異。
+- Leaf 11/20 回覆：RESTAPIDebugLevel.conf 已停用，改由 /opt/ELEMENTVIEW_MASTER/conf/log4j2_ems.xml 的
+  `<Logger name="RESTAPILogger" level="info">` 控制（0→info、1..6→debug、7+→trace），存檔後 10 秒內生效、不需重啟。
+  .8 目前 RESTAPILogger=info；log4j2_ems.xml、lib、mibs 時間戳為 2026-11-19 21:16 → .8 EMS 在 11/19 晚上重新安裝／升級，
+  版本檔 version.conf 為空，實際 build 未確認（ems.yaml 仍寫 b16）。RAD 失效可能與此有關，未確認。
+- 2026-11-20 15:24 使用者同意：.8 log4j2_ems.xml 第 507 行 RESTAPILogger info→trace（備份
+  /opt/ELEMENTVIEW_MASTER/conf/log4j2_ems.xml.bak-20261120-restapi-trace，diff 只差這行）；15:25 起 RESTAPILog.log 印出
+  [RequestLog]（時間為 UTC）。**測完必須改回 info**。15:27 起跑 7223 時間差腳本（舊順序 12 秒 ×4，probe_trace_*）。
+- trace 第 1 輪（15:30）結果 never（CLI 15:30:50 起無設定；POST 15:30:43 完成，CLI 樣本有 8 秒空檔）。RESTAPILog 顯示：
+  DELETE /ontservice 11 ms、**不送任何 SSH command**；DELETE config → `no interface remote xont 3-16-1`；POST → 先
+  `no interface remote xont 3-16-1` 再 `config / interface remote xont 3-16-1 / sn / registration-id / register-method A /
+  description / type auto / adminstate enable / exit`；之後到 15:31:30 沒有其他 REST API 對此 ONT 的 command。
+  → 刪設定的不是 REST API 模組。WebAutoProvision.log 每 30 秒跑一次 CheckProfile（07:30:09、:39、07:31:09…），
+  logger 為 info，看不到它下的 command；推測 ontservice 刪除由此 30 秒週期工作處理（與「12 秒間隔約一半失敗、35 秒以上不失敗」吻合），未證實。
+  另：WebAutoProvision 每 30 秒都 `[CheckProfile] exception NullPointerException: Cannot read field "Status"`（今天已 2715 次）。
+- **7223 根因已確認（trace 第 2 輪，15:40）**：`DELETE /ontservice/{sn}` 只把 DB ServiceInfo 標成 state='Delete'（17 ms，
+  不送 command）；WebAutoProvision **Thread-0 每 30 秒**查 `state='Delete'`，07:40:50.519Z 找到後對 NODE3 送
+  **SNMP SET `NEOX06-MIB:xontRowStatus.30016.1`**（刪掉 xont 3-16-1），再 `DELETE FROM ServiceInfo`。
+  我們的 restore POST 在 07:40:50.43Z 剛下完設定，0.18 秒後就被這個 SNMP SET 刪掉 → CLI 15:40:54 起 UnReg。
+  所以刪 ontservice 後設備端清理會在下一個 Thread-0 週期（≤30 秒）才執行；間隔 ≥35 秒的重建都在週期之後，故不受影響。
+  不是 CLI command，所以 CLI／RESTAPILog 都看不到。
+- 15:46:15 已把 RESTAPILogger、WebAutoProvision 改回 info；與備份 diff 一致、sha256 相同（備份檔仍留在 .8 conf/）。
+  trace 第 3、4 輪在改回後繼續跑（無 trace），結果不再用於分析。
+- 7223 修正（使用者同意計畫，分支 `claude/7223-wait-autoprov-delete`，未提交）：
+  - `ProvisionService.delete_ont_service_if_uses_template` 改回傳是否真的刪除（bool）。
+  - `cleanup_ont_provision_template_scenario`：有刪 ontservice 時不再 REST DELETE ONT config，改以 CLI 等
+    `interface remote xont` 消失（WebAutoProvision 移除，timeout 120 s、interval 5 s，allure 記錄等待秒數），逾時判 Fail；
+    沒刪 ontservice 時維持原本 DELETE＋等待。
+  - 離線測試：新增 3 筆（等待 EMS 移除、未刪時照舊、EMS 未移除判 Fail），服務層測試加回傳值斷言；
+    `pytest -m offline` 211 passed；相關檔案 46 passed；compile OK。
+  - 實機驗證：NODE3 單獨跑 7223 ×3（fix_verify_*），排在時間差腳本結束後執行。
+- 實機驗證第 1 次（16:00，報表在 b17_ubuntu）：Pass（641 s）。16:05:08 DELETE ontservice → 等 EMS 移除 23.1 s
+  （CLI 16:05:28 設定消失）→ 16:05:37 POST 基準 → 16:05:42 OOS-NR、16:05:57 IS，之後 25 筆樣本穩定。
+- 實機驗證第 2、3 次也 Pass：第 2 次（725 s）16:15:21 刪 ontservice → 等 13.8 s → 16:15:41 POST → 16:16:06 IS，
+  之後 36 筆穩定；第 3 次（620 s）16:27:22 → 等 13.8 s → 16:27:42 POST → 16:27:58 IS，之後 24 筆穩定。
+  合計 3/3 Pass，重建後設定皆未被刪（fix_verify_cli_watch/）。結束時 ONT IS。
+- **版本**：configs/ems.yaml 的 ubuntu version 在 2026-11-20 11:11:12 被改成 b17（非本 session 所改），
+  11:11～11:12 有其他 b17 報表。.8 在 11/19 21:16 重裝，故 09:03 的 IPv6 NODE1 回歸實際可能是 b17，
+  卻標成 b16、放在 b16_ubuntu 並記入 formal_runs b16（待更正）。
+- 2026-11-20 使用者要求：09:03 IPv6 NODE1 那輪改標 b17：報表 3 檔＋allure 目錄由 b16_ubuntu 移到 b17_ubuntu，
+  檔名與內文 `(AAVV.221) b16`→`b17`（txt 1 處、html 8、integrated 7、allure 附件 1）；formal_runs 移到新增的
+  `b17_ubuntu` 下（final: false）；index 重建。17:45 起在分支 claude/7223-wait-autoprov-delete 跑 NODE1→NODE3 完整回歸
+  （b17、IPv6，NODE3 期間 CLI 監看 b17_ubuntu/node3_cli_watch/）。
+- b17 回歸結果（2026-11-20_17-45-01，19:48 結束）：
+  - NODE1 2026-11-20_17-45-04：173 Pass／0 Fail，RAD external 恢復 Pass，與 b16 正式輪比對 Regression 0。
+  - NODE3 2026-11-20_18-06-50：230 Pass／10 Fail／14 Skip。比對 b16 正式輪 Regression 10。根因：EMS 現以 IPv6
+    `2001:2:169:0:fad4:a3ff:fec9:e1b0` 納管 NODE3，但 test_targets.local.yaml 的 device_ip 是 192.168.169.58；
+    device／slot 的 IPAddress 比對、GE port 與 ONT readiness（比對 IP）、geservice 以 IP 過濾都失敗，連帶 ONT／ontservice
+    與 RAD 共 14 筆 skip，7109 summary Fail。7223（修正後）、7119、7173 Pass。非 API bug，屬環境／設定不一致。
+- 2026-11-24 IPv4／IPv6 雙測修正（使用者同意設計，分支 `claude/ipv4-ipv6-targets`，自 base 開，未提交）：
+  ems.yaml `ubuntu`=IPv4、新增 `ubuntu_ipv6`；node 新增 `device_ip_v6`、`managed_ip_family`（`EMS_NODE_IP_FAMILY` 單次覆寫），
+  `dut.device_ip` 指向納管位址、`device_ip_v4` 保留 IPv4、ssh_host 仍 IPv4；device preflight 比對 EMS IPAddress，
+  不符即停並列修正方式；報表加 `Node IP Family`；step 比對遮 IPv6；remote console inband 改比 IPv4；ADR 0003、project-context。
+  本機 test_targets.local.yaml NODE3 設 ipv6（不提交）。離線：新測 12 passed、`-m offline` 223 passed；
+  test_hardware_config 的 firmware 版本失敗為既有本機設定問題（無本次修改也失敗）。
+  實機驗證 10:10 起：NODE1 走 ubuntu（IPv4），接著 NODE3 走 ubuntu_ipv6（納管 IPv6）＋CLI 監看。
+  注意此分支不含 7223 修正（PR #41），7223 可能偶發失敗。
+  10:29 使用者要求停止（NODE1 環境需調整）：NODE1 跑到 95%（267+/316，4 Fail＝EMS1-6644／6680 rw＋ro，slot 1 卡被換成
+  GLC1540X-55A V2.03(ACFF.10)b1，uptime 約 30 分），runner／pytest 已全部停止，未產生報表；NODE3 未開始。
+  中斷在 session 測試，session 範圍 fixture 的收尾（例如 seed 的 ONT／GE service）可能沒跑到，下次開跑前留意。
+  使用者確認 .8 目前為 b17（ems.yaml 已是 b17）。
+- NODE1 環境調整後 CLI 唯讀檢查（2026-11-24）：卡 MSC1240QA V2.03(ABGX.10)b1、GLC1540X-55A V2.03(ACFF.10)b1、
+  OLC3816-IA V2.03(ACHD.10)b1（約 35 分前重開）；inband 192.168.169.57；ONT 2-16-1 無設定、在 unreg 清單；GE 1-39 status disable。
+  依使用者指示更新：test_targets.local.yaml NODE1 三張卡（本機、不提交）；hardware_matrix.yaml 三張卡加 `versions`
+  （保留 .9、加 .10 b1），IES4204 report_card_order／line_cards／ge_service_cards 加 GLC1540X-55A（未提交）。
+  config secrets 0；offline 222 passed／1 failed（test_default_topology_v2_node1…：讀到本機檔，仍預期 GLC1440X-55）；
+  test_node1_report_cards_are_yaml_targeted 同因失敗；committed test_targets.yaml NODE1 仍是 GLC1440X-55／.9（待使用者決定）。
+- 2026-11-24 使用者選擇兩邊一起改：committed test_targets.yaml NODE1 改 GLC1540X-55A／.10b1，兩個測試預期值同步；offline 223 passed。
+- IPv4／IPv6 實機驗證第 2 次（13:39 起，reports/ipv6_verify_progress_2026-11-24_r2.txt）：
+  - NODE1（ubuntu）2026-11-24_13-39-08：173 Pass／0 Fail；報表 `Node IP Family: ipv4`、三張卡為 .10b1。
+  - NODE3（ubuntu_ipv6）2026-11-24_13-59-43：14:51 app 重啟時 runner 被中止，未產生報表；中止前 86 Pass／6 Skip／0 Fail。
+    之前 b17 的 10 Fail（IPAddress、GE／ONT readiness、geservice by IP）都已通過，preflight 通過。
+  - 6 筆 alarm skip：KeyWord 用 IPv6 查 `/activealarm` 得 No data。11/20 同一 alarm 的 DevIP 是 192.168.169.58（trap 來源 IPv4）。
+    依使用者同意修正：`services/alarm/service.py` 新增 `alarm_source_ip()`（device_ip_v4 優先），KeyWord／DevIP／inband 都用它；
+    test_alarm 加 2 筆離線測試；ADR 0003 加說明。offline 223 passed；尚未實機驗證。
+  - 14:36:15 DELETE ontservice → 14:36:28 POST ONT config → 14:36:53 CLI 設定消失（7223 同型，此分支無 PR #41 修正），
+    之後測試輪詢 /ont/sn 等 ONT 上線直到中止。
+  - 使用者同意後：本分支 merge claude/7223-wait-autoprov-delete（951ff5d，未 push）；16:13 以
+    reports/…b17_ubuntu_ipv6/restore/test_restore_node3_ont.py 恢復 3-16-1（無 ontservice → POST → 16:13:47 CLI 有設定且 IS）。
+    16:14 起 NODE3 第 3 次（ubuntu_ipv6，CLI 監看 node3_cli_watch_r3，進度 reports/ipv6_verify_progress_2026-11-24_r3.txt）。
+  - NODE3 第 3 次結果 2026-11-24_16-14-01（17:42 結束）：報表 223 Pass／4 Fail（pytest 278 passed／4 failed／34 skipped）；
+    報表 `Node IP: 2001:2:169:0:fad4:a3ff:fec9:e1b0`、`Node IP Family: ipv6` 正確。7223 收尾未再刪掉 ONT 設定。
+    - alarm 6 筆仍 skip，IPv4 KeyWord 也查不到 → 「DevIP 是 IPv4」的推測不成立，已還原（alarm 仍用 device_ip）。
+      唯讀查證：EMS 中 NODE3 的 alarm（11/22 Device Not Responding／Responding）DevIP 皆為 IPv6；
+      CLI `show snmp` trap destination 只有 IPv4（192.168.128.8、.100、1.2.3.4），Login Success trap 未被 EMS 記錄。
+      需使用者決定是否在 NODE3 加 IPv6 trap destination（設備設定變更）。ADR 0003 已改為此結論。
+    - EMS1-6838／6917：POST ONTServiceProfile 回 `Reach the maximum number of profiles 3000 in database.`；
+      唯讀計數 2997 筆，其中 2671 筆 `Auto_max*`（非本專案建立）。環境問題，清理需使用者／擁有者決定。
+    - EMS1-6666（16:14）：ontservice 建在 ONT 2（預期 1）；CLI 見 3-16-1 基準設定與 service 設定並存。
+      16:13 剛恢復基準設定 1 分鐘即開跑，推測 EMS 尚未同步（未證實）。
+    - EMS1-7131（16:39）：POST ONT config 回 `This card is not NXP card`；第 2 次（14:27）同 case Pass，原因未查明，待單獨重跑。
+  - 2026-11-26 使用者同意：NODE3 CLI `snmp-server trap-destination 4 address 2001:2:128::8 udp-port 162 version v2c`
+    （只改 running-config，未 write memory；還原＝改回 0.0.0.0）。11:15:53 REST remote console 後 EMS 收到 Login Success，
+    DevIP=2001:2:169:0:fad4:a3ff:fec9:e1b0 → 確認 alarm 需 IPv6 trap destination。11:16 起單獨重跑 test_alarm、test_provision、
+    7131（log／CLI 監看在 reports/…b17_ubuntu_ipv6/rerun_2026-11-26*）。
+    結果 11:24：40 passed／0 failed（alarm 7 筆含 lifecycle、provision 含 6666、7131 全 Pass）。
+    6666 這次建在 ONT 1，支持「上次是恢復後立即開跑、EMS 未同步」的推測；7131 的 `not NXP card` 未重現（原因仍未查明）。
+  - 2026-11-26 NODE3 完整回歸 r4（ubuntu_ipv6，含 PR #41 修正 merge 951ff5d，trap destination 4 已設 IPv6）：
+    報表 2026-11-26_11-28-12_NODE3，247 Pass／2 Fail（pytest 309 passed／2 failed／5 skipped），1:30:09。
+    標頭 `Node IP: 2001:2:169:0:fad4:a3ff:fec9:e1b0`、`Node IP Family: ipv6`、`EMS Target: ubuntu_ipv6`。
+    失敗僅 6838／6917（已知環境問題：profile 上限 3000）；5 個 Skip（6836／6837／6839／6840／6918）皆因同一 profile 建立失敗。
+    alarm lifecycle、6666、7131、7223 皆 Pass；CLI 監看（node3_cli_watch_r4）結束時 ONT 3-16-1 基準設定在且 IS。
+  - 2026-11-26 使用者同意清理 Auto_max* ONTServiceProfile：唯讀盤點 2671 筆（內容相同，無 ONTTemplateProfile
+    的 serviceprof1..32 引用；`GET /ontservice` 回 500 未能查），逐筆備份於 reports/…b17_ubuntu_ipv6/cleanup/automax_backup.json。
+    14:08 試刪 10 筆全 Success 且 GET 確認已消失（delete_log.txt），總數 2997→2987。
+    使用者要求先不刪其餘 2661 筆；單獨重跑 6838／6917／6836／6837／6839／6840／6918：7 passed／0 failed，
+    跑完總數仍 2987（測試建立的 profile 有刪回）。另 ONTTemplateProfile 有 2867 筆 Auto_max*（共 2944），接近 3000 上限，未處理。
+    仍待：其餘 2661 筆 Auto_max* 是否刪除；trap destination 是否 write memory；IPv4／IPv6 變更提交與 PR。
+- 未做：確認 ems.yaml 改 b17 是誰改的；7223 修正 push／PR（已在分支 claude/7223-wait-autoprov-delete 提交 52bae0b，未 push）；RAD external 失效原因（需確認 .8 的 RADIUS 設定或 RADIUS server）；7223 測試修改（待 Leaf 回覆／使用者確認計畫）；Redmine 驗證留言（需使用者確認預覽）；b16_redhat build 未建。
 
-### 2026-10-27 RC-5 回填前把關（UseTestlink，Claude Code）
+### 2026-11-10～11 b15 第 4 輪、NODE1 重跑與開 bug（Claude Code）
 
-- 使用者決定：把關做在 UseTestlink（匯入前驗證是它的責任，所有回填路徑都會經過），不在本專案另做檢查工具；
-  Incomplete／Drift 擋下、可帶原因放行並寫入 audit、沒有 Completeness 行只警告；先不發版。
-- D:\UseTestlink 分支 claude/report-readiness-gate（基準 main 8112c2d）：解析檔頭 `Completeness`／`Case ID Drift`；
-  qa-integration-agent 預覽與 testlink_upload_report（CLI upload-report）都在呼叫 TestLink／Redmine 前回
-  `REPORT_NOT_READY`；`readiness_override_reason` 放行時記入預覽、warnings 與 workflow audit；JUnit 不檢查。
-- 驗證：UseTestlink `python -m unittest discover -s tests` 通過 445／失敗 0（新增 tests/test_report_readiness.py 10 個）。
-  以真實報表與測試用假連線離線驗證：10-27 safe lane、10-22 完整測試通過；10-27 漂移實測報表被擋下；
-  b12_redhat 判定版（無 Completeness）只出 warning。
-- 本專案：ems-version-regression 第 6 步補上 REPORT_NOT_READY 的處理方式（分支 claude/backfill-gate-docs）。
-- 未完成：UseTestlink 發版與安裝（mcp-release，需使用者同意）；安裝前回填流程行為不變。
+- 分支 claude/b15-regression（基準 c7d5673）；configs/ems.yaml b15 與本檔仍未提交。
+- R4 2026-11-10_11-19-01：NODE1 通過 186／失敗 7＋1 error；NODE3 通過 314／失敗 2。
+- EMS1-6666（ont_service_by_sn 停在 Wait）判定為環境問題，不開 bug：ONT 實體線鬆脫（使用者重插），且 2-16-1 被另一台
+  ONT（SN ZYXEC601D0A6）的設定佔用，POST 分到 ONT 2。經使用者同意刪除 2-16-1、把 ZYXEC601D0A6 重建在 2-16-2 後，
+  6666–6669 通過 7／失敗 0。測試沒有先確認 ONT 存在（框架改善項目）。
+- NODE1 完整重跑 2026-11-10_15-15-28：通過 219／失敗 6／skipped 91；6 個失敗都是 EMS1-6675／6676／6677
+  （兩種角色）GET /ont 回 HTTP 500。完整重現（16:56–17:05）與 RD 腳本 `--toggle`（17:28–17:36）都證實：PON 上有未註冊
+  ONT 時回 500，註冊回來後恢復 200。最後 CLI：2-16-1 IS（ZYXE8CADDDC3）、2-16-2 IS（ZYXEC601D0A6）、unreg 清單為空。
+- Redmine（使用者確認預覽後建立）：
+  - #263239 GET /ont 在 PON 上有未註冊 ONT 時回 HTTP 500（EMS1-6675，L2）；已被指派。腳本 rd_repro_ont_unreg_500.py
+    在 b15_evidence_2026-11-06/；11-11 讀回時附件數為 0，使用者表示已附，待再確認。
+  - #263277 有效 session 偶發 HTTP 500／no privilege／No data found（EMS1-6643，Regression，L2）；附 repro_valid_session_errors.py。
+    由 NODE3 session（11-11 以 NeoX 重現）合併原草稿 1 與 No data found 草稿。
+- 未開單：EMS1-7223（R4 NODE3，restore POST 回 Success 但設定沒套用），只發生一次，重現需改動 NODE3，待使用者同意。
+  NODE3 R2 的 4 個 not-NX-card 之後未再出現，未開單；session 600 秒到期為設計行為，不送。
+- TestLink b15 回填（2026-11-11，使用者確認預覽後寫入）：正式輪 NODE1 2026-11-10_15-15-35、NODE3 2026-11-10_11-42-15
+  （已記入 reports/_index/formal_runs.yaml）；254 筆 p 248／f 6，0 錯誤。6 個 f 以 testlink_link_bug 連結（各多一筆 f execution，
+  TestLink 不回報連結成功與否）：6675／6676／6677／7109 與 7223 → #263239，7173 → #263277。
+- 框架問題（未修）：`ensure_prerequisite_profile` 把 HTTP 500 當成不存在；`ensure_profile_exists_or_skip` 把 no privilege 當 Skip；
+  ont_service_by_sn 缺 ONT 存在前置檢查。
 
-### 2026-10-27 Case ID 漂移檢查（Claude Code）
+### 2026-11-06 b15 NODE1／NODE3 回歸（Claude Code）
 
-- 分支 claude/case-id-drift，基準為 b07702c（#36 合併後的預設分支）。
-- 原因：PR #34 之後 ID 同時寫在測試 marker 與 services 的 `attach_case_id`，只檢查「有 ID」，不檢查兩邊一致；
-  改了 service 的 ID 卻沒改 marker 時，同一個測試會在報表掛兩個 case。
-- 修改：收集結束時凍結每個選中測試的 ID；執行時 `register_case` 登記不在其中的 ID，報表檔頭加
-  `Case ID Drift: N` 與 `Case ID Drift #n: <nodeid> registered <id>; collection had <ids>`（使用者決定只寫檔頭，不改結果）。
-  新增 `testlink_runtime_case(case_id)` marker，lifecycle 測試用它宣告執行時補登的 6641／6642／6652／6658／6670／6674。
-  新增 tests/test_case_id_drift.py：AST 掃描 services／tests 的 `attach_case_id` 字面 ID，必須有測試在收集時持有；
-  marker ID 必須是已知 case，名稱與 service 字面一致（`register_txt=False` 的權限摘要排除）。
-- 驗證：compile 通過；`pytest -m offline` 通過 206／失敗 0。刻意改 service ID 與 marker 名稱，兩個守門測試都失敗。
-  b12／b13 共 80 輪 Allure 結果比對 81 個測試函式，沒有漂移。
-- 實機 NODE3（redhat .100，safe lane，唯讀）：通過 39／skipped 34／error 1，Completeness 74/74，沒有 Case ID Drift。
-  error 是 readonly 登入時 .100 `RemoteDisconnected`（連帶 EMS1-7109 Fail），單獨重跑通過。暫時把
-  services/invalid_params 的 EMS1-7031 改為 EMS1-6699 跑該測試：檔頭列出 1 筆 Drift，結果列出現 7031 與 6699 兩列；檔案已用 git 還原。
-- 帳號事件：同日 NODE3 preflight 兩次失敗，default profile 的 readwrite 帳號登入成功，但 `GET /device` 與
-  `GET /device/<NODE3>` 都回 `You have no privilege to do this.`。使用者確認 NODE3 仍由 redhat .100 管理並修正帳號權限，
-  第一次修正後仍失敗、再次修正後兩個 GET 皆 Success，之後實測正常。
-
-### 2026-10-22 NODE3 完整測試（Claude Code）
-
-- 使用者授權含破壞性測試；預設分支 b07702c，`tools/run_multi_node.py --nodes NODE3 --run-full-testcases`，
-  reports/multi_node/2026-10-22_full-NODE3-b07702c。
-- 結果：316 selected，pytest 通過 313／失敗 3，1:58:17；報表 251 Pass／3 Fail，Completeness 316/316，無 Teardown Errors。
-  ONT error 測試的 baseline 還原 219 秒、14 次輪詢，標 SLOW（門檻 12）。
-- 3 個失敗都是 .100 連線層錯誤：EMS1-7195（RemoteDisconnected）、EMS1-7116（/v3/api-docs 讀取逾時）、
-  EMS1-6922（RemoteDisconnected）；單獨重跑 3 個都通過，判定為環境問題。
-- CLI show 確認 ONT 3-16-1 為 IS、description REST_API_NEOX_ONT、無 template。沒有回填 TestLink。
-
-### 2026-10-22 RC-1 完整性檢查：缺漏測試與中斷標記（Claude Code）
-
-- 分支 claude/run-completeness-check，基準為 a98039d（#35 合併後的預設分支）；commit f67499c。
-- PR #36 CI 通過，head f67499c，於 2026-10-22 14:38（台北）以 merge commit 合併為 b07702c。
-- 實機 NODE3 safe lane：檔頭、`EMS completeness:`、summary.json 與總表都顯示 Complete (74/74)，corp 解析 33 列不變；
-  同日第一次執行時 .100 拒絕連線，preflight 標 Blocked、pytest 未執行，重跑正常。
-- 原因：2026-07-21 與 2026-10-02 09:54 兩輪中途停止，沒有 summary.json，也沒有任何地方標出沒跑完；
-  b12_redhat 判定版回填的來源就是 10-02 09:54 那輪（log 停在 99%）。
-- 修改：收集結束（-m／-k 之後）記錄選中的 nodeid；pytest 被中斷（ExitCode 2）時標記。txt／HTML 檔頭加
-  `Completeness: Complete|Incomplete (X/Y selected tests have a result[; run interrupted])` 與
-  `Missing Test #n: <case ID> <nodeid>`（最多 30 行）；xdist 標「not evaluated」。結束時印 `EMS completeness: …`。
-  run_multi_node 讀這一行：檔頭 Incomplete、exit code 2 或 log 沒有最後摘要行時，node 狀態為 Incomplete，
-  summary.json 加 completeness 欄位，整輪 exit code 非 0。不改 Summary 與結果列。
-- 驗證：compile 通過；`pytest -m offline` 通過 199／失敗 0（新增 tests/test_run_completeness.py 15 個）。
-  corp 離線解析 Incomplete 範例報表：只讀到結果列與 Summary，新檔頭不影響。
-- 限制：單一 node 回填時，corp 仍會寫入有結果的列，缺漏的 case 不寫；要擋回填需做建議第 4 項（回填前把關）。
-  Incomplete 的情境只有離線測試，實機尚未遇到。
-
-### 2026-10-22 修正假 Pass：收集階段登記 TestLink case ID（Claude Code）
-
-- 分支 claude/run-completeness，基準為 8c32c6d（#33 合併後的預設分支）；commit 76199b8、ab30db5。
-- PR #34 CI 通過，head ab30db5，由使用者於 2026-10-22 11:10（台北）以 merge commit 合併為 a9d9273。
-- 問題證據：b12 NODE1（2026-09-08）報表有 152 Pass／0 Fail，pytest 結果是 26 skipped。EMS1-6667／6669 的主測試被 skip，
-  但報表顯示 Pass（只有 readonly／noaccess 權限變體有跑）；EMS1-6642／6668／6670 被 skip 後在報表中消失。
-  原因：這些測試的 case ID 在 services 執行時才由 attach_case_id 登記，setup 或本體前段被 skip 時拿不到 ID。
-- 修改：新增 `testlink_case(case_id, name)` marker（pytest.ini），collection.py 在收集時登記；32 個非參數化測試加上 marker，
-  ID 和名稱沿用 services 字面值，並用 b12／b13 共 80 輪 Allure 結果交叉確認。profile 參數化 case（catalog dict）也改在收集時登記。
-  lifecycle 測試只標它獨有的 6654／6659，避免停用時把其他測試的 Pass 變成 Skip。
-- 離線量測（`--collect-only --run-full-testcases`）：收集時已知的 ID 從 108／254 增加到 252／254（剩下 7109／7110 是權限摘要）；
-  沒有 ID 的 item 從 156 降到 3，都是非 TestLink 測試，列在 tests/test_case_id_registration.py 的允許清單。
-- 驗證：compile 通過；`pytest -m offline` 通過 184／失敗 0；新測試在拿掉修正後 4 個全部失敗。
-- 行為改變：被 skip 的 case 會在報表多出 `Result Skip` 列（例如沒開 --run-alarm-delete 時的 6674／6654／6659）。
-  corp（D:\UseTestlink）預設 skip_policy=ignore，Skip 列列入 ignored、不寫入；blocked 才寫成 b。
-- 已開 PR #34，CI 通過。b12 TestLink 唯讀查詢：6667／6668／6669 當時已人工判定為 b，沒有假 Pass 落地。
-- 實機 NODE3（redhat .100，2026-10-22，safe lane，唯讀）：通過 40／skipped 34；報表 16 Pass／17 Skip，
-  每個 skipped item 的 ID 都在報表，沒有 skip 被顯示成 Pass。6642／6670 以 Skip 出現（修正前會消失）。
-  corp 離線解析：33 列、無錯誤，ignore 為 p 16／忽略 17。未驗證：mutating 的 6667～6669 情境（不在唯讀範圍）。
-- 仍有缺口：RAD 摘要（7056／7107／7108）只在 --auth-matrix 時登記，沒開時被 skip 仍不會出現在報表。
-
-### 2026-10-21 TD：strict cleanup 失敗記 Blocked、D3 重複報表清理（Claude Code）
-
-- 分支 claude/td-teardown-blocked，基準為 #31 合併後的預設分支。使用者決定：strict cleanup 失敗且本體通過 → Blocked
-  （TestLink b）；本體已失敗維持 Fail；非 strict teardown 錯誤只列明細。SFU 還原移進本體、失敗記 Fail 另做（PR-2）。
-- utils/cleanup.py 新增 StrictCleanupError；reporting_hooks 在 teardown 標記 strict 並記錄訊息（user_properties，xdist 適用）；
-  utils/reporting 新增 blocked 與 teardown_errors；txt 檔頭 `Teardown Errors`／`Teardown Error #n`，有 Blocked 時
-  Summary 為 `X Pass / Y Fail / Z Blocked`；HTML、integrated、報表索引認得 Blocked。
-- corp 只產生 preview（不寫入）：`Result Blocked` → b、`Result Error` → f；新檔頭與 Summary 解析無 warning；
-  檔頭明細不會進 TestLink notes。TestLink EMS1-7223 步驟 6 明列「cleanup 成功」，EMS1-7130 步驟不含還原。
-- 離線 `pytest -m offline`：通過 174／失敗 0（新增 tests/test_teardown_blocked.py）。
-- D3：刪除 reports/multi_node 中 91 個與 build 歸檔逐檔 SHA-256 相同的 allure-current 子目錄與 3 個 dry-run 目錄
-  （504,616 檔）；DIFFERENT 3、NO_ARCHIVE 6 保留；reports/ 剩 1,026,561 檔。清單：reports/summary/20261020-d3-multi-node-allure-duplicates.csv。
-
-### 2026-10-21 PR-2：ONT baseline 還原單一輪詢窗、SFU 還原移進本體（Claude Code）
-
-- 分支 claude/sfu-restore-in-body，基準為 #32 合併後的預設分支。使用者決定：還原輪詢改單一 600 秒窗（乘 wait_scale）、
-  固定 15 秒、不重送 baseline、超過 12 次輪詢在報表檔頭標 SLOW；EMS1-7223 還原移進本體、失敗記 Fail。
-- 新增 tests/support/ont_baseline.py（converge_ont_baseline）：POST baseline 一次，REST 以每段 300 秒重新登入輪詢
-  （EMS session 600 秒到期），需連續 4 次符合；附 Allure 輪詢次數／耗時；SLOW 寫入檔頭 `ONT Baseline Restore (...)`。
-  EMS1-7130、7133（strict teardown）與 7223 共用；刪除舊的 120／180 秒兩輪重送與 restore_ont_config_baseline。
-- EMS1-7223 比照 NNI restore_state：步驟 6 在本體執行，未執行到時才由 strict final 補救。
-- 實機 NODE3（redhat .100）：EMS1-7223、EMS1-7130 通過 2／失敗 0，無 Teardown Errors；SFU 本體還原 6 次輪詢、163 秒，
-  7130 teardown 還原 4 次、120 秒，皆未標 SLOW；CLI 確認 ONT 為 IS、description REST_API_NEOX_ONT、無 template。
-- 離線 `pytest -m offline`：通過 178／失敗 0；相關單元測試（rest_polling、ont_cli_status、reporting 等）通過 72／失敗 0。
+- 分支 claude/b15-regression（基準 c7d5673，未設 upstream）；configs/ems.yaml 兩個 target version 改為 b15，未提交。
+  使用者確認 .8（ubuntu）已升 b15、NODE1／NODE3 由 .8 納管且無人使用，授權完整測試含破壞性測試。
+- 三輪完整回歸（`run_multi_node.py --run-full-testcases`，reports/multi_node/）：
+  R1 2026-11-06_09-59-10（NODE1 通過 191／失敗 4＋1 error；NODE3 通過 286／失敗 30，當時有其他 client 使用 .8）、
+  R2 2026-11-06_14-36-05（NODE3 305／11；NODE1 191／7）、R3 2026-11-06_16-46-23（NODE1 201／1；NODE3 307／9）。
+  2026-11-06_13-34-39 那輪因 .8 於 13:52 重啟而手動停止，不列入比對；停止後確認無測試殘留。
+- 總結報表：reports/03.00.11 (AAVV.221) b15_ubuntu/b15_regression_summary_2026-11-06_NODE1_NODE3.html，
+  證據（最小重現腳本與 JSONL、報表產生腳本）在同目錄 b15_evidence_2026-11-06/。
+- 主要現象（Root Cause 皆未確認）：
+  - 有效 readwrite session 零星收到 `You have no privilege to do this.`，三輪打在不同 case；
+    不跑測試的最小重現（登入一次後連續 GET）692 筆中 7 筆，疑似 b15 API 問題。
+  - NODE1 `test_post_ont_service_by_sn` 三輪都失敗（ONT service 停在 Wait），唯一穩定失敗，未調查。
+  - NODE3 `This card is not NXC/NXP card`：R2 15:02–15:03 三次、單項重跑一次、R3 零次；卡片與 alarm 正常，需 .8 EMS server log。
+  - R1 才有的 Invalid session id、ONT 查無資料、DELETE usersession 回 SQLNonTransientConnectionException、EMS1-7020，之後未再出現。
+- 框架問題（未修）：services/profile/service.py `ensure_profile_exists_or_skip` 把 no privilege 當 Skip，會掩蓋同一問題。
+- 後續（見上一條）：no privilege 已開為 #263277；ont_service_by_sn 已查明為環境問題。
+  仍未完成：NODE3 上 34 組舊 `#RestApi_*_3011bXX_N3_*` SFU template 是否清理。
 
 ## 下一步
 
@@ -176,6 +278,14 @@ retro 計畫（2026-10-20 核准）的離線 PR A～I 已全部完成；剩下�
 - [D3]〔需決定〕（重複副本已清理）保留的 9 個 DIFFERENT／NO_ARCHIVE 目錄與 b1–b9 是否再以 tools/archive_reports.py 歸檔。
 - [D4]〔需決定〕曾貼入對話或整檔讀出的測試帳密是否輪替。
 - [D5]〔需決定〕Codex 之後是否仍在本 repo 使用（影響 skill 原檔位置）。
+
+b15（2026-11-11）：
+
+- [B15-7223]〔需實機〕EMS1-7223 restore 回 Success 但未套用：需使用者同意在 NODE3 重現，重現到才起草 bug。
+- [B15-TL]〔離線〕到 TestLink 頁面確認 6 個 f case 的 bug 清單有顯示連結（API 不回報）。
+- [B15-FW]〔離線〕框架：ensure_prerequisite_profile 500 當不存在、ensure_profile_exists_or_skip 吞 no privilege、
+  ont_service_by_sn 加 ONT 存在前置檢查。
+- [B15-ATT]〔需決定〕確認 #263239 附件 rd_repro_ont_unreg_500.py 已上傳。
 
 既有事項：
 

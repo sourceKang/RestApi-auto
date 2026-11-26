@@ -206,7 +206,9 @@
     14:08 試刪 10 筆全 Success 且 GET 確認已消失（delete_log.txt），總數 2997→2987。
     使用者要求先不刪其餘 2661 筆；單獨重跑 6838／6917／6836／6837／6839／6840／6918：7 passed／0 failed，
     跑完總數仍 2987（測試建立的 profile 有刪回）。另 ONTTemplateProfile 有 2867 筆 Auto_max*（共 2944），接近 3000 上限，未處理。
-    仍待：其餘 2661 筆 Auto_max* 是否刪除；trap destination 是否 write memory；IPv4／IPv6 變更提交與 PR。
+    仍待：其餘 2661 筆 Auto_max* 是否刪除；trap destination 是否 write memory。
+  - 2026-11-26 IPv4／IPv6 變更提交 2faff58，開 PR #42（base codex/prepare-github-upload，含 PR #41 的 52bae0b）。
+    offline 223 passed；本機 test_targets.local.yaml 的 NODE3 韌體 V1.03 未列入 hardware_matrix（committed 設定仍為 V1.02），待決定是否更新。
 - 未做：確認 ems.yaml 改 b17 是誰改的；7223 修正 push／PR（已在分支 claude/7223-wait-autoprov-delete 提交 52bae0b，未 push）；RAD external 失效原因（需確認 .8 的 RADIUS 設定或 RADIUS server）；7223 測試修改（待 Leaf 回覆／使用者確認計畫）；Redmine 驗證留言（需使用者確認預覽）；b16_redhat build 未建。
 
 ### 2026-11-10～11 b15 第 4 輪、NODE1 重跑與開 bug（Claude Code）

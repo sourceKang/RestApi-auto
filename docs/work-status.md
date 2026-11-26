@@ -211,6 +211,8 @@
     offline 223 passed。之後依使用者要求把 NODE3 韌體 V1.03(ACKG/ACKI/ACQE.0)b9 加入 hardware_matrix 的 versions
     並更新 test_targets.yaml NODE3（NODE5／7／8 仍為 V1.02，兩版並列）；NODE1 已是 .10b1、無 V1.03。
     offline 223 passed，相關測試在本機與 committed targets 下皆 31 passed。
+  - 2026-11-26 使用者要求合併：PR #41 dry run 衝突 0 → 合併 2074fc4；PR #42 對更新後的 base dry run 衝突 0（19 檔）
+    → 合併 6de312c（codex/prepare-github-upload）。兩者合併前 CI 皆 pass。
 - 未做：確認 ems.yaml 改 b17 是誰改的；7223 修正 push／PR（已在分支 claude/7223-wait-autoprov-delete 提交 52bae0b，未 push）；RAD external 失效原因（需確認 .8 的 RADIUS 設定或 RADIUS server）；7223 測試修改（待 Leaf 回覆／使用者確認計畫）；Redmine 驗證留言（需使用者確認預覽）；b16_redhat build 未建。
 
 ### 2026-11-10～11 b15 第 4 輪、NODE1 重跑與開 bug（Claude Code）

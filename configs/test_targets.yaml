@@ -24,15 +24,15 @@ nodes:
     slots:
       4:
         card: "MSC1240QA"
-        fw_version: "V2.03(ABGX.9)"
+        fw_version: "V2.03(ABGX.10)b1"
         role: "controller"
         ports:
           1:
             type: "Network"
             speed: "1G"
       1:
-        card: "GLC1440X-55"
-        fw_version: "V2.03(AAWO.9)"
+        card: "GLC1540X-55A"
+        fw_version: "V2.03(ACFF.10)b1"
         role: "line"
         ports:
           39:
@@ -41,7 +41,7 @@ nodes:
             ge_service:
       2:
         card: "OLC3816-IA"
-        fw_version: "V2.03(ACHD.9)"
+        fw_version: "V2.03(ACHD.10)b1"
         role: "line"
         ports:
           16:
@@ -101,6 +101,7 @@ nodes:
   NODE3:
     device_name: "Taiwan_NeoX-03_169.58"
     device_ip: "192.168.169.58"
+    device_ip_v6: "2001:2:169:0:fad4:a3ff:fec9:e1b0"
     ssh_username: "${DUT_SSH_NODE3_USERNAME:-admin}"
     ssh_password: "${DUT_SSH_NODE3_PASSWORD:-CHANGE_ME_DUT_SSH_PASSWORD}"
     chassis: "NeoX-03"
@@ -110,7 +111,7 @@ nodes:
     slots:
       4:
         card: "NXC400"
-        fw_version: "V1.02(ACKG.1)_260604c"
+        fw_version: "V1.03(ACKG.0)b9"
         hw_version: "AAB"
         role: "controller"
         ports:
@@ -122,7 +123,7 @@ nodes:
             speed: "10G"
       3:
         card: "NXP316"
-        fw_version: "V1.02(ACKI.1)_260604c"
+        fw_version: "V1.03(ACKI.0)b9"
         role: "line"
         ports:
           16:
@@ -137,7 +138,7 @@ nodes:
                 fw_image: "V542ABYY2Z0"
       1:
         card: "NXA340"
-        fw_version: "V1.02(ACQE.1)_260604b"
+        fw_version: "V1.03(ACQE.0)b9"
         hw_version: "AA"
         role: "line"
         ports:

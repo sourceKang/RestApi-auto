@@ -6,6 +6,7 @@ through EMS. It connects to EMS and the DUT, so callers decide when it may run.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import time
 from dataclasses import dataclass
@@ -52,7 +53,7 @@ def run_device_preflight(node: str | None, auth_profile: str | None) -> DutPrefl
         api_client = EmsApiClient(env_config)
         session_manager = SessionManager(api_client, env_config)
         with session_manager.credentials_session(env_config.readwrite) as session_id:
-            return _check_success(
+            result = _check_success(
                 api_client,
                 session_id,
                 f"/device/{env_config.dut.device_name}",
@@ -60,8 +61,61 @@ def run_device_preflight(node: str | None, auth_profile: str | None) -> DutPrefl
                 attempts=device_preflight_attempts(),
                 interval_seconds=device_preflight_interval_seconds(),
             )
+            if not result.ok:
+                return result
+            return _check_managed_ip(api_client, session_id, env_config)
     except Exception as error:
         return DutPreflightResult(False, str(error))
+
+
+def _check_managed_ip(api_client: EmsApiClient, session_id: str, env_config: Any) -> DutPreflightResult:
+    """Stop early when EMS manages the node by another address than the test target expects.
+
+    Inventory, provision and alarm checks compare EMS's IPAddress with dut.device_ip, so a
+    node EMS manages by IPv6 while the target expects IPv4 (or the reverse) would fail many
+    unrelated cases. A response without an IPAddress is not judged here.
+    """
+    dut = env_config.dut
+    response = api_client.request("GET", f"/device/{dut.device_name}", session=session_id)
+    actual = _find_device_ip(response.json, dut.device_name)
+    if not actual or _same_ip(actual, dut.device_ip):
+        return DutPreflightResult(True)
+    family = getattr(dut, "managed_ip_family", "ipv4")
+    hint = "set managed_ip_family in test_targets.yaml (or EMS_NODE_IP_FAMILY for one run)"
+    if getattr(dut, "device_ip_v6", "") and _same_ip(actual, dut.device_ip_v6):
+        hint = f"EMS manages {dut.node_key} by IPv6; set managed_ip_family: ipv6 (or EMS_NODE_IP_FAMILY=ipv6)"
+    elif getattr(dut, "device_ip_v4", "") and _same_ip(actual, dut.device_ip_v4):
+        hint = f"EMS manages {dut.node_key} by IPv4; set managed_ip_family: ipv4 (or EMS_NODE_IP_FAMILY=ipv4)"
+    return DutPreflightResult(
+        False,
+        f"EMS manages {dut.device_name} by IPAddress={actual}, but the target expects {dut.device_ip} "
+        f"(managed_ip_family={family}); {hint}",
+    )
+
+
+def _find_device_ip(value: Any, device_name: str) -> str:
+    if isinstance(value, dict):
+        name = value.get("DevName") or value.get("devname")
+        address = value.get("IPAddress") or value.get("ipaddress")
+        if address and (not name or str(name) == device_name):
+            return str(address)
+        for item in value.values():
+            found = _find_device_ip(item, device_name)
+            if found:
+                return found
+    if isinstance(value, list):
+        for item in value:
+            found = _find_device_ip(item, device_name)
+            if found:
+                return found
+    return ""
+
+
+def _same_ip(left: str, right: str) -> bool:
+    try:
+        return ipaddress.ip_address(str(left).strip()) == ipaddress.ip_address(str(right).strip())
+    except ValueError:
+        return str(left).strip().lower() == str(right).strip().lower()
 
 
 def run_ont_preflight(node: str | None, auth_profile: str | None) -> DutPreflightResult:

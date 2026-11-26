@@ -34,6 +34,7 @@ supported_devices:
   MSC1240QA:
     family: "MSAN Chassis (IES4204)"
     version: "V2.03(ABGX.9)"
+    versions: ["V2.03(ABGX.9)", "V2.03(ABGX.10)b1"]
   MSC1240QB:
     family: "MSAN Chassis (IES4204)"
     version: "V2.03(ACJM.9)"
@@ -52,21 +53,26 @@ supported_devices:
   OLC3816-IA:
     family: "MSAN Chassis"
     version: "V2.03(ACHD.9)"
+    versions: ["V2.03(ACHD.9)", "V2.03(ACHD.10)b1"]
   GLC1440X-55:
     family: "MSAN Chassis"
     version: "V2.03(AAWO.9)"
   GLC1540X-55A:
     family: "MSAN Chassis"
     version: "V2.03(ACFF.9)"
+    versions: ["V2.03(ACFF.9)", "V2.03(ACFF.10)b1"]
   NXC400:
     family: "MSAN Chassis (NeoX06, NeoX03)"
     version: "V1.02(ACKG.1)_260604c"
+    versions: ["V1.02(ACKG.1)_260604c", "V1.03(ACKG.0)b9"]
   NXP316:
     family: "MSAN Chassis (NeoX06, NeoX03)"
     version: "V1.02(ACKI.1)_260604c"
+    versions: ["V1.02(ACKI.1)_260604c", "V1.03(ACKI.0)b9"]
   NXA340:
     family: "MSAN Chassis (NeoX06, NeoX03)"
     version: "V1.02(ACQE.1)_260604b"
+    versions: ["V1.02(ACQE.1)_260604b", "V1.03(ACQE.0)b9"]
 
 model_aliases:
   GLC1440X-55A: "GLC1440X-55"
@@ -82,10 +88,10 @@ chassis:
   IES4204:
     max_controller_cards: 2
     max_line_cards: 2
-    report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    report_card_order: ["MSC1240QA", "MSC1240QB", "GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "GLC1540X-55A", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
     controller_cards: ["MSC1240QA", "MSC1240QB"]
-    line_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
-    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X"]
+    line_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "GLC1540X-55A", "OLC3816", "OLC3816-IA", "OLC3416B", "OLC3416-42A", "OLC3708"]
+    ge_service_cards: ["GLC1440", "GLC1440X", "GLC1440X-55", "GLC1540", "GLC1540X", "GLC1540X-55A"]
 
   IES5206:
     max_controller_cards: 2

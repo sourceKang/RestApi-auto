@@ -28,7 +28,13 @@ VOLATILE_TOKEN_RE = re.compile(
 # optical rx/txPower readings differ between runs without a product change.
 VOLATILE_KEY_RE = re.compile(r"(?i)^(elapsed|timestamp|\w*time|logid|logsubid|rxpower|txpower)$")
 URL_HOST_RE = re.compile(r"^https?://[^/]+", re.I)
-IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+# IPv4 or IPv6 address (EMS may manage the node by either). The IPv6 branch needs four
+# colons or "::" so clock times such as 07:40:50 are not taken for addresses.
+IPV4_RE = re.compile(
+    r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
+    r"|(?<![\w:.])(?:(?:[0-9A-Fa-f]{1,4}:){4,7}[0-9A-Fa-f]{1,4}"
+    r"|(?:[0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{0,4}::(?:[0-9A-Fa-f]{1,4}:)*[0-9A-Fa-f]{0,4})(?![\w:])"
+)
 PREVIEW_LIMIT = 20000
 MAX_DIFFS = 200
 

@@ -14,10 +14,10 @@ def test_default_topology_v2_node1_normalizes_to_runtime_target_shape():
 
     hardware.validate_node("NODE1", node)
 
-    assert node["report_cards"] == ["MSC1240QA", "GLC1440X-55", "OLC3816-IA"]
+    assert node["report_cards"] == ["MSC1240QA", "GLC1540X-55A", "OLC3816-IA"]
     assert node["controller_card"] == "MSC1240QA"
     assert node["pon_card"] == "OLC3816-IA"
-    assert node["ge_service_card"] == "GLC1440X-55"
+    assert node["ge_service_card"] == "GLC1540X-55A"
     assert node["ont"]["port_id"] == "16"
     assert node["ont"]["ont_id"] == "1"
     assert node["ont"]["sn"] == "5A5958458CADDDC3"

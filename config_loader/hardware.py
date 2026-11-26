@@ -187,6 +187,8 @@ class HardwareConfig:
         for field in (
             "device_name",
             "device_ip",
+            "device_ip_v6",
+            "managed_ip_family",
             "ssh_host",
             "ssh_backend",
             "ssh_username",

@@ -9,6 +9,7 @@ import pytest
 from services.alarm.service import (
     AlarmService,
     alarm_keywords,
+    assert_matching_alarm_info,
     expected_alarm_description,
     find_alarm_by_ids,
     remote_alarm_seed_commands,
@@ -61,6 +62,38 @@ def test_alarm_ground_truth_uses_unregister_ont_for_olt140x_and_login_for_neox()
     )
     assert alarm_keywords(neox_env) == ["192.168.169.58", "Login Success"]
     assert expected_alarm_description(neox_env) == "Login Success"
+
+
+def _ipv6_managed_neox_env():
+    return SimpleNamespace(
+        dut=SimpleNamespace(
+            chassis="NeoX-03",
+            device_name="Taiwan_NeoX-03_169.58",
+            device_ip="2001:2:169:0:fad4:a3ff:fec9:e1b0",
+            device_ip_v4="192.168.169.58",
+            port_id="16",
+            ont_sn="NEOX_SN",
+        )
+    )
+
+
+def test_alarm_keywords_use_the_managed_address_when_ems_manages_the_node_by_ipv6():
+    # b17: EMS alarms for IPv6-managed NODE3 carry DevIP = the managed IPv6 address.
+    assert alarm_keywords(_ipv6_managed_neox_env()) == ["2001:2:169:0:fad4:a3ff:fec9:e1b0", "Login Success"]
+
+
+def test_alarm_devip_is_checked_against_the_managed_address():
+    env = _ipv6_managed_neox_env()
+    alarm = {
+        "Description": "Login Success",
+        "DevName": "Taiwan_NeoX-03_169.58",
+        "DevIP": "2001:2:169:0:fad4:a3ff:fec9:e1b0",
+    }
+
+    assert_matching_alarm_info(alarm, env)
+
+    with pytest.raises(AssertionError):
+        assert_matching_alarm_info({**alarm, "DevIP": "192.168.169.58"}, env)
 
 
 @dataclass

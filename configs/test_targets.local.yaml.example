@@ -36,7 +36,13 @@ nodes:
   NODE3:
     device_name: "Taiwan_NeoX-03_169.58"
     device_ip: "192.168.169.58"
-    # ssh_host defaults to device_ip when omitted.
+    # device_ip_v6: the node's IPv6 address, used when EMS manages the node by IPv6.
+    # managed_ip_family: ipv4 (default) or ipv6 - the address EMS added the node with; REST
+    # IPAddress fields and IP filters are checked against it, and the device preflight stops
+    # early when EMS reports the other one. EMS_NODE_IP_FAMILY overrides it for one run.
+    # device_ip_v6: "2001:db8::58"
+    # managed_ip_family: "ipv4"
+    # ssh_host defaults to device_ip (the IPv4 address) when omitted.
     # ssh_backend: "paramiko" (default) or "openssh_legacy" for old firmware.
     ssh_username: "admin"
     ssh_password: "REPLACE_WITH_REAL_DUT_SSH_PASSWORD"

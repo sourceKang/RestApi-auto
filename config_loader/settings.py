@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +14,9 @@ from models.api import SessionRole
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
 DEFAULT_EMS_FILE = CONFIG_DIR / "ems.yaml"
 EMS_TARGET_ENV = "EMS_TARGET"
+# One-run override of how EMS manages the node (see managed_ip_family in test_targets.yaml).
+NODE_IP_FAMILY_ENV = "EMS_NODE_IP_FAMILY"
+NODE_IP_FAMILIES = ("ipv4", "ipv6")
 
 
 
@@ -49,6 +52,12 @@ class DutSample:
     ge_template: str
     ge_port_name: str
     ge_telephone: str
+    # device_ip is the address EMS manages the node by (IPv4 device_ip or device_ip_v6,
+    # chosen by managed_ip_family); ssh_host stays the CLI address.
+    device_ip_v6: str = ""
+    managed_ip_family: str = "ipv4"
+    # The node's own IPv4 address from test_targets.yaml (what device CLI output shows).
+    device_ip_v4: str = ""
 
 
 @dataclass(frozen=True)
@@ -108,6 +117,7 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
 
     dut = _select_dut_sample(hardware, selected_node_key, allow_fallback=allow_node_fallback)
     selected_node = hardware.node_target(dut.node_key)
+    dut = _apply_managed_ip_family(dut, selected_node)
     try:
         hardware.validate_node(dut.node_key, selected_node)
     except HardwareConfigError as error:
@@ -135,6 +145,29 @@ def load_environment(path: str | Path | None = None, node: str | None = None, au
         transport_retry_delays=_retry_delays(ems.get("transport_retry_delays", (5, 15))),
         min_request_interval=_non_negative_float(ems.get("min_request_interval", 0.0), "ems.min_request_interval"),
     )
+
+
+def _apply_managed_ip_family(dut: DutSample, node: dict[str, Any]) -> DutSample:
+    """Point dut.device_ip at the address EMS manages the node by.
+
+    EMS keeps one management address per node (IPv4 or IPv6); REST fields such as
+    IPAddress and IP filters carry that address. EMS_NODE_IP_FAMILY overrides the
+    node's managed_ip_family for one run; the default is ipv4.
+    """
+    family = str(os.environ.get(NODE_IP_FAMILY_ENV) or node.get("managed_ip_family") or "ipv4").strip().lower()
+    if family not in NODE_IP_FAMILIES:
+        raise ConfigError(
+            f"{dut.node_key} managed_ip_family {family!r} is not one of {', '.join(NODE_IP_FAMILIES)} "
+            f"(from {NODE_IP_FAMILY_ENV} or test_targets.yaml)"
+        )
+    device_ip_v6 = str(node.get("device_ip_v6") or "").strip()
+    if family == "ipv6":
+        if not device_ip_v6:
+            raise ConfigError(f"{dut.node_key} uses managed_ip_family ipv6 but has no device_ip_v6 in test_targets.yaml")
+        return replace(
+            dut, device_ip=device_ip_v6, device_ip_v4=dut.device_ip, device_ip_v6=device_ip_v6, managed_ip_family=family
+        )
+    return replace(dut, device_ip_v4=dut.device_ip, device_ip_v6=device_ip_v6, managed_ip_family=family)
 
 
 def dut_ssh_credentials(env_config: Any) -> tuple[str, str]:

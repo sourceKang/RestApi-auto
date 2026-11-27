@@ -213,6 +213,21 @@
     offline 223 passed，相關測試在本機與 committed targets 下皆 31 passed。
   - 2026-11-26 使用者要求合併：PR #41 dry run 衝突 0 → 合併 2074fc4；PR #42 對更新後的 base dry run 衝突 0（19 檔）
     → 合併 6de312c（codex/prepare-github-upload）。兩者合併前 CI 皆 pass。
+  - 2026-11-26 NODE3 完整回歸 r5（ubuntu_ipv6，HEAD 28fcdee）：報表 2026-11-26_16-11-26_NODE3，253 Pass／1 Fail
+    （pytest 315 passed／1 failed），1:30:23，標頭 `Node IP Family: ipv6`。6838／6917 這次 Pass。
+    - EMS1-7223 SFU：16:40:19 DELETE＋POST ONT config 皆 Success；CLI 監看（node3_cli_watch_r5）16:40:35 起
+      template `#RestApi_provision_temp_SFU`、description `REST_API_PROVISION_TEMPLATE_SFU`、ONT IS 一直到 16:45:25，
+      但 EMS `GET /ont/sn/<sn>` 5 分鐘內都回 `No data found in the database.`（設備端已套用，EMS DB 未出現 ONT）。
+      原因未查明；與先前 7223 cleanup／ontservice 刪除時序問題不同。cleanup 後 16:46 CLI 恢復基準設定且 IS；
+      17:4x 唯讀 GET：ont 有資料（REST_API_NEOX_ONT），無 ontservice。
+    - 使用者要求「沒問題才回填 TestLink b17（notes 標 IPv6／ubuntu_ipv6）」；因 7223 Fail，先單獨重跑。
+    - 7223 單獨重跑（17:45～17:55，log／CLI 監看在 reports/…b17_ubuntu_ipv6/rerun_7223_2026-11-26*）：Pass；
+      17:47:19 SFU template 套上、17:49 cleanup 後 17:50:13 恢復基準設定且 IS。
+    - TestLink b17 預覽（label `NODE3 IPv6 (ubuntu_ipv6)`，platform NetAtlas EMS，build id 21026），未寫入：
+      ① r5 `b17-ubuntu_ipv6-node3-20261126-r5`（digest 2b69dc76…）254 筆：p 253／f 1（7223）；
+      ② 重跑 `b17-ubuntu_ipv6-node3-20261126-7223rerun`（digest b65376d1…）1 筆 7223 p。
+    - 使用者確認後寫入（先 ① 254 筆、0 錯誤，再 ② 1 筆、0 錯誤；audit 在 local/testlink_audit/qa_audit/）。
+      readback：254 筆最新結果皆 p；7223 最新 execution 2026-11-26 17:59:05 status p，notes 為重跑那筆（ubuntu_ipv6）。
 - 未做：確認 ems.yaml 改 b17 是誰改的；7223 修正 push／PR（已在分支 claude/7223-wait-autoprov-delete 提交 52bae0b，未 push）；RAD external 失效原因（需確認 .8 的 RADIUS 設定或 RADIUS server）；7223 測試修改（待 Leaf 回覆／使用者確認計畫）；Redmine 驗證留言（需使用者確認預覽）；b16_redhat build 未建。
 
 ### 2026-11-10～11 b15 第 4 輪、NODE1 重跑與開 bug（Claude Code）
